@@ -1,0 +1,21 @@
+{
+  "window": {
+    "width": 1280,
+    "height": 720,
+    "vsync": true,
+    "title": "Forward Renderer"
+  },
+  "shadow_map": {
+    "width": 2048,
+    "height": 2048
+  },
+  "logging": {
+    "level": "debug"
+  },
+  "paths": {
+    "asset_root": "assets/"
+  },
+  "debug": {
+    "gl_errors": true
+  }
+}

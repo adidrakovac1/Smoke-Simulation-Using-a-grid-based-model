@@ -1,0 +1,502 @@
+#include "core/RenderQueue.h"
+#include "core/SubmissionContext.h"
+#include "core/ShaderProgram.h"
+#include "core/MeshBuffer.h"
+#include "core/Mesh.h"
+#include "core/Material.h"
+#include "core/Texture2D.h"
+#include "core/TextureCubemap.h"
+#include "scene/RenderItem.h"
+#include "scene/ReflectionProbe.h"
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <algorithm>
+#include <string>
+#include <spdlog/spdlog.h>
+
+namespace
+{
+
+    constexpr glm::vec3 kDefaultPbrAlbedoColor(1.0f, 1.0f, 1.0f);
+    constexpr float kDefaultPbrMetallicValue = 0.0f;
+    constexpr float kDefaultPbrRoughnessValue = 0.5f;
+    constexpr glm::vec3 kDefaultPbrEmissiveColor(0.0f, 0.0f, 0.0f);
+    constexpr uint32_t kMaterialTextureSlotBindCount = 7;
+    constexpr uint32_t kEnvironmentTextureSlotBindCount = 4;
+    constexpr uint32_t kShadowTextureBindCount = 1;
+
+    void SetOptionalIntUniform(GLuint programId, const char *name, int value)
+    {
+        const GLint location = glGetUniformLocation(programId, name);
+        if (location != -1)
+            glUniform1i(location, value);
+    }
+
+    void SetOptionalFloatUniform(GLuint programId, const char *name, float value)
+    {
+        const GLint location = glGetUniformLocation(programId, name);
+        if (location != -1)
+            glUniform1f(location, value);
+    }
+
+    void SetOptionalVec3Uniform(GLuint programId, const char *name, const glm::vec3 &value)
+    {
+        const GLint location = glGetUniformLocation(programId, name);
+        if (location != -1)
+            glUniform3f(location, value.x, value.y, value.z);
+    }
+
+    bool IsCubemapPresent(const std::shared_ptr<TextureCubemap>& texture)
+    {
+        return texture && texture->IsValid();
+    }
+
+    bool IsTexture2DPresent(const std::shared_ptr<Texture2D>& texture)
+    {
+        return texture && texture->IsValid();
+    }
+
+    void BindEnvironmentResources(const ShaderProgram &shader,
+                                  const ReflectionProbe *probe,
+                                  IBLDebugMode debugMode,
+                                  float debugPrefilteredMip)
+    {
+        const GLuint programId = shader.GetID();
+        if (programId == 0)
+            return;
+
+        const bool hasSource = probe && IsCubemapPresent(probe->sourceCubemap);
+        const bool hasIrradiance = probe && IsCubemapPresent(probe->irradianceCubemap);
+        const bool hasPrefiltered = probe && IsCubemapPresent(probe->prefilteredCubemap);
+        const bool hasBrdfLut = probe && IsTexture2DPresent(probe->brdfLut);
+        const bool hasIbl = hasIrradiance || (hasPrefiltered && hasBrdfLut);
+        const float prefilteredMaxMip = hasPrefiltered
+            ? static_cast<float>(std::max(probe->prefilteredCubemap->GetMipLevels() - 1, 0))
+            : 0.0f;
+
+        if (hasSource)
+            probe->sourceCubemap->Bind(EnvironmentTextureUnit::Source);
+        else
+            TextureCubemap::Unbind(EnvironmentTextureUnit::Source);
+
+        if (hasIrradiance)
+            probe->irradianceCubemap->Bind(EnvironmentTextureUnit::Irradiance);
+        else
+            TextureCubemap::Unbind(EnvironmentTextureUnit::Irradiance);
+
+        if (hasPrefiltered)
+            probe->prefilteredCubemap->Bind(EnvironmentTextureUnit::Prefiltered);
+        else
+            TextureCubemap::Unbind(EnvironmentTextureUnit::Prefiltered);
+
+        if (hasBrdfLut)
+            probe->brdfLut->Bind(EnvironmentTextureUnit::BrdfLut);
+        else
+            Texture2D::Unbind(EnvironmentTextureUnit::BrdfLut);
+
+        SetOptionalIntUniform(programId, EnvironmentTextureSlot::Source, EnvironmentTextureUnit::Source);
+        SetOptionalIntUniform(programId, EnvironmentTextureSlot::Irradiance, EnvironmentTextureUnit::Irradiance);
+        SetOptionalIntUniform(programId, EnvironmentTextureSlot::Prefiltered, EnvironmentTextureUnit::Prefiltered);
+        SetOptionalIntUniform(programId, EnvironmentTextureSlot::BrdfLut, EnvironmentTextureUnit::BrdfLut);
+        SetOptionalIntUniform(programId, "u_HasSourceEnvironmentMap", hasSource ? 1 : 0);
+        SetOptionalIntUniform(programId, "u_HasIrradianceMap", hasIrradiance ? 1 : 0);
+        SetOptionalIntUniform(programId, "u_HasPrefilteredMap", hasPrefiltered ? 1 : 0);
+        SetOptionalIntUniform(programId, "u_HasBRDFLUT", hasBrdfLut ? 1 : 0);
+        SetOptionalIntUniform(programId, "u_HasIBL", hasIbl ? 1 : 0);
+        SetOptionalFloatUniform(programId, "u_IBLIntensity", (probe && (hasIbl || hasSource)) ? probe->intensity : 0.0f);
+        SetOptionalFloatUniform(programId, "u_PrefilteredMaxMip", prefilteredMaxMip);
+        SetOptionalIntUniform(programId, "u_IBLDebugMode", ToUniformValue(debugMode));
+        SetOptionalFloatUniform(programId, "u_IBLDebugPrefilteredMip", debugPrefilteredMip);
+
+        const glm::vec3 position = probe ? probe->position : glm::vec3(0.0f);
+        const glm::vec3 boxMin = probe ? probe->boxMin : glm::vec3(0.0f);
+        const glm::vec3 boxMax = probe ? probe->boxMax : glm::vec3(0.0f);
+        SetOptionalVec3Uniform(programId, "u_ProbePosition", position);
+        SetOptionalFloatUniform(programId, "u_ProbeRadius", probe ? probe->radius : 0.0f);
+        SetOptionalVec3Uniform(programId, "u_ProbeBoxMin", boxMin);
+        SetOptionalVec3Uniform(programId, "u_ProbeBoxMax", boxMax);
+        SetOptionalIntUniform(programId, "u_ProbeInfluenceType", probe ? static_cast<int>(probe->influenceType) : 0);
+    }
+
+    void ApplyPbrFallbackUniformDefaults(const ShaderProgram &shader)
+    {
+        const GLuint programId = shader.GetID();
+        if (programId == 0)
+            return;
+
+        SetOptionalIntUniform(programId, TextureSlot::Albedo, MaterialTextureUnit::Albedo);
+        SetOptionalIntUniform(programId, TextureSlot::Normal, MaterialTextureUnit::Normal);
+        SetOptionalIntUniform(programId, TextureSlot::Metallic, MaterialTextureUnit::Metallic);
+        SetOptionalIntUniform(programId, TextureSlot::Roughness, MaterialTextureUnit::Roughness);
+        SetOptionalIntUniform(programId, TextureSlot::AO, MaterialTextureUnit::AO);
+        SetOptionalIntUniform(programId, TextureSlot::Emissive, MaterialTextureUnit::Emissive);
+        SetOptionalIntUniform(programId, TextureSlot::SpecularGlossiness, MaterialTextureUnit::SpecularGlossiness);
+        SetOptionalIntUniform(programId, "u_CascadeShadowMaps", 7);
+        SetOptionalIntUniform(programId, EnvironmentTextureSlot::Source, EnvironmentTextureUnit::Source);
+        SetOptionalIntUniform(programId, EnvironmentTextureSlot::Irradiance, EnvironmentTextureUnit::Irradiance);
+        SetOptionalIntUniform(programId, EnvironmentTextureSlot::Prefiltered, EnvironmentTextureUnit::Prefiltered);
+        SetOptionalIntUniform(programId, EnvironmentTextureSlot::BrdfLut, EnvironmentTextureUnit::BrdfLut);
+        SetOptionalIntUniform(programId, "u_HasSourceEnvironmentMap", 0);
+        SetOptionalIntUniform(programId, "u_IBLDebugMode", ToUniformValue(kDefaultIBLDebugMode));
+        SetOptionalFloatUniform(programId, "u_IBLDebugPrefilteredMip", 0.0f);
+        SetOptionalFloatUniform(programId, "u_PrefilteredMaxMip", 0.0f);
+        SetOptionalVec3Uniform(programId, "u_AlbedoColor", kDefaultPbrAlbedoColor);
+        SetOptionalFloatUniform(programId, "u_MetallicValue", kDefaultPbrMetallicValue);
+        SetOptionalFloatUniform(programId, "u_RoughnessValue", kDefaultPbrRoughnessValue);
+        SetOptionalVec3Uniform(programId, "u_EmissiveColor", kDefaultPbrEmissiveColor);
+        SetOptionalFloatUniform(programId, "u_EmissiveStrength", 1.0f);
+        SetOptionalFloatUniform(programId, "u_AoStrength", 1.0f);
+        SetOptionalFloatUniform(programId, "u_NormalScale", 1.0f);
+        SetOptionalFloatUniform(programId, "u_FlipNormalMapY", 0.0f);
+        SetOptionalVec3Uniform(programId, "u_SpecularFactor", glm::vec3(1.0f));
+        SetOptionalFloatUniform(programId, "u_GlossinessFactor", 1.0f);
+        SetOptionalIntUniform(programId, "u_IsSpecularGlossiness", 0);
+        SetOptionalIntUniform(programId, "u_UseNormalMap", 1);
+        SetOptionalIntUniform(programId, "u_HasAlbedoMap", 0);
+        SetOptionalIntUniform(programId, "u_HasNormalMap", 0);
+        SetOptionalIntUniform(programId, "u_HasMetallicMap", 0);
+        SetOptionalIntUniform(programId, "u_HasRoughnessMap", 0);
+        SetOptionalIntUniform(programId, "u_HasAoMap", 0);
+        SetOptionalIntUniform(programId, "u_HasEmissiveMap", 0);
+        SetOptionalIntUniform(programId, "u_HasSpecularGlossinessMap", 0);
+    }
+
+} // namespace
+
+static GLenum ToGLPrimitive(PrimitiveTopology topology)
+{
+    switch (topology)
+    {
+    case PrimitiveTopology::Triangles:
+        return GL_TRIANGLES;
+    case PrimitiveTopology::Lines:
+        return GL_LINES;
+    case PrimitiveTopology::Points:
+        return GL_POINTS;
+    case PrimitiveTopology::TriangleStrip:
+        return GL_TRIANGLE_STRIP;
+    case PrimitiveTopology::LineStrip:
+        return GL_LINE_STRIP;
+    }
+    return GL_TRIANGLES;
+}
+
+static uint64_t ApproxTriangleCount(const RenderItem &item)
+{
+    if (item.meshMulti)
+    {
+        if (item.subMeshIndex >= item.meshMulti->SubMeshCount())
+            return 0;
+        return static_cast<uint64_t>(item.meshMulti->GetSubMesh(item.subMeshIndex).indexCount) / 3ull;
+    }
+
+    if (!item.mesh)
+        return 0;
+
+    const uint64_t primitiveCount = item.mesh->IsIndexed()
+                                        ? static_cast<uint64_t>(item.mesh->GetIndexCount())
+                                        : static_cast<uint64_t>(item.mesh->GetVertexCount());
+
+    // We only estimate triangle-like primitives here. Non-triangle topologies intentionally
+    // contribute 0 so the UI stays honest instead of inventing a fake triangle equivalence.
+    switch (item.topology)
+    {
+    case PrimitiveTopology::Triangles:
+        return primitiveCount / 3ull;
+    case PrimitiveTopology::TriangleStrip:
+        return primitiveCount >= 3ull ? (primitiveCount - 2ull) : 0ull;
+    case PrimitiveTopology::Lines:
+    case PrimitiveTopology::LineStrip:
+    case PrimitiveTopology::Points:
+        return 0ull;
+    }
+
+    return 0ull;
+}
+
+bool RenderQueue::Add(const RenderItem &item)
+{
+    if (!item.flags.visible || (!item.mesh && !item.meshMulti))
+        return false;
+    if (!item.material && !item.shader)
+    {
+        if (m_errorShader)
+        {
+            RenderItem fallback = item;
+            fallback.shader = m_errorShader;
+            fallback.material = nullptr;
+            m_items.push_back(fallback);
+            return true;
+        }
+        return false;
+    }
+    m_items.push_back(item);
+    return true;
+}
+
+void RenderQueue::SetErrorShader(const ShaderProgram *shader)
+{
+    m_errorShader = shader;
+}
+
+void RenderQueue::SetEnvironmentData(const ReflectionProbe *probe)
+{
+    m_activeReflectionProbe = probe;
+}
+
+void RenderQueue::SetIBLDebugState(IBLDebugMode mode, float prefilteredMipLevel)
+{
+    m_iblDebugMode = mode;
+    m_iblDebugPrefilteredMip = prefilteredMipLevel;
+}
+
+void RenderQueue::SetLightingDebugControls(float ambientFloorStrength, float maxShadowOcclusion)
+{
+    m_ambientFloorStrength = std::max(0.0f, ambientFloorStrength);
+    m_maxShadowOcclusion = std::clamp(maxShadowOcclusion, 0.0f, 1.0f);
+}
+
+void RenderQueue::Sort()
+{
+    // Multi-key sort to minimize state changes:
+    // 1. Shader: ResolvedShader() pointer (minimize expensive program switches)
+    // 2. Material: material pointer (minimize texture and material parameter switches)
+    // 3. Mesh Buffer: meshMulti or mesh pointer (minimize VAO switches)
+    // 4. SubMesh: subMeshIndex (minimize submesh switches within the same mesh)
+    // 5. Draw Mode: drawMode (minimize rasterizer state changes)
+    // 6. Topology: topology (minimize primitive type changes)
+    std::sort(m_items.begin(), m_items.end(),
+              [](const RenderItem &a, const RenderItem &b)
+              {
+                  // 1. Shader program (highest priority)
+                  const ShaderProgram *sa = a.ResolvedShader();
+                  const ShaderProgram *sb = b.ResolvedShader();
+                  if (sa != sb)
+                  {
+                      if (!sa) return false;
+                      if (!sb) return true;
+                      return sa < sb;
+                  }
+
+                  // 2. Material
+                  if (a.material != b.material)
+                  {
+                      if (!a.material) return false;
+                      if (!b.material) return true;
+                      return a.material < b.material;
+                  }
+
+                  // 3. Mesh (either meshMulti or mesh)
+                  if (a.meshMulti != b.meshMulti)
+                  {
+                      if (!a.meshMulti) return false;
+                      if (!b.meshMulti) return true;
+                      return a.meshMulti < b.meshMulti;
+                  }
+                  if (a.mesh != b.mesh)
+                  {
+                      if (!a.mesh) return false;
+                      if (!b.mesh) return true;
+                      return a.mesh < b.mesh;
+                  }
+
+                  // 4. Submesh index
+                  if (a.subMeshIndex != b.subMeshIndex)
+                  {
+                      return a.subMeshIndex < b.subMeshIndex;
+                  }
+
+                  // 5. Draw mode
+                  if (a.drawMode != b.drawMode)
+                  {
+                      return static_cast<int>(a.drawMode) < static_cast<int>(b.drawMode);
+                  }
+
+                  // 6. Topology
+                  if (a.topology != b.topology)
+                  {
+                      return static_cast<int>(a.topology) < static_cast<int>(b.topology);
+                  }
+
+                  return false;
+              });
+}
+
+RenderQueueFrameStats RenderQueue::Flush(SubmissionContext & /*current*/)
+{
+    const ShaderProgram *lastShader = nullptr;
+    const MaterialInstance *lastMaterial = nullptr;
+    DrawMode lastMode = DrawMode::Fill;
+    RenderQueueFrameStats stats{};
+
+    for (const RenderItem &item : m_items)
+    {
+        // ── Draw mode (only on change) ────────────────────────────────────
+        if (item.drawMode != lastMode)
+        {
+            switch (item.drawMode)
+            {
+            case DrawMode::Fill:
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                break;
+            case DrawMode::Wireframe:
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                break;
+            case DrawMode::Points:
+                glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+                break;
+            }
+            lastMode = item.drawMode;
+        }
+
+        // ── Material / shader binding ─────────────────────────────────────
+        if (item.material)
+        {
+            // Material path: bind full material (shader + textures + params).
+            if (item.material != lastMaterial)
+            {
+                const ShaderProgram *materialShader = item.material->GetShader();
+                ++stats.materialChangeCount;
+                if (materialShader && materialShader != lastShader)
+                    ++stats.shaderProgramChangeCount;
+                stats.textureBindingCount += kMaterialTextureSlotBindCount + kEnvironmentTextureSlotBindCount;
+
+                item.material->Bind();
+                if (const ShaderProgram *shader = materialShader)
+                    BindEnvironmentResources(*shader,
+                                             m_activeReflectionProbe,
+                                             m_iblDebugMode,
+                                             m_iblDebugPrefilteredMip);
+                lastMaterial = item.material;
+                lastShader = materialShader;
+            }
+        }
+        else
+        {
+            // Legacy shader-only path.
+            if (item.shader != lastShader)
+            {
+                ++stats.shaderProgramChangeCount;
+                stats.textureBindingCount += kMaterialTextureSlotBindCount + kEnvironmentTextureSlotBindCount;
+
+                item.shader->Bind();
+                ApplyPbrFallbackUniformDefaults(*item.shader);
+                Texture2D::Unbind(MaterialTextureUnit::Albedo);
+                Texture2D::Unbind(MaterialTextureUnit::Normal);
+                Texture2D::Unbind(MaterialTextureUnit::Metallic);
+                Texture2D::Unbind(MaterialTextureUnit::Roughness);
+                Texture2D::Unbind(MaterialTextureUnit::AO);
+                Texture2D::Unbind(MaterialTextureUnit::Emissive);
+                Texture2D::Unbind(MaterialTextureUnit::SpecularGlossiness);
+                BindEnvironmentResources(*item.shader,
+                                         m_activeReflectionProbe,
+                                         m_iblDebugMode,
+                                         m_iblDebugPrefilteredMip);
+                lastShader = item.shader;
+                lastMaterial = nullptr;
+            }
+        }
+
+        // ── Per-object uniforms ───────────────────────────────────────────
+        const ShaderProgram *activeShader = item.ResolvedShader();
+        if (activeShader)
+        {
+            glm::mat4 model = item.transform.GetModelMatrix();
+
+            const glm::vec3 &tOff = item.translationOffset;
+            if (tOff != glm::vec3(0.0f))
+                model = model * glm::translate(glm::mat4(1.0f), tOff);
+
+            // Apply the mesh-local orientation fix as a single quaternion→matrix conversion.
+            // One glm::mat4_cast replaces three separate glm::rotate matrix multiplications,
+            // and the quaternion stores the intent (axis + angle) without any order ambiguity.
+            static const glm::quat kIdentity(1.0f, 0.0f, 0.0f, 0.0f);
+            if (item.rotationOffset != kIdentity)
+                model = model * glm::mat4_cast(item.rotationOffset);
+
+            activeShader->SetUniform("u_Model", model);
+
+            activeShader->SetUniform("u_ReceiveShadow", (item.flags.receiveShadow && m_hasShadowData) ? 1 : 0);
+            activeShader->SetUniform("u_AmbientFloorStrength", m_ambientFloorStrength);
+            activeShader->SetUniform("u_MaxShadowOcclusion", m_maxShadowOcclusion);
+
+            // ── Cascaded shadow data (directional light only) ─────────────
+            if (m_hasShadowData)
+            {
+                // Always set these if shadow data is present, even if this object 
+                // doesn't receive shadows, to ensure u_CascadeShadowMaps stays on unit 7.
+                for (uint32_t i = 0; i < CascadedShadowMap::kNumCascades; ++i)
+                {
+                    const std::string idx = "[" + std::to_string(i) + "]";
+                    activeShader->SetUniform(("u_CascadeViewProj" + idx).c_str(), m_cascadeViewProj[i]);
+                    activeShader->SetUniform(("u_CascadeSplits" + idx).c_str(), m_cascadeSplits[i]);
+                }
+
+                // Bind the cascade depth array to texture unit 7.
+                glActiveTexture(GL_TEXTURE0 + 7);
+                glBindTexture(GL_TEXTURE_2D_ARRAY, m_shadowMapTextureArrayId);
+                activeShader->SetUniform("u_CascadeShadowMaps", 7);
+                activeShader->SetUniform("u_PCFRadius", m_pcfRadius);
+                glActiveTexture(GL_TEXTURE0);
+                stats.textureBindingCount += kShadowTextureBindCount;
+            }
+        }
+
+        if (item.meshMulti)
+        {
+            if (item.subMeshIndex >= item.meshMulti->SubMeshCount())
+                continue;
+            // Guard: if this submesh has no tangent data (no UV channel), disable
+            // normal map sampling so the TBN is never applied on bad geometry.
+            if (activeShader)
+            {
+                const SubMesh &sm = item.meshMulti->GetSubMesh(item.subMeshIndex);
+                if (!sm.hasTangents)
+                    SetOptionalIntUniform(activeShader->GetID(), "u_HasNormalMap", 0);
+            }
+            item.meshMulti->DrawSubMesh(item.subMeshIndex);
+            ++stats.processedItemCount;
+            ++stats.drawCallCount;
+            stats.approxTriangleCount += ApproxTriangleCount(item);
+        }
+        else if (item.mesh)
+        {
+            item.mesh->Draw(ToGLPrimitive(item.topology));
+            ++stats.processedItemCount;
+            ++stats.drawCallCount;
+            stats.approxTriangleCount += ApproxTriangleCount(item);
+        }
+    }
+
+    // Restore fill mode so the next frame starts clean.
+    if (lastMode != DrawMode::Fill)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    return stats;
+}
+
+void RenderQueue::Clear()
+{
+    m_items.clear();
+    m_activeReflectionProbe = nullptr;
+}
+
+bool RenderQueue::IsEmpty() const
+{
+    return m_items.empty();
+}
+
+void RenderQueue::SetDirectionalShadowData(
+    const std::array<glm::mat4, CascadedShadowMap::kNumCascades> &cascadeViewProj,
+    const std::array<float, CascadedShadowMap::kNumCascades> &cascadeSplits,
+    uint32_t shadowMapTextureArrayId,
+    int pcfRadius)
+{
+    m_cascadeViewProj = cascadeViewProj;
+    m_cascadeSplits = cascadeSplits;
+    m_shadowMapTextureArrayId = shadowMapTextureArrayId;
+    m_pcfRadius = pcfRadius;
+    m_hasShadowData = (shadowMapTextureArrayId != 0);
+}

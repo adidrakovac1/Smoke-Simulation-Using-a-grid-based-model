@@ -1,0 +1,42 @@
+cmake_minimum_required(VERSION 3.26.0)
+project(TestApp)
+
+set(CMAKE_CXX_STANDARD 20)
+
+# Test application executable
+add_executable(${PROJECT_NAME}
+        src/main.cpp
+        src/CapturePresetScene.h
+        src/CapturePresetScene.cpp
+        src/SampleScene.cpp
+        src/SolarSystemScene.h
+        src/SolarSystemScene.cpp
+        src/DioramaScene.h
+        src/DioramaScene.cpp
+        src/NeonCityScene.h
+        src/NeonCityScene.cpp
+        src/JapanScene.h
+        src/JapanScene.cpp
+        src/PbrValidationScene.h
+        src/PbrValidationScene.cpp
+        src/NormalMapScene.h
+        src/NormalMapScene.cpp
+        src/IblValidationScene.h
+        src/IblValidationScene.cpp
+        src/BistroScene.h
+        src/BistroScene.cpp
+        src/TerrainScene.h
+        src/TerrainScene.cpp
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+        RendererLib
+)
+
+# Copy shaders to test app output directory
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
+        COMMENT "Copying assets to test app output directory"
+)

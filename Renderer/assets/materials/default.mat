@@ -1,0 +1,24 @@
+{
+  "shader": {
+    "vert": "assets/shaders/basic.vert",
+    "frag": "assets/shaders/basic.frag"
+  },
+  "textures": {
+    "u_AlbedoMap": {
+      "path": "assets/textures/default_albedo.png",
+      "colorSpace": "sRGB"
+    },
+    "u_NormalMap": {
+      "path": "assets/textures/default_normal.png",
+      "colorSpace": "Linear"
+    }
+  },
+  "floats": {
+    "u_MetallicValue": 0.0,
+    "u_RoughnessValue": 0.5
+  },
+  "vec3s": {
+    "u_AlbedoColor": [1.0, 1.0, 1.0],
+    "u_EmissiveColor": [0.0, 0.0, 0.0]
+  }
+}
