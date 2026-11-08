@@ -1,0 +1,54 @@
+#pragma once
+
+#include "smoke/DensityView.h"
+#include "smoke/Diagnostics.h"
+#include "smoke/GridSize.h"
+#include "smoke/SmokeParams.h"
+#include "smoke/SolverConfig.h"
+#include "smoke/StepTimings.h"
+
+#include <memory>
+
+namespace smoke {
+
+/// The single class the rest of the project (console program, tests, later the renderer
+/// integration) talks to. Everything else in Solver/src is an implementation detail.
+///
+/// The simulation lives in an "invisible box": a grid of cells with solid walls. Nothing about
+/// the box's position in a 3D scene is known here; the renderer side places it later
+/// (docs/plan/ARCHITECTURE.md, section 8).
+class SmokeSolver {
+public:
+    explicit SmokeSolver(const SolverConfig& config = {});
+    ~SmokeSolver();
+
+    SmokeSolver(const SmokeSolver&)            = delete;
+    SmokeSolver& operator=(const SmokeSolver&) = delete;
+    SmokeSolver(SmokeSolver&&) noexcept;
+    SmokeSolver& operator=(SmokeSolver&&) noexcept;
+
+    /// Advance the simulation by dt seconds (one step).
+    void step(float dt);
+    /// Same, using params().dt.
+    void step() { step(params().dt); }
+
+    /// Clear all fields (grid size stays).
+    void reset();
+    /// Reallocate everything for a new grid size and reset. Not cheap: do not call every frame.
+    void resize(const GridSize& newSize);
+
+    const GridSize&    gridSize() const;
+    SmokeParams&       params();
+    const SmokeParams& params() const;
+    long long          stepCount() const;
+
+    DensityView          density() const;
+    const Diagnostics&   diagnostics() const;
+    const StepTimings&   lastTimings() const;
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+} // namespace smoke

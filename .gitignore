@@ -1,0 +1,26 @@
+# Build output (Renderer/build and Solver/build are created by CMake and are large)
+build/
+**/build/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# IDE / editor
+.vs/
+.vscode/
+.idea/
+*.user
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code local files
+.claude/settings.local.json
+
+# Output of local runs (slices, temporary measurements). Real results go to perf/results.csv.
+*.pgm
+perf/*.tmp
