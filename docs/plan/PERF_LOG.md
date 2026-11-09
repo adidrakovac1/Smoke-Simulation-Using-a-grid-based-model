@@ -274,3 +274,67 @@ T11 provjera: prije M4, `Field3D` je već koristio 64-bajtno poravnanje i redni 
 višekratnik od osam floatova; postojeći testovi provjeravaju poravnanje baze, pitch i indekse. Ovo
 potvrđuje ispravnost rasporeda memorije, ali ne mjeri učinak u odnosu na neporavnati raspored, pa T11
 se ne smatra uporedno iscrpljenim.
+
+Napomena: odluke M4-001 do M4-005 donesene su po starom pravilu šuma (max − min svih koraka), na PC-1.
+Od D10 vrijedi novo pravilo (OPTIMIZATION.md, odjeljak 4, tačka 5); PC-1 unosi se ne prepravljaju.
+
+---
+
+## 6. PC-2: osnove i nastavak M4 (2026-11-09)
+
+Zajedničko za sve unose u ovom odjeljku:
+- **Računar:** PC-2 (odjeljak 1), plan napajanja High performance. Pozadinsko opterećenje nije
+  posebno kontrolisano; korisnik je zamoljen da ne koristi računar tokom mjerenja.
+- **Gradnja:** Release, g++ 16.2.0 (MSYS2 UCRT64). B1 je `-O3 -DNDEBUG`, B0 je
+  `-O3 -DNDEBUG -fno-tree-vectorize`.
+- **Scenarij:** ε = 5, K = 40, dt = 1/60, jedna nit.
+- **Protokol (D10):** `perf/run_rounds.sh`, 3 naizmjenične runde, svaka 10 zagrijavanja + 100 mjerenih
+  koraka. Glavni broj je medijan medijana rundi. Šum je raspon medijana rundi osnove. Presude računa
+  `perf/summarize_rounds.sh`.
+- **Sesije:** 32³, 64³ i 128³ iz sesije 1. 96³ iz ponovljene sesije, jer je u sesiji 1 jedna runda
+  M4-B0 bila poremećena (cijeli korak 352 ms umjesto oko 85 ms).
+- **Tačnost:** svaka varijanta je prošla 42 ili 43 testa i `--verify` prema
+  `serial_64_100steps_pc2.bin`, bit po bit isto (razlika 0).
+- **Kalibracija:** `--calibrate` daje triad oko 107 GB/s, a teorijski maksimum dvokanalnog DDR4
+  je oko 51 GB/s. Mjerenje kalibracije je vjerovatno pogrešno (nije provjereno), pa se **E ne
+  računa** dok se ne provjeri.
+
+### P2-001 / P2-002: osnove B0 i B1 na PC-2 (commit `73ceb9e`)
+
+Medijani u ms po koraku, B0 / B1:
+
+| Mreža | Izvor | Sile | Advekcija brzine | Projekcija | Advekcija skalara | Ukupno | S koraka (B0/B1) | `f` projekcije (B1) |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 32³ | 0.0066 / 0.0048 | 0.286 / 0.267 | 0.618 / 0.618 | 1.345 / 0.673 | 0.515 / 0.514 | 2.787 / 2.094 | 1.331x | 32.2% |
+| 64³ | 0.034 / 0.029 | 2.518 / 2.431 | 5.274 / 5.331 | 10.854 / 5.540 | 3.778 / 3.784 | 22.617 / 17.230 | 1.313x | 32.2% |
+| 96³ | 0.145 / 0.130 | 12.324 / 9.726 | 17.752 / 17.807 | 37.367 / 19.119 | 12.140 / 12.202 | 81.670 / 59.171 | 1.380x | 32.3% |
+| 128³ | 0.449 / 0.422 | 22.000 / 21.986 | 42.406 / 42.361 | 95.359 / 59.710 | 28.910 / 28.961 | 190.822 / 156.326 | 1.221x | 38.2% |
+
+Nalazi:
+- **Projekcija:** kompajler je sam vektorizira. Projekcija je u B1 1.6x (128³) do 2.0x (32³) brža,
+  a Jacobi iteracija 1.65x do 2.2x. Na 128³ je dobitak manji jer polja više ne staju u L3 (16 MiB).
+- **Advekcija** se ne vektorizira: S = 1.00 na svim mrežama, isto kao na PC-1.
+- **Profil B1:** projekcija je najveća faza (32% do 38%). Odmah iza je advekcija brzine (27% do 31%),
+  pa advekcija skalara i sile. Redoslijed jezgara za M4a na PC-2 je zato projekcija/Jacobi, pa
+  advekcija.
+- **96³ je na PC-2 bučna i u ponovljenoj sesiji.** Medijan runde faze Sile za B0 kreće se od 9.6 do
+  13.9 ms, a projekcije za B0 od 37.3 do 45.3 ms. Zaključci na 96³ zato imaju najmanju težinu;
+  uzrok nije istražen.
+
+### P2-003: M4-003 (branchless vorticity confinement, Adi) ponovo izmjeren na PC-2: ZADRŽATI
+
+- Osnova je B1 na `73ceb9e`, kandidat B1 na `c8f775d` (kod isti kao `eeb591d`). Kontrola: B0 obje verzije.
+- **Tačnost:** na PC-2 je rezultat **bit po bit isti** kao M3. Razlika na PC-1 (1.5·10⁻⁶) je dakle
+  posljedica drugačijeg kompajliranja na ARM-u, a ne promjene računa.
+
+| Mreža | Sile: osnova / nova (ms) | S / Δ faze Sile | Presuda (D10) | Cijeli korak S / Δ | Presuda (D10) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 32³ | 0.267 / 0.222 | 1.205x / 17.0% | brže | 1.014x / 1.4% | brže |
+| 64³ | 2.431 / 1.967 | 1.236x / 19.1% | brže | 1.035x / 3.4% | brže |
+| 96³ | 9.726 / 9.409 | 1.034x / 3.3% | šum | 0.961x / −4.1% | šum |
+| 128³ | 21.986 / 18.338 | 1.199x / 16.6% | brže | 1.039x / 3.7% | šum |
+
+- **Kontrola B0:** faza Sile je i bez vektorizacije brža, S = 1.19 do 1.40. Na PC-1 je bila sporija.
+- **Odluka:** zadržati. Faza Sile je mjerljivo brža na 32³, 64³ i 128³. Na 96³ je presuda šum
+  (vidi gore). Cijeli korak dobija 1.4% do 3.7%, a na 128³ to je unutar šuma.
+- Svi redovi su u `perf/results.csv` (oznake `PC2-20261109-BASE-*` i `PC2-20261109-M4-003-*`).

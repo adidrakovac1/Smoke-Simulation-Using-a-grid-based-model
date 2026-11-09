@@ -1,6 +1,7 @@
 # Build output (Renderer/build and Solver/build are created by CMake and are large)
 build/
 **/build/
+**/build-*/
 out/
 cmake-build-*/
 CMakeFiles/
