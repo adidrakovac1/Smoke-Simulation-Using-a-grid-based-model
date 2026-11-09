@@ -508,3 +508,79 @@ Nalazi:
   ovdje nekonzistentna (vidi uvod odjeljka 6).
 - **Odluka:** zadržati. Ovo je preduslov za vektorizaciju, uz mali dobitak i bez promjene rezultata.
   Oznake u CSV-u: `PC2-20261109-M4-011-*`.
+
+### M4-012: T12 `restrict` u advekciji: ZADRŽATI (preduslov, bez ubrzanja)
+
+- **Izmjena:** unutrašnja petlja advekcije je funkcija po redu `advectRow` sa `SMOKE_RESTRICT`
+  parametrima (`Solver/src/stages/AdvectionRows.inc`). Trilinearna interpolacija čita sirov pokazivač
+  (`sampleTrilinear(const float*, sJ, sK, x, y, z)` u `Interpolation.h`), istim redom računa kao M1 oblik.
+  `src` smije biti isti niz kao `u`, `v` ili `w` (`advectVelocity`), jer se oni samo čitaju.
+- **Tačnost:** 45/45 testova (novi test: sirovi oblik interpolacije je bit po bit isti kao M1 oblik);
+  `--verify` daje bit po bit isto.
+- **Mjerenje:** osnova je `b860c02`; jedna zajednička sesija za M4-012, M4-013 i M4-014 (4 programa,
+  3 rotirane runde).
+
+| Mreža | Adv. brzine: osnova / nova (ms) | S | Adv. skalara: osnova / nova (ms) | S | Cijeli korak S | Presude (brzina / skalari / korak) |
+| :--- | :--- | ---: | :--- | ---: | ---: | :--- |
+| 32³ | 0.618 / 0.610 | 1.012x | 0.537 / 0.513 | 1.046x | 1.020x | šum / brže / šum |
+| 64³ | 5.113 / 5.106 | 1.002x | 3.723 / 3.741 | 0.995x | 0.995x | šum / šum / šum |
+| 96³ | 17.832 / 17.694 | 1.008x | 12.397 / 12.273 | 1.010x | 1.029x | šum / šum / šum |
+| 128³ | 41.414 / 41.193 | 1.005x | 28.469 / 28.020 | 1.016x | 1.009x | šum / brže / šum |
+
+- **Tumačenje:** kao i kod M4-002 na PC-1, `restrict` sam ne mijenja ništa: g++ i dalje ne vektorizira
+  petlju ("data ref analysis failed"). Razlike su u šumu.
+- **Odluka:** zadržati, jer je preduslov za M4-013. Oznake u CSV-u: `PC2-20261109-M4-012-*`.
+
+### M4-013: vektorizacija advekcije (32-bitni indeks, red van linije): ZADRŽATI
+
+- **Izmjena:** dvije stvari, i nijedna sama nije dovoljna (provjereno sa `-fopt-info-vec`):
+  1. osam čitanja u `sampleTrilinear` koristi `int` indeks `c = i0 + sj*j0 + sk*k0` i `f[c + offset]`
+     umjesto 64-bitne aritmetike pokazivača. Adrese su iste, pa je i rezultat isti. Uslov je manje od
+     2^31 floatova po polju (`advectScalar` to provjerava sa `assert`).
+  2. `advectRow` ostaje zasebna funkcija (`SMOKE_NOINLINE`, `Restrict.h`). Kad je g++ ugradi u petlju po
+     redovima, `restrict` obećanja više ne pokrivaju čitanja koja zavise od brzine, pa odustane.
+- **Šta kompajler napravi:** petlja je vektorizirana u zadanoj gradnji (SSE, 4 floata; 17 `mulps` u
+  `Advection.cpp.obj`). Osam čitanja je "oponašani gather" (`pextrd`/`movss`/`insertps`), a clamp, težine
+  i množenja su vektorski. `vgatherdps` g++ ne koristi.
+- **Tačnost:** 45/45 testova; `--verify` daje bit po bit isto.
+- **Mjerenje:** osnova je M4-012, ista sesija.
+
+| Mreža | Adv. brzine: osnova / nova (ms) | S | Adv. skalara: osnova / nova (ms) | S | Cijeli korak S | Presude (brzina / skalari / korak) |
+| :--- | :--- | ---: | :--- | ---: | ---: | :--- |
+| 32³ | 0.610 / 0.465 | 1.314x | 0.513 / 0.373 | 1.373x | 1.186x | brže / brže / brže |
+| 64³ | 5.106 / 3.660 | 1.395x | 3.741 / 2.638 | 1.418x | 1.250x | brže / brže / brže |
+| 96³ | 17.694 / 12.296 | 1.439x | 12.273 / 8.640 | 1.421x | 1.205x | brže / brže / brže |
+| 128³ | 41.193 / 28.796 | 1.431x | 28.020 / 19.652 | 1.426x | 1.179x | brže / brže / brže |
+
+- **Tumačenje:** advekcija je 1.31 do 1.44x brža, na svim mrežama i u svakoj rundi. Iako su čitanja
+  pojedinačna, račun koordinata, clampa i težina (oko 30 operacija po ćeliji) sada radi na 4 ćelije
+  odjednom. Dobitak ne pada na 128³, pa advekcija nije ograničena memorijom kao Jacobi.
+- **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-013-*`.
+
+### M4-014: T15/T16 AVX2 po fajlu za advekciju, s provjerom procesora: ZADRŽATI
+
+- **Izmjena:** isti kod (`AdvectionRows.inc`) se gradi još jednom sa `-mavx2` u
+  `Solver/src/stages/Advection_avx2.cpp`; `advectScalar` bira tu verziju kad `avx2Supported()` vrati true
+  (`KernelIsa`, kao kod Jacobija u M4-009). Pomoćne funkcije u `Interpolation.h` su `static inline`, a
+  `std::min`/`std::max` su zamijenjeni sa `minOf`/`maxOf` (napisani isto kao u standardnoj biblioteci).
+  Inače bi linker mogao cijelom programu dati AVX2 kopiju, i program bi se rušio bez AVX2.
+- **Šta kompajler napravi:** 8 floatova odjednom (17 `vmulps` na `ymm` registrima). Čitanja su i dalje
+  oponašani gather (`vpextrd`/`vmovss`/`vinsertps`), bez FMA.
+- **Tačnost:** 46/46 testova (novi test: AVX2 i skalarna advekcija su bit po bit iste, i kad je `src`
+  isti niz kao `u`); `--verify` daje bit po bit isto.
+- **Mjerenje:** osnova je M4-013, ista sesija.
+
+| Mreža | Adv. brzine: osnova / nova (ms) | S | Adv. skalara: osnova / nova (ms) | S | Cijeli korak S | Presude (brzina / skalari / korak) |
+| :--- | :--- | ---: | :--- | ---: | ---: | :--- |
+| 32³ | 0.465 / 0.323 | 1.441x | 0.373 / 0.280 | 1.332x | 1.180x | brže / brže / brže |
+| 64³ | 3.660 / 2.365 | 1.548x | 2.638 / 1.767 | 1.493x | 1.224x | brže / brže / brže |
+| 96³ | 12.296 / 7.972 | 1.542x | 8.640 / 5.779 | 1.495x | 1.133x | brže / brže / brže |
+| 128³ | 28.796 / 18.576 | 1.550x | 19.652 / 12.844 | 1.530x | 1.162x | brže / brže / brže |
+
+- **Ukupno M4-012 do M4-014** prema `b860c02`: advekcija brzine 1.91 do 2.24x, advekcija skalara 1.91 do
+  2.22x, cijeli korak 1.38 do 1.52x (sve presude "brže"). Projekcija se nije mijenjala (šum).
+- **Tumačenje:** 8 umjesto 4 floata daje još 1.33 do 1.55x, iako čitanja ostaju pojedinačna. Projekcija
+  je sada najveći dio koraka na svim mrežama (na 128³ oko 50%).
+- **Moguće dalje:** ručni `_mm256_i32gather_ps` (T9/T14) da se provjeri da li pravi gather pomaže na Zen 3;
+  nije izmjereno.
+- **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-014-*`.

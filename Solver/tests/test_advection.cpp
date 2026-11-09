@@ -134,3 +134,31 @@ TEST_CASE("T1_sphere_in_constant_velocity_moves_by_c_dt_per_step") {
     CHECK(err40 < 1e-6);
     CHECK(massRel < 1e-6);
 }
+
+TEST_CASE("advection_avx2_and_scalar_builds_are_bit_identical") {
+    // M4-013: the AVX2 build of advection (Advection_avx2.cpp, -mavx2, gathers, no FMA) must give exactly the
+    // scalar result. Random velocities up to 120 cells/s with dt = 1/60 (2 cells per step) also exercise the
+    // clamp at the walls; nx = 13 covers the vector loop and its remainder.
+    const GridSize g{13, 9, 7};
+    Field3D src(g), u(g), v(g), w(g), dScalar(g), dAvx2(g), dAuto(g);
+    SplitMix64 rng{77};
+    fillRandom(src, rng, 0.0f, 3.0f);
+    fillRandom(u, rng, -120.0f, 120.0f);
+    fillRandom(v, rng, -120.0f, 120.0f);
+    fillRandom(w, rng, -120.0f, 120.0f);
+    const float dt = 1.0f / 60.0f;
+
+    REQUIRE(advectScalar(dScalar, src, u, v, w, dt, wholeInterior(g), KernelIsa::Scalar));
+    if (!advectScalar(dAvx2, src, u, v, w, dt, wholeInterior(g), KernelIsa::Avx2)) {
+        MESSAGE("AVX2 not available on this CPU/build: only the scalar path was checked");
+        return;
+    }
+    CHECK(cellsDifferent(dScalar, dAvx2) == 0);
+    advectScalar(dAuto, src, u, v, w, dt, wholeInterior(g));
+    CHECK(cellsDifferent(dScalar, dAuto) == 0);
+    // src as one of the velocities (as in advectVelocity: u0 advected by u0, v0, w0)
+    Field3D sScalar(g), sAvx2(g);
+    REQUIRE(advectScalar(sScalar, u, u, v, w, dt, wholeInterior(g), KernelIsa::Scalar));
+    REQUIRE(advectScalar(sAvx2, u, u, v, w, dt, wholeInterior(g), KernelIsa::Avx2));
+    CHECK(cellsDifferent(sScalar, sAvx2) == 0);
+}

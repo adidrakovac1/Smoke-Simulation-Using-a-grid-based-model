@@ -9,3 +9,15 @@
 #else
 #define SMOKE_RESTRICT
 #endif
+
+// SMOKE_NOINLINE keeps a function out of line (M4-013). g++ vectorizes the advection row loop only when the row
+// function stays a separate function: once it is inlined into the slab loop, the restrict promises on its
+// pointer parameters no longer cover the velocity-dependent reads, and the loop is reported as
+// "data ref analysis failed". One call per row costs nanoseconds; a row costs microseconds.
+#if defined(__GNUC__) || defined(__clang__)
+#define SMOKE_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define SMOKE_NOINLINE __declspec(noinline)
+#else
+#define SMOKE_NOINLINE
+#endif

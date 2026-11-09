@@ -1,25 +1,47 @@
 #include "stages/Interpolation.h"
 #include "stages/Stages.h"
 
+#include "CpuFeatures.h"
+#include "Restrict.h"
+
+#include <cassert>
+#include <climits>
+#include <cstddef>
+
 namespace smoke::serial {
 
 // Semi-Lagrangian advection (Stam 1999, section 2.2 and appendix A; Stam 2003, advect()):
 // "where did the fluid now at this cell centre come from dt seconds ago?" Trace back one Euler step,
 // clamp to the box, and take the old value there by trilinear interpolation. With h = 1 (decision D4)
 // the velocity is in cells per second, so the back-traced position is simply  i - dt * u.
-void advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v, const Field3D& w,
-                  float dt, SlabRange range) {
+namespace {
+// advectRow / advectSlab: the same source is compiled again with -mavx2 in Advection_avx2.cpp (M4-014).
+#include "stages/AdvectionRows.inc"
+} // namespace
+
+#if defined(SMOKE_HAS_AVX2_BINARY)
+// Defined in Advection_avx2.cpp (compiled with -mavx2). Only call it when avx2Supported() is true.
+void advectSlabAvx2(float* dst, const float* src, const float* u, const float* v, const float* w,
+                    const GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ, std::ptrdiff_t sK);
+#endif
+
+bool advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v, const Field3D& w,
+                  float dt, SlabRange range, KernelIsa isa) {
     const GridSize s = dst.size();
-    for (int k = range.k0; k < range.k1; ++k) {
-        for (int j = 1; j <= s.ny; ++j) {
-            for (int i = 1; i <= s.nx; ++i) {
-                const float x = clampToBox(static_cast<float>(i) - dt * u.at(i, j, k), s.nx);
-                const float y = clampToBox(static_cast<float>(j) - dt * v.at(i, j, k), s.ny);
-                const float z = clampToBox(static_cast<float>(k) - dt * w.at(i, j, k), s.nz);
-                dst.at(i, j, k) = sampleTrilinear(src, x, y, z);
-            }
-        }
+    const std::ptrdiff_t sJ = dst.strideJ(), sK = dst.strideK();
+    assert(src.strideK() == sK && u.strideK() == sK && v.strideK() == sK && w.strideK() == sK);
+    assert(src.totalFloats() < static_cast<std::size_t>(INT_MAX));  // 32-bit cell index (Interpolation.h)
+    const bool haveAvx2 = avx2Supported();  // always false when the AVX2 file is not built
+    if (isa == KernelIsa::Avx2Intrinsics) return false;  // there is no hand-written advection version
+    if (isa == KernelIsa::Avx2 && !haveAvx2) return false;
+#if defined(SMOKE_HAS_AVX2_BINARY)
+    if (isa != KernelIsa::Scalar && haveAvx2) {
+        advectSlabAvx2(dst.data(), src.data(), u.data(), v.data(), w.data(), s, range.k0, range.k1, dt, sJ, sK);
+        return true;
     }
+#endif
+    advectSlab(dst.data(), src.data(), u.data(), v.data(), w.data(), s, range.k0, range.k1, dt, sJ, sK);
+    return true;
 }
 
 // Self-advection of the velocity (Stam 1999, section 2.2): each component is a field like any other and is

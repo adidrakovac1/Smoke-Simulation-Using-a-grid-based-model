@@ -48,3 +48,20 @@ TEST_CASE("clamp_keeps_the_point_between_the_walls") {
     CHECK(clampToBox(10.5f, 10) == 10.5f);
     CHECK(clampToBox(99.0f, 10) == 10.5f);
 }
+
+TEST_CASE("raw_pointer_interpolation_is_bit_identical_to_the_m1_form") {
+    // M4-012: sampleTrilinear(const float*, ...) must compute exactly what the original Field3D form did.
+    const GridSize g{9, 7, 6};
+    Field3D f(g);
+    SplitMix64 rng(11);
+    fillRandom(f, rng, -5.0f, 5.0f);
+    int different = 0;
+    for (int n = 0; n < 2000; ++n) {
+        const float x = clampToBox(rng.uniform(-1.0f, g.nx + 2.0f), g.nx);  // includes clamped points
+        const float y = clampToBox(rng.uniform(-1.0f, g.ny + 2.0f), g.ny);
+        const float z = clampToBox(rng.uniform(-1.0f, g.nz + 2.0f), g.nz);
+        const float a = sampleTrilinear(f, x, y, z), b = smoke::serial::sampleTrilinearM1(f, x, y, z);
+        different += std::memcmp(&a, &b, sizeof(float)) != 0;
+    }
+    CHECK(different == 0);
+}

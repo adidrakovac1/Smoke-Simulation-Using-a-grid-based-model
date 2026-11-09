@@ -39,11 +39,19 @@ void setBoundary(Field3D& field, BoundaryKind kind);
 /// setBoundary for u (VelocityX), v (VelocityY) and w (VelocityZ).
 void setVelocityBoundary(SmokeState& state);
 
+/// Which build of a kernel to run (M4-009, M4-010, M4-014). Auto uses the AVX2 build when the CPU supports
+/// it, otherwise the default build; Scalar forces the default build; Avx2 forces the AVX2 build and the
+/// function returns false (doing nothing) when it is not available; Avx2Intrinsics forces a hand-written
+/// AVX2 version (only Jacobi has one; same rule). All builds give bit-identical results. Tests and smoke_lab
+/// use the explicit values to compare them.
+enum class KernelIsa { Auto, Scalar, Avx2, Avx2Intrinsics };
+
 /// Semi-Lagrangian advection of one field (docs/plan/MATH.md, section 4; Stam 1999 and 2003, advect):
 /// for each interior cell, trace back x - dt*u, clamp to [0.5, n + 0.5] and interpolate `src` trilinearly.
 /// `dst` and `src` must be different fields. Does NOT call setBoundary (the caller knows the field kind).
-void advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v, const Field3D& w,
-                  float dt, SlabRange range);
+/// `isa`: see KernelIsa (AVX2 build since M4-014).
+bool advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v, const Field3D& w,
+                  float dt, SlabRange range, KernelIsa isa = KernelIsa::Auto);
 
 /// 1. Inject smoke (and heat) inside the source sphere: += dt * rate (docs/plan/MATH.md, section 3).
 void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
@@ -65,11 +73,7 @@ void computeDivergence(const Field3D& u, const Field3D& v, const Field3D& w, Fie
 
 /// One Jacobi iteration for  laplacian(p) = div:  pNew = ( sum of the 6 neighbours of pOld - div ) / 6.
 /// Reads only pOld, writes only pNew (interior), so the cells are independent of each other.
-/// `isa` picks the implementation (M4-009): Auto uses the AVX2 build when the CPU supports it, otherwise
-/// the default build; Scalar forces the default build; Avx2 forces AVX2 and returns false (doing nothing)
-/// when it is not available; Avx2Intrinsics forces the hand-written AVX2 version (M4-010, same rule).
-/// All versions give bit-identical results. Tests and smoke_lab use the explicit values to compare them.
-enum class KernelIsa { Auto, Scalar, Avx2, Avx2Intrinsics };
+/// `isa`: see KernelIsa (M4-009, M4-010).
 bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range,
                      KernelIsa isa = KernelIsa::Auto);
 

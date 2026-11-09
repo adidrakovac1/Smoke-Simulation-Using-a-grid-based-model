@@ -50,7 +50,7 @@ add_library(smoke_solver STATIC
 option(SMOKE_ENABLE_AVX2 "Build AVX2 kernels with a run-time CPU check (x86 only)" ON)
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SMOKE_CPU)
 if(SMOKE_ENABLE_AVX2 AND NOT SMOKE_DISABLE_VECTORIZATION AND SMOKE_CPU MATCHES "^(x86_64|amd64|x64|i[3-6]86)$")
-  set(SMOKE_AVX2_SOURCES src/stages/Projection_avx2.cpp)
+  set(SMOKE_AVX2_SOURCES src/stages/Projection_avx2.cpp src/stages/Advection_avx2.cpp)
   target_sources(smoke_solver PRIVATE ${SMOKE_AVX2_SOURCES})
   if(MSVC)
     set_source_files_properties(${SMOKE_AVX2_SOURCES} PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
