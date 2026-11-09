@@ -48,6 +48,7 @@
 namespace {
 
 using Clock = std::chrono::steady_clock;
+constexpr double kVerifyRelativeTolerance = 1.0e-4;
 
 struct Options {
     bool calibrate = false;
@@ -421,8 +422,7 @@ bool runReference(const Options& options) {
 }
 
 // Runs the same fixed scenario as --reference and compares the final density with a reference file
-// cell by cell (docs/plan/VERIFICATION.md, section 3). It only REPORTS the differences: the pass/fail
-// tolerance is TODO(measure) and is decided from these numbers, not guessed.
+// cell by cell (docs/plan/VERIFICATION.md, section 3).
 bool runVerify(const Options& options) {
     const int n = options.gridExplicit ? options.gridSizes.front() : 64;
     if (options.gridExplicit && options.gridSizes.size() != 1) {
@@ -447,6 +447,12 @@ bool runVerify(const Options& options) {
     config.grid = {n, n, n};
     smoke::SmokeSolver solver(config);
     for (int step = 0; step < options.steps; ++step) solver.step();
+    const smoke::Diagnostics diagnostics = solver.diagnostics();
+    if (diagnostics.nonFiniteCells != 0) {
+        std::cerr << "Verification failed: solver state contains " << diagnostics.nonFiniteCells
+                  << " non-finite cells\n";
+        return false;
+    }
     const smoke::DensityView density = solver.density();
 
     double maxAbs = 0.0, maxRef = 0.0;
@@ -467,13 +473,18 @@ bool runVerify(const Options& options) {
                 maxRef = std::max(maxRef, std::fabs(static_cast<double>(reference)));
             }
 
+    const double relativeError = maxRef > 0.0 ? maxAbs / maxRef
+                                              : (maxAbs == 0.0 ? 0.0 : std::numeric_limits<double>::infinity());
+    const bool passed = relativeError <= kVerifyRelativeTolerance;
     std::cout << "Verify against " << options.verifyPath << " (" << n << "^3, " << options.steps << " steps)\n"
               << std::setprecision(6)
               << "  cells_different: " << different << " of " << cells << '\n'
               << "  max_abs_diff: " << maxAbs << " at cell (" << worstI << ", " << worstJ << ", " << worstK << ")\n"
-              << "  max_abs_diff / max|reference|: " << (maxRef > 0.0 ? maxAbs / maxRef : 0.0) << '\n'
+              << "  max_abs_diff / max|reference|: " << relativeError << '\n'
+              << "  relative_tolerance: " << kVerifyRelativeTolerance << '\n'
               << "  bit_identical: " << (different == 0 ? "yes" : "no") << '\n';
-    return true;
+    std::cout << "  result: " << (passed ? "PASS" : "FAIL") << '\n';
+    return passed;
 }
 
 bool runBenchmarks(const Options& options, std::ostream& csv) {

@@ -70,17 +70,25 @@ Ovo je prva linija odbrane: ako nešto krene krivo, vidi se u brojevima prije ne
 
 ## 3. Referentni rezultat za poređenje paralelnih verzija
 
-Serijska referenca je snimljena:
-1. `smoke_bench --reference Solver/reference/serial_64_100steps.bin --steps 100` pokreće fiksni
-   scenarij na 64³ bez zagrijavanja i snima `density` kao little-endian IEEE-754 float32 u
+Serijska referenca se snima **po računaru** (oznake računara su u PERF_LOG.md, odjeljak 1):
+1. `smoke_bench --reference Solver/reference/serial_64_100steps_<računar>.bin --steps 100` pokreće
+   fiksni scenarij na 64³ bez zagrijavanja i snima `density` kao little-endian IEEE-754 float32 u
    z/y/x redoslijedu; sažetak i parametri su u pratećem `.bin.txt` fajlu.
-2. Referentni fajl je `Solver/reference/serial_64_100steps.bin`; FNV-1a 64-bit kontrolni zbroj je
-   `165cde9630821391`, min 0, max 12.9589844, sredina 0.032197039. B0 i B1 daju identičan rezultat
-   (najveća apsolutna razlika 0).
+2. Snimljene reference (obje ε = 5, K = 40, 100 koraka; B0 i B1 daju identičan rezultat na istom računaru):
+
+| Fajl | Računar | Kompajler | Commit | FNV-1a 64 | max | sredina |
+| :--- | :--- | :--- | :--- | :--- | ---: | ---: |
+| `serial_64_100steps_pc1.bin` | PC-1 (Apple M4) | AppleClang 21.0.0 | `58d0e18-dirty` | `165cde9630821391` | 12.9589844 | 0.032197039 |
+| `serial_64_100steps_pc2.bin` | PC-2 (Ryzen 5 5500) | g++ 16.2.0 | `73ceb9e` (čisto) | `4acffd90eeb386f1` | 12.9590082 | 0.0321969849 |
+
+   **M4 na PC-2 se poredi isključivo s `serial_64_100steps_pc2.bin`.**
 3. Ista komanda podržava druge veličine (`--grid N`) kad se želi dodatna referenca.
 4. **Poređenje:** `smoke_bench --verify FILE [--grid N] [--steps N]` pokreće isti scenarij i ispisuje
    broj različitih ćelija, `max_abs_diff`, `max_abs_diff / max|reference|` i da li je rezultat bit po
-   bit isti. Prag za "prošlo" je `TODO(measure)`: određuje se iz prvih M4 mjerenja, ne pogađa se.
+   bit isti. M4 prag je **1e-4 relativne maksimalne greške** (u skladu s tolerancijom za vektorizirane
+   rezultate iz OPTIMIZATION.md); `--verify` vraća izlazni kod 1 ako se prag pređe ili stanje nije konačno.
+   Prag važi **samo uz referencu snimljenu na istom računaru i istim kompajlerom**: nepromijenjen kod
+   na PC-2 poređen s PC-1 referencom daje 1.41·10⁻⁴ i pada (izmjereno 2026-11-09).
 
 **Referenca zavisi od računara i kompajlera (izmjereno 2026-11-09).** Isti commit, izgrađen s
 g++ 16.2.0 (MSYS2, x86-64, Release) i poređen s ovom referencom (AppleClang 21, Apple M4, ARM):
@@ -89,9 +97,9 @@ uzrok (nije dokazano) je da Clang na ARM-u spaja `a*b+c` u FMA, a g++ na x86-64 
 Na istom računaru i istoj gradnji rezultat je **bit po bit isti** (solver je determinističan).
 Zato:
 - izmjene iz M4 se porede s referencom **snimljenom na istom računaru i istim kompajlerom**;
-- ova referenca je snimljena iz necommitanog stanja (`58d0e18-dirty`) i na računaru PC-1. Prije M4
-  je ponovo snima onaj ko radi M4, na svom računaru, iz čistog commita i s konačnim ε (MATH.md,
-  odjeljak 3, nalaz o divergenciji).
+- PC-1 referenca je snimljena iz necommitanog stanja (`58d0e18-dirty`); zadržana je kao podatak za
+  PC-1. M4 se nastavlja na PC-2, pa je PC-2 referenca snimljena iz čistog M3 commita `73ceb9e`, s
+  konačnim ε = 5 (odluka D9, PLAN.md).
 
 5. Svaka kasnija verzija (OpenMP, SIMD, GPU) se poredi s referencom:
 

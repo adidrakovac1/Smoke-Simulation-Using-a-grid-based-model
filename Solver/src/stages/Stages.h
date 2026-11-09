@@ -39,11 +39,26 @@ void setBoundary(Field3D& field, BoundaryKind kind);
 /// setBoundary for u (VelocityX), v (VelocityY) and w (VelocityZ).
 void setVelocityBoundary(SmokeState& state);
 
+/// Which build of a kernel to run (M4-009, M4-010, M4-014). Auto uses the AVX2 build when the CPU supports
+/// it, otherwise the default build; Scalar forces the default build; Avx2 forces the AVX2 build and the
+/// function returns false (doing nothing) when it is not available; Avx2Intrinsics forces a hand-written
+/// AVX2 version (only Jacobi has one; same rule). All builds give bit-identical results. Tests and smoke_lab
+/// use the explicit values to compare them.
+enum class KernelIsa { Auto, Scalar, Avx2, Avx2Intrinsics };
+
 /// Semi-Lagrangian advection of one field (docs/plan/MATH.md, section 4; Stam 1999 and 2003, advect):
 /// for each interior cell, trace back x - dt*u, clamp to [0.5, n + 0.5] and interpolate `src` trilinearly.
 /// `dst` and `src` must be different fields. Does NOT call setBoundary (the caller knows the field kind).
-void advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v, const Field3D& w,
-                  float dt, SlabRange range);
+/// `isa`: see KernelIsa (AVX2 build since M4-014).
+bool advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v, const Field3D& w,
+                  float dt, SlabRange range, KernelIsa isa = KernelIsa::Auto);
+
+/// advectScalar for `count` (1, 2 or 3) fields src[n] -> dst[n] carried by the same velocity, in one pass
+/// (kernel fusion, M4-015): the back-trace, clamp and interpolation weights are computed once per cell.
+/// Bit-identical to `count` separate advectScalar calls. Every dst[n] must differ from all src fields;
+/// a src may be one of u, v, w.
+bool advectFields(Field3D* const dst[], const Field3D* const src[], int count, const Field3D& u, const Field3D& v,
+                  const Field3D& w, float dt, SlabRange range, KernelIsa isa = KernelIsa::Auto);
 
 /// 1. Inject smoke (and heat) inside the source sphere: += dt * rate (docs/plan/MATH.md, section 3).
 void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
@@ -54,7 +69,9 @@ void applyBuoyancy(SmokeState& state, const SmokeParams& params, float dt, SlabR
 /// 2. Forces: buoyancy and optional vorticity confinement (docs/plan/MATH.md, section 3).
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 /// Add Fedkiw et al. vorticity confinement to the velocity field. A non-positive epsilon disables it.
-void applyVorticityConfinement(SmokeState& state, float epsilon, float dt, SlabRange range);
+/// `isa`: see KernelIsa (AVX2 build since M4-020); returns false only when the requested build is not available.
+bool applyVorticityConfinement(SmokeState& state, float epsilon, float dt, SlabRange range,
+                               KernelIsa isa = KernelIsa::Auto);
 
 /// 3. Semi-Lagrangian advection of u, v, w by the old velocity (docs/plan/MATH.md, section 4).
 void advectVelocity(SmokeState& state, float dt, SlabRange range);
@@ -65,7 +82,9 @@ void computeDivergence(const Field3D& u, const Field3D& v, const Field3D& w, Fie
 
 /// One Jacobi iteration for  laplacian(p) = div:  pNew = ( sum of the 6 neighbours of pOld - div ) / 6.
 /// Reads only pOld, writes only pNew (interior), so the cells are independent of each other.
-void jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range);
+/// `isa`: see KernelIsa (M4-009, M4-010).
+bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range,
+                     KernelIsa isa = KernelIsa::Auto);
 
 /// u -= ( p(i+1) - p(i-1) ) / 2, and the same for v (in j) and w (in k). Interior cells only.
 void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D& p, SlabRange range);

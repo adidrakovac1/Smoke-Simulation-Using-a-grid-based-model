@@ -156,8 +156,15 @@ Proširuje VERIFICATION.md, odjeljak 4. Za svako mjerenje:
 3. **Zagrijavanje + ponavljanja:** najmanje 1 zagrijavanje i 10 mjerenja (kao u labu); prijavi **medijan**,
    **minimum** i **raspon** (max − min). Medijan je glavni broj.
 4. **Provjera tačnosti prije mjerenja** (VERIFICATION.md). Netačna varijanta se ne mjeri.
-5. **Šum:** poboljšanje se priznaje tek ako je veće od raspona mjerenja osnove. Prag određujemo
-   iz stvarnog šuma na našim računarima, a ne pogađamo ga unaprijed.
+5. **Šum (odluka D10, 2026-11-09):** osnova i kandidat se mjere u **najmanje 3 naizmjenične runde**
+   (`perf/run_rounds.sh`, redoslijed se rotira svake runde). Šum je **raspon medijana rundi osnove**
+   (najveći minus najmanji medijan runde). Izmjena se priznaje kao brža (ili sporija) samo ako je
+   (a) razlika medijana veća od tog šuma **i** (b) kandidat je brži (sporiji) u **svakoj** rundi.
+   Inače je presuda "šum". Računa to `perf/summarize_rounds.sh`.
+   *Zašto ne max − min svih koraka:* na Windowsu pojedinačni koraci imaju zastoje sistema, pa je
+   taj raspon ogroman. Na PC-2 je po njemu čak i 2x ubrzanje projekcije (B1 naspram B0, 32³)
+   ispalo "unutar šuma" (raspon 1.07 ms, razlika 0.67 ms). Medijan po rundi je stabilan
+   (raspon rundi 0.007 ms), pa mjeri stvarnu ponovljivost.
 6. **Uslovi računara:** priključen na struju, plan napajanja na visoke performanse, zatvoreni teški
    programi (pretraživač, igre, sinhronizacija OneDrive), laptop ne smije biti pregrijan.
 7. **Zapiši otisak računara** uz svaki unos (odjeljak 5.2).
