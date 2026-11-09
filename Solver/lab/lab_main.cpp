@@ -275,7 +275,8 @@ using AdvectFn = std::function<bool(Field3D& dst, const Field3D& src, const Fiel
 
 struct AdvectVersion {
     std::string name;
-    AdvectFn fn;
+    AdvectFn fn;               // one field at a time (versions 1 to 4)
+    bool fused = false;        // version 5: advectFields, 3 velocity fields + 2 scalars in two passes
 };
 
 std::vector<AdvectVersion> advectionVersions() {
@@ -301,6 +302,7 @@ std::vector<AdvectVersion> advectionVersions() {
          [](Field3D& d, const Field3D& s, const Field3D& u, const Field3D& v, const Field3D& w, float dt) {
              return advectScalar(d, s, u, v, w, dt, wholeInterior(d.size()), KernelIsa::Avx2);
          }},
+        {"5. spojeno, jedan trag (M4-015..017)", AdvectFn{}, true},
     };
 }
 
@@ -327,6 +329,13 @@ void runAdvection(const Options& o) {
         for (const AdvectVersion& ver : versions) c.names.push_back(ver.name);
         c.reset = [] {};  // the inputs are only read
         c.run = [&](std::size_t ver) {
+            if (versions[ver].fused) {  // as advectVelocity and advectScalars do since M4-015/M4-016 (Auto build)
+                Field3D* const d3[3] = {&out[0], &out[1], &out[2]};
+                Field3D* const d2[2] = {&out[3], &out[4]};
+                const Field3D* const s2[2] = {&density, &temperature};
+                return smoke::serial::advectFields(d3, sources, 3, u, v, w, dt, smoke::serial::wholeInterior(g)) &&
+                       smoke::serial::advectFields(d2, s2, 2, u, v, w, dt, smoke::serial::wholeInterior(g));
+            }
             for (std::size_t f = 0; f < out.size(); ++f)
                 if (!versions[ver].fn(out[f], *sources[f], u, v, w, dt)) return false;
             return true;

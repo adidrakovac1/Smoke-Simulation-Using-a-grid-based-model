@@ -17,9 +17,9 @@ namespace {
 #include "stages/AdvectionRows.inc"
 } // namespace
 
-void advectSlabAvx2(float* dst, const float* src, const float* u, const float* v, const float* w,
-                    const GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ, std::ptrdiff_t sK) {
-    advectSlab(dst, src, u, v, w, s, k0, k1, dt, sJ, sK);  // the internal copy compiled with -mavx2
+void advectSlabAvx2(float* const* dst, const float* const* src, int count, const float* u, const float* v,
+                    const float* w, const GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ, std::ptrdiff_t sK) {
+    advectSlab(dst, src, count, u, v, w, s, k0, k1, dt, sJ, sK);  // the internal copy compiled with -mavx2
 }
 
 } // namespace smoke::serial

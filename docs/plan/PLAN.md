@@ -98,6 +98,10 @@ Sve u M4 je **sekvencijalno (jedna nit)**: bez OpenMP niti i bez GPU-a (odluka D
 mjerenja i evidencija su u [OPTIMIZATION.md](OPTIMIZATION.md); svaka izmjena ide u [PERF_LOG.md](PERF_LOG.md)
 i `perf/results.csv`. Redoslijed jezgara bira se po profilu iz M3 (najskuplja faza prva).
 
+**Stanje (2026-11-09, odluka D11):** M4a urađen za Jacobi, projekciju, advekciju i vorticity confinement
+(M4-001 do M4-014); od M4b urađena fuzija jezgara u advekciji (M4-015 do M4-017); zbir prema B0/B1 je u
+PERF_LOG.md, odjeljak 7. Ostale stavke ispod su namjerno ostavljene (D11).
+
 **M4a: tehnike iz laboratorijske vježbe 1** (OPTIMIZATION.md, odjeljak 2, nivo 1)
 - [ ] Za svako bitno jezgro (Jacobi, divergencija/korekcija, advekcija, uzgon, redukcije) prođeni
       koraci 2 do 10 iz OPTIMIZATION.md, odjeljak 2.3: redoslijed petlji, `restrict`, izvještaj
@@ -158,6 +162,7 @@ izabran način bez preuzimanja s interneta. D8 je dodana istog dana.
 | D8 | Opseg optimizacije u ovoj fazi | M4 je **samo sekvencijalan**: prvo tehnike iz laboratorijske vježbe 1 (uključujući SIMD na jednoj niti), pa dodatne sekvencijalne tehnike. OpenMP niti i GPU nisu milestone; planiraju se tek kad tim odluči |
 | D9 | Konačni ε (vorticity confinement) i računar za M4 (2026-11-09) | ε = 5 ostaje zadano, uz poznatu veću preostalu divergenciju (MATH.md, odjeljak 3). M4 nastavlja Ermin na PC-2 (x86, AVX2); M4 se poredi samo s PC-2 osnovama i PC-2 referencom |
 | D10 | Kada je izmjena brža od šuma (2026-11-09) | Najmanje 3 naizmjenične runde; šum = raspon medijana rundi osnove; izmjena prolazi ako je razlika veća od šuma i ako je brža u svakoj rundi (OPTIMIZATION.md, odjeljak 4, tačka 5). Zamjenjuje pravilo "veće od max − min svih koraka" |
+| D11 | Skraćeni opseg M4 (2026-11-09, Ermin) | Preostali mali koraci nivoa 1 (ručni gather za advekciju, AVX2 za divergenciju i gradijent, poravnanje T11) se **ne rade**: očekivani dobitak je mali i vezan za jedan procesor. Od nivoa 2 uzima se samo fuzija jezgara u advekciji (M4-015 do M4-017): ne zavisi od procesora i daje bit po bit isti rezultat. Tehnike koje mijenjaju rezultat (red-black GS, multigrid, FMA, 1/6 umjesto dijeljenja) ili su teške (vremensko blokiranje) ostaju za kasnije. Zbir M4 je u PERF_LOG.md, odjeljak 7 |
 
 ---
 

@@ -53,6 +53,13 @@ enum class KernelIsa { Auto, Scalar, Avx2, Avx2Intrinsics };
 bool advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v, const Field3D& w,
                   float dt, SlabRange range, KernelIsa isa = KernelIsa::Auto);
 
+/// advectScalar for `count` (1, 2 or 3) fields src[n] -> dst[n] carried by the same velocity, in one pass
+/// (kernel fusion, M4-015): the back-trace, clamp and interpolation weights are computed once per cell.
+/// Bit-identical to `count` separate advectScalar calls. Every dst[n] must differ from all src fields;
+/// a src may be one of u, v, w.
+bool advectFields(Field3D* const dst[], const Field3D* const src[], int count, const Field3D& u, const Field3D& v,
+                  const Field3D& w, float dt, SlabRange range, KernelIsa isa = KernelIsa::Auto);
+
 /// 1. Inject smoke (and heat) inside the source sphere: += dt * rate (docs/plan/MATH.md, section 3).
 void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 

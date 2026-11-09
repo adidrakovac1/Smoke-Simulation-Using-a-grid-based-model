@@ -57,6 +57,11 @@ if(SMOKE_ENABLE_AVX2 AND NOT SMOKE_DISABLE_VECTORIZATION AND SMOKE_CPU MATCHES "
   else()
     set_source_files_properties(${SMOKE_AVX2_SOURCES} PROPERTIES COMPILE_OPTIONS "-mavx2")
   endif()
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # M4-017: g++'s cost model picks 4-float vectors for the fused advection rows (advectRow2/3) even with
+    # -mavx2; "unlimited" lets it use 8 floats. Same arithmetic, so the result does not change.
+    set_property(SOURCE src/stages/Advection_avx2.cpp APPEND PROPERTY COMPILE_OPTIONS "-fvect-cost-model=unlimited")
+  endif()
   target_compile_definitions(smoke_solver PRIVATE SMOKE_HAS_AVX2_BINARY=1)
   set(SMOKE_AVX2_STATE "AVX2 kernels built (run-time check)")
 else()

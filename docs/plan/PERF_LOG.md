@@ -18,7 +18,8 @@ radi tek kad je ε konačno izabran (MATH.md, odjeljak 3, nalaz o divergenciji),
 vremena i rezultat.
 
 **Stanje (2026-11-09):** ε = 5 je konačan (odluka D9). M4 nastavlja Ermin na **PC-2**; PC-2 osnove i
-referenca su u odjeljku 6. Unosi M4-001 do M4-005 (odjeljak 5) vrijede za PC-1 i AppleClang.
+referenca su u odjeljku 6. Unosi M4-001 do M4-005 (odjeljak 5) vrijede za PC-1 i AppleClang. Opseg M4 je skraćen
+(odluka D11); zbir M4 prema B0/B1 je u odjeljku 7.
 
 ---
 
@@ -456,7 +457,8 @@ Nalazi:
   - **Advekcija** (dodano poslije M4-014): jedno mjerenje je 5 advekcija (u, v, w, gustina, temperatura),
     kao u jednom koraku. Verzije: M3 kod bez vektorizacije, M3 kod sa zadanim oznakama (g++ ga ne
     vektorizira, pa je isto kao verzija 1), vektorizirani SSE kod (M4-011 do M4-013) i AVX2 po fajlu
-    (M4-014). M3 kod je sačuvan u `Solver/lab/AdvectionM3.inc`.
+    (M4-014). M3 kod je sačuvan u `Solver/lab/AdvectionM3.inc`. Verzija 5 (od M4-017) je spojena
+    advekcija (`advectFields`, 3 + 2 polja), kao u solveru.
 - Ispisuje medijan, minimum, raspon rundi, S prema verziji 1 i poboljšanje prema prethodnoj verziji.
 - Mjeri samo jezgro (bez `setBoundary`), pa je dopuna ovom dnevniku, a ne zamjena za mjerenje cijelog
   koraka.
@@ -590,3 +592,106 @@ Nalazi:
 - **Moguće dalje:** ručni `_mm256_i32gather_ps` (T9/T14) da se provjeri da li pravi gather pomaže na Zen 3;
   nije izmjereno.
 - **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-014-*`.
+
+### M4-015: fuzija jezgara, advekcija brzine u jednom prolazu (nivo 2, M4b): ZADRŽATI
+
+- **Odluka o opsegu:** D11 (PLAN.md). Preostali mali koraci nivoa 1 se ne rade; od nivoa 2 uzima se samo
+  fuzija u advekciji, jer ne zavisi od procesora i ne mijenja rezultat.
+- **Hipoteza:** u, v i w se advektuju istom (starom) brzinom, pa sve tri komponente imaju isti trag unazad.
+  Ako se trag, clamp, indeks ćelije i 6 težina računaju jednom po ćeliji (umjesto tri puta), a u, v, w
+  čitaju jednom, advekcija brzine treba biti primjetno brža. Interpolacija (8 čitanja po polju) ostaje.
+- **Izmjena:** nova funkcija `advectFields` (`Solver/src/stages/Stages.h`, `Advection.cpp`) za 1 do 3 polja,
+  s redom `advectRow3` u `AdvectionRows.inc`; `advectVelocity` je poziva jednom. `advectScalar` je sada
+  `advectFields` sa jednim poljem.
+- **Tačnost:** svako polje koristi iste x, y, z i isti `sampleTrilinear`, pa je bit po bit isto. Novi test
+  `fused_advection_is_bit_identical_to_separate_calls` (skalarna i AVX2 gradnja); 47/47; `--verify` bit po
+  bit isto.
+- **Mjerenje:** osnova je `dfa2107`; jedna zajednička sesija za B0, B1, `dfa2107`, M4-015, M4-016 i M4-017
+  (6 programa, 3 rotirane runde).
+
+| Mreža | Adv. brzine: osnova / nova (ms) | S | Adv. skalara: osnova / nova (ms) | S | Cijeli korak S | Presude (brzina / skalari / korak) |
+| :--- | :--- | ---: | :--- | ---: | ---: | :--- |
+| 32³ | 0.311 / 0.229 | 1.357x | 0.267 / 0.273 | 0.976x | 1.070x | brže / šum / brže |
+| 64³ | 2.305 / 1.866 | 1.235x | 1.693 / 1.711 | 0.989x | 1.002x | brže / šum / šum |
+| 96³ | 7.947 / 6.525 | 1.218x | 5.557 / 5.471 | 1.016x | 0.985x | brže / šum / šum |
+| 128³ | 18.447 / 15.040 | 1.227x | 12.600 / 12.523 | 1.006x | 1.059x | brže / šum / brže |
+
+- **Tumačenje:** advekcija brzine je 1.22 do 1.36x brža u svakoj rundi. Cijeli korak je ponegdje u šumu,
+  jer projekcija na PC-2 jako varira (vidi uvod odjeljka 6).
+- **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-015-*`.
+
+### M4-016: fuzija jezgara, gustina i temperatura u jednom prolazu: ZADRŽATI
+
+- **Izmjena:** `advectScalars` advektuje gustinu i temperaturu jednim pozivom `advectFields` (`advectRow2`);
+  oba `setBoundary` idu poslije. Rezultat je bit po bit isti (isti test; 47/47; `--verify`).
+- **Mjerenje:** osnova je M4-015, ista sesija.
+
+| Mreža | Adv. brzine: osnova / nova (ms) | S | Adv. skalara: osnova / nova (ms) | S | Cijeli korak S | Presude (brzina / skalari / korak) |
+| :--- | :--- | ---: | :--- | ---: | ---: | :--- |
+| 32³ | 0.229 / 0.231 | 0.994x | 0.273 / 0.205 | 1.331x | 1.065x | šum / brže / brže |
+| 64³ | 1.866 / 1.843 | 1.012x | 1.711 / 1.502 | 1.139x | 1.090x | šum / brže / šum |
+| 96³ | 6.525 / 6.945 | 0.940x | 5.471 / 5.270 | 1.038x | 0.874x | šum / šum / šum |
+| 128³ | 15.040 / 14.930 | 1.007x | 12.523 / 11.825 | 1.059x | 1.006x | šum / brže / šum |
+
+- **Tumačenje:** advekcija skalara je 1.06 do 1.33x brža (96³ u šumu). Dobitak je manji nego kod brzine:
+  dijele se samo 2 polja. Na AVX2 gradnji g++ je spojene petlje sam suzio na 4 floata (vidi M4-017).
+- **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-016-*`.
+
+### M4-017: `-fvect-cost-model=unlimited` samo za `Advection_avx2.cpp`: ZADRŽATI
+
+- **Uzrok:** `-fopt-info-vec` pokazuje da g++ za `advectRow2`/`advectRow3` u AVX2 fajlu bira vektore od
+  16 bajta (4 floata) zbog svoje procjene cijene (oponašani gather). Sa `unlimited` bira 32 bajta (8 floatova).
+- **Izmjena:** opcija u `Solver/CMakeLists.txt`, samo za g++ i samo za taj fajl. Ista aritmetika, bit po bit
+  isto (47/47; `--verify`). Na drugim kompajlerima i u gradnji bez AVX2 nema efekta.
+- **Mjerenje:** osnova je M4-016, ista sesija.
+
+| Mreža | Adv. brzine: osnova / nova (ms) | S | Adv. skalara: osnova / nova (ms) | S | Cijeli korak S | Presude (brzina / skalari / korak) |
+| :--- | :--- | ---: | :--- | ---: | ---: | :--- |
+| 32³ | 0.231 / 0.219 | 1.052x | 0.205 / 0.184 | 1.116x | 1.030x | brže / brže / brže |
+| 64³ | 1.843 / 1.751 | 1.053x | 1.502 / 1.332 | 1.128x | 1.026x | brže / brže / brže |
+| 96³ | 6.945 / 6.174 | 1.125x | 5.270 / 4.528 | 1.164x | 1.176x | brže / brže / šum |
+| 128³ | 14.930 / 14.607 | 1.022x | 11.825 / 10.387 | 1.138x | 1.016x | šum / brže / šum |
+
+- **Tumačenje:** procjena kompajlera ovdje nije bila tačna; 8 floatova je brže na svim mrežama.
+- **Ukupno M4-015 do M4-017** prema `dfa2107`: advekcija brzine 1.26 do 1.42x, advekcija skalara 1.21 do
+  1.45x, cijeli korak 1.08 do 1.17x (96³: šum).
+- **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-017-*`. Verzija 5 u `smoke_lab --kernel advekcija`
+  pokazuje spojenu advekciju.
+
+---
+
+## 7. Zbir M4 na PC-2 (2026-11-09)
+
+Konačna verzija M4 (M4-017) prema osnovama B0 i B1 iz M3 (`73ceb9e`), ista sesija kao M4-015 do M4-017
+(3 rotirane runde, 100 koraka, 10 zagrijavanja, 40 Jacobi iteracija). Ćelija: **S prema B0 / S prema B1**.
+Rezultat je bit po bit isti kao PC-2 referenca (`serial_64_100steps_pc2.bin`), u AVX2 gradnji i u gradnji
+bez AVX2 (`-DSMOKE_ENABLE_AVX2=OFF`, 47/47 testova).
+
+| Faza | 32³ | 64³ | 96³ | 128³ |
+| :--- | ---: | ---: | ---: | ---: |
+| izvori | 1.86x / 1.39x | 1.54x / 1.18x | 2.06x / 1.76x | 1.11x / 1.05x |
+| sile (uzgon, vorticity) | 1.30x / 1.21x | 1.32x / 1.30x | 1.19x / 0.91x | 1.19x / 1.23x |
+| advekcija brzine | 2.83x / 2.82x | 3.01x / 3.00x | 2.91x / 2.89x | 2.88x / 2.89x |
+| projekcija | 3.29x / 1.63x | 3.23x / 1.61x | 3.10x / 1.49x | 1.86x / 1.13x |
+| advekcija skalara | 2.84x / 2.88x | 2.85x / 2.84x | 2.76x / 2.73x | 2.78x / 2.78x |
+| **cijeli korak** | **2.68x / 2.02x** | **2.67x / 2.02x** | **2.32x / 1.69x** | **1.99x / 1.60x** |
+
+Sve presude za cijeli korak su "brže" (D10). Sile na 96³ su u šumu (poznata nestabilnost 96³ na PC-2).
+
+**Šta je donijelo ubrzanje (po fazama):**
+- **Advekcija (oko 2.8x):** clamp bez grananja (M4-011), `restrict` (M4-012), 32-bitni indeks i red van
+  linije, pa je petlja vektorizirana (M4-013), AVX2 po fajlu (M4-014) i fuzija (M4-015 do M4-017).
+  Sve osim M4-014 i M4-017 vrijedi i bez AVX2.
+- **Projekcija (3.1 do 3.3x prema B0, 1.5 do 1.6x prema B1; na 128³ manje):** auto-vektorizacija iz M3 (B1),
+  `restrict` (M4-007) i AVX2 po fajlu (M4-009). Na 128³ Jacobi je ograničen memorijom, pa SIMD daje manje.
+- **Sile:** vorticity confinement bez grananja (M4-003, M4-006).
+
+**Ograničenja:**
+- Na 128³ projekcija je sada oko 53% koraka. Dalji dobitak traži manje prolaza kroz memoriju ili manje
+  iteracija (vremensko blokiranje, red-black GS, multigrid), što D11 ostavlja za kasnije, jer je teže ili
+  mijenja rezultat.
+- Brojevi vrijede za PC-2. Na računaru bez AVX2 otpadaju doprinosi M4-009, M4-014 i M4-017; ostalo ostaje.
+  Na PC-1 (Mac, ARM) M4 nije ponovo mjeren.
+- E (efikasnost memorije) nije izračunat: kalibracija na PC-2 daje nevjerovatnih ~107 GB/s (odjeljak 6), pa
+  zaključci stoje samo na S i Δ.
+- Oznake u CSV-u: `PC2-20261109-M4-SUM-B0-*` i `PC2-20261109-M4-SUM-B1-*`.
