@@ -23,8 +23,8 @@ Linux / macOS: isto, bez `-G "MinGW Makefiles"`.
 | `smoke_bench` | CSV benchmark, referentni rezultat i kalibracija računara |
 | `smoke_lab` | poređenje verzija jednog jezgra jednu do druge (M3 bez vektorizacije, auto, restrict, AVX2...), s vremenom, ubrzanjem i provjerom tačnosti, kao primjer iz laba; za demonstraciju |
 
-`smoke_lab` (npr. `Solver/build/smoke_lab --grid 64`) traje nekoliko sekundi i pokazuje ubrzanje **jednog
-jezgra**. Ubrzanje cijelog koraka, mjereno po protokolu iz `../docs/plan/OPTIMIZATION.md` (odjeljak 4,
+`smoke_lab` (npr. `Solver/build/smoke_lab --grid 64`, ili samo jedno jezgro sa `--kernel jacobi` /
+`--kernel advekcija`) traje nekoliko sekundi i pokazuje ubrzanje **jednog jezgra** (Jacobi i advekcija). Ubrzanje cijelog koraka, mjereno po protokolu iz `../docs/plan/OPTIMIZATION.md` (odjeljak 4,
 odluka D10), je u `../docs/plan/PERF_LOG.md`.
 
 Primjeri: `smoke_cli --grid 128 --steps 200`, `smoke_cli --nx 64 --ny 128 --nz 64 --quiet`.

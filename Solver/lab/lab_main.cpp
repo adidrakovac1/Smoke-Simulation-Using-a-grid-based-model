@@ -45,6 +45,8 @@ struct Options {
     int repeats = 10;
     int warmup = 1;
     int iterations = 40;  // Jacobi iterations per run, as in one simulation step (SmokeParams default)
+    bool jacobi = true;
+    bool advection = true;
 };
 
 double medianOf(std::vector<double> v) {
@@ -114,15 +116,101 @@ void fillRandom(Field3D& f, std::uint64_t seed) {
     }
 }
 
-// One Jacobi iteration: writes pNew from pOld. Returns false when the version is not available here.
+// ---------------------------------------------------------------------------------------------------------
+// Generic comparison, the same for every kernel. For one grid, a Case holds the inputs and outputs of all
+// versions: run(v) does one measured run of version v and returns false when that version is not available
+// here (CPU or build without AVX2); outputs() are the fields compared bit by bit against version 1.
+struct Case {
+    std::vector<std::string> names;
+    std::function<void()> reset;  // restores the inputs before each version is checked or measured
+    std::function<bool(std::size_t v)> run;
+    std::function<std::vector<const Field3D*>()> outputs;
+};
+
+void compareVersions(const Options& o, int n, Case& c) {
+    const std::size_t count = c.names.size();
+
+    // 1. Accuracy first (like check_vector in the lab): every version against version 1, bit by bit.
+    std::vector<bool> available(count, false);
+    std::vector<std::string> accuracy(count);
+    std::vector<Field3D> expected;
+    for (std::size_t v = 0; v < count; ++v) {
+        c.reset();
+        if (!c.run(v)) continue;
+        available[v] = true;
+        const std::vector<const Field3D*> out = c.outputs();
+        if (v == 0) {
+            for (const Field3D* f : out) {
+                expected.emplace_back();
+                copyField(expected.back(), *f);
+            }
+            accuracy[v] = "referenca";
+            continue;
+        }
+        long long diff = 0;
+        for (std::size_t f = 0; f < out.size(); ++f) diff += cellsDifferent(*out[f], expected[f]);
+        accuracy[v] = diff == 0 ? "bit po bit isto" : "RAZLIKA u " + std::to_string(diff) + " celija";
+    }
+
+    // 2. Interleaved rounds; the order of the versions is rotated every round (as perf/run_rounds.sh).
+    std::vector<std::vector<double>> roundMedians(count);
+    std::vector<double> minimum(count, 1e300);
+    for (int r = 0; r < o.rounds; ++r)
+        for (std::size_t step = 0; step < count; ++step) {
+            const std::size_t v = (step + static_cast<std::size_t>(r)) % count;
+            if (!available[v]) continue;
+            c.reset();
+            const Sample s = measure(o, [&] { c.run(v); }, [&] {
+                double sum = 0.0;
+                for (const Field3D* f : c.outputs()) sum += checksum(*f);
+                return sum;
+            });
+            roundMedians[v].push_back(s.medianMs);
+            minimum[v] = std::min(minimum[v], s.minMs);
+        }
+
+    // 3. Table.
+    std::cout << "\nMreza " << n << "^3\n"
+              << "  " << std::left << std::setw(42) << "verzija" << std::right << std::setw(11) << "medijan ms"
+              << std::setw(11) << "minimum ms" << std::setw(13) << "raspon rundi" << std::setw(10) << "S (od 1.)"
+              << std::setw(18) << "prema prethodnoj" << "   tacnost\n";
+    double firstMedian = 0.0, previousMedian = 0.0;
+    for (std::size_t v = 0; v < count; ++v) {
+        if (!available[v]) {
+            std::cout << "  " << std::left << std::setw(42) << c.names[v] << std::right
+                      << "  nije dostupno (procesor ili gradnja bez AVX2)\n";
+            continue;
+        }
+        const std::vector<double>& rm = roundMedians[v];
+        const double med = medianOf(rm);
+        const double spread = *std::max_element(rm.begin(), rm.end()) - *std::min_element(rm.begin(), rm.end());
+        if (v == 0) firstMedian = med;
+        std::cout << "  " << std::left << std::setw(42) << c.names[v] << std::right << std::fixed
+                  << std::setprecision(3) << std::setw(11) << med << std::setw(11) << minimum[v] << std::setw(13)
+                  << spread << std::setw(9) << std::setprecision(2) << firstMedian / med << "x";
+        if (v == 0) std::cout << std::setw(18) << "-";
+        else std::cout << std::setw(16) << std::setprecision(1) << 100.0 * (previousMedian - med) / previousMedian << " %";
+        std::cout << "   " << accuracy[v] << "\n" << std::defaultfloat;
+        previousMedian = med;
+    }
+}
+
+void printMeasurementNote(const Options& o) {
+    std::cout << o.rounds << " naizmjenicne runde; u svakoj rundi svaka verzija: " << o.warmup << " zagrijavanje + "
+              << o.repeats << " mjerenja.\nMedijan = medijan medijana rundi; minimum = najbrze pojedinacno "
+              << "mjerenje; raspon rundi = najveci - najmanji medijan runde (sum).\n";
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Jacobi. One iteration writes pNew from pOld; returns false when the version is not available here.
 using JacobiFn = std::function<bool(Field3D& pNew, const Field3D& pOld, const Field3D& div)>;
 
-struct Version {
+struct JacobiVersion {
     std::string name;
     JacobiFn fn;
 };
 
-std::vector<Version> jacobiVersions() {
+std::vector<JacobiVersion> jacobiVersions() {
     using smoke::serial::KernelIsa;
     using smoke::serial::jacobiIteration;
     using smoke::serial::wholeInterior;
@@ -158,76 +246,98 @@ bool runIterations(const JacobiFn& fn, Field3D& a, Field3D& b, const Field3D& di
 
 void runJacobi(const Options& o) {
     std::cout << "=== Jezgro: Jacobi iteracija (projekcija pritiska) ===\n"
-              << "Jedno mjerenje = " << o.iterations << " Jacobi iteracija (kao u jednom koraku simulacije). "
-              << o.rounds << " naizmjenicne runde; u svakoj rundi svaka verzija: " << o.warmup << " zagrijavanje + "
-              << o.repeats << " mjerenja.\nMedijan = medijan medijana rundi; minimum = najbrze pojedinacno "
-              << "mjerenje; raspon rundi = najveci - najmanji medijan runde (sum).\n";
-    const std::vector<Version> versions = jacobiVersions();
-
+              << "Jedno mjerenje = " << o.iterations << " Jacobi iteracija (kao u jednom koraku simulacije). ";
+    printMeasurementNote(o);
+    const std::vector<JacobiVersion> versions = jacobiVersions();
     for (const int n : o.grids) {
         const GridSize g{n, n, n};
-        Field3D start(g), div(g);
+        Field3D start(g), div(g), a, b;
         fillRandom(start, 42);
         fillRandom(div, 7);
-
-        // 1. Accuracy first (like check_vector in the lab): every version against version 1, bit by bit.
-        std::vector<bool> available(versions.size(), false);
-        std::vector<std::string> accuracy(versions.size());
-        Field3D expected;
-        for (std::size_t v = 0; v < versions.size(); ++v) {
-            Field3D a, b;
+        Case c;
+        for (const JacobiVersion& v : versions) c.names.push_back(v.name);
+        c.reset = [&] {
             copyField(a, start);
             copyField(b, start);
-            if (!runIterations(versions[v].fn, a, b, div, o.iterations)) continue;
-            available[v] = true;
-            if (v == 0) { copyField(expected, a); accuracy[v] = "referenca"; continue; }
-            const long long diff = cellsDifferent(a, expected);
-            accuracy[v] = diff == 0 ? "bit po bit isto" : "RAZLIKA u " + std::to_string(diff) + " celija";
-        }
-
-        // 2. Interleaved rounds; the order of the versions is rotated every round (as perf/run_rounds.sh).
-        std::vector<std::vector<double>> roundMedians(versions.size());
-        std::vector<double> minimum(versions.size(), 1e300);
-        for (int r = 0; r < o.rounds; ++r)
-            for (std::size_t step = 0; step < versions.size(); ++step) {
-                const std::size_t v = (step + static_cast<std::size_t>(r)) % versions.size();
-                if (!available[v]) continue;
-                Field3D a, b;
-                copyField(a, start);
-                copyField(b, start);
-                const Sample s = measure(o, [&] { runIterations(versions[v].fn, a, b, div, o.iterations); },
-                                         [&] { return checksum(a); });
-                roundMedians[v].push_back(s.medianMs);
-                minimum[v] = std::min(minimum[v], s.minMs);
-            }
-
-        // 3. Table.
-        std::cout << "\nMreza " << n << "^3\n"
-                  << "  " << std::left << std::setw(42) << "verzija" << std::right << std::setw(11) << "medijan ms"
-                  << std::setw(11) << "minimum ms" << std::setw(13) << "raspon rundi" << std::setw(10) << "S (od 1.)"
-                  << std::setw(18) << "prema prethodnoj" << "   tacnost\n";
-        double firstMedian = 0.0, previousMedian = 0.0;
-        for (std::size_t v = 0; v < versions.size(); ++v) {
-            if (!available[v]) {
-                std::cout << "  " << std::left << std::setw(42) << versions[v].name << std::right
-                          << "  nije dostupno (procesor ili gradnja bez AVX2)\n";
-                continue;
-            }
-            std::vector<double> rm = roundMedians[v];
-            const double med = medianOf(rm);
-            const double spread = *std::max_element(rm.begin(), rm.end()) - *std::min_element(rm.begin(), rm.end());
-            if (v == 0) firstMedian = med;
-            std::cout << "  " << std::left << std::setw(42) << versions[v].name << std::right << std::fixed
-                      << std::setprecision(3) << std::setw(11) << med << std::setw(11) << minimum[v] << std::setw(13)
-                      << spread << std::setw(9) << std::setprecision(2) << firstMedian / med << "x";
-            if (v == 0) std::cout << std::setw(18) << "-";
-            else std::cout << std::setw(16) << std::setprecision(1) << 100.0 * (previousMedian - med) / previousMedian << " %";
-            std::cout << "   " << accuracy[v] << "\n" << std::defaultfloat;
-            previousMedian = med;
-        }
+        };
+        c.run = [&](std::size_t v) { return runIterations(versions[v].fn, a, b, div, o.iterations); };
+        c.outputs = [&] { return std::vector<const Field3D*>{&a}; };
+        compareVersions(o, n, c);
     }
-    std::cout << "\nKako citati: razlika izmedju dvije verzije je pouzdana tek kad je veca od raspona rundi\n"
-              << "(odluka D10). Za cijeli korak simulacije vidi docs/plan/PERF_LOG.md.\n";
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Advection. One measured run = the 5 advections of one simulation step: u, v and w carried by (u, v, w)
+// itself (advectVelocity, so the source is also one of the velocity arrays), then density and temperature
+// carried by the same velocity (advectScalars). setBoundary is not called, so only the kernel is measured.
+using AdvectFn = std::function<bool(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v,
+                                    const Field3D& w, float dt)>;
+
+struct AdvectVersion {
+    std::string name;
+    AdvectFn fn;
+};
+
+std::vector<AdvectVersion> advectionVersions() {
+    using smoke::serial::KernelIsa;
+    using smoke::serial::advectScalar;
+    using smoke::serial::wholeInterior;
+    return {
+        {"1. M3 kod, bez vektorizacije (B0)",
+         [](Field3D& d, const Field3D& s, const Field3D& u, const Field3D& v, const Field3D& w, float dt) {
+             smoke_lab::advectM3Scalar(d, s, u, v, w, dt);
+             return true;
+         }},
+        {"2. M3 kod, zadane oznake (B1)",
+         [](Field3D& d, const Field3D& s, const Field3D& u, const Field3D& v, const Field3D& w, float dt) {
+             smoke_lab::advectM3Auto(d, s, u, v, w, dt);
+             return true;
+         }},
+        {"3. vektorizirano, SSE (M4-011..013)",
+         [](Field3D& d, const Field3D& s, const Field3D& u, const Field3D& v, const Field3D& w, float dt) {
+             return advectScalar(d, s, u, v, w, dt, wholeInterior(d.size()), KernelIsa::Scalar);
+         }},
+        {"4. AVX2 po fajlu, -mavx2 (M4-014)",
+         [](Field3D& d, const Field3D& s, const Field3D& u, const Field3D& v, const Field3D& w, float dt) {
+             return advectScalar(d, s, u, v, w, dt, wholeInterior(d.size()), KernelIsa::Avx2);
+         }},
+    };
+}
+
+void runAdvection(const Options& o) {
+    // dt = 2 with velocities in [-1, 1): back-traced points move up to 2 cells, so near the walls the clamp
+    // is reached and both of its limits are exercised.
+    const float dt = 2.0f;
+    std::cout << "=== Jezgro: semi-Lagrangeova advekcija ===\n"
+              << "Jedno mjerenje = 5 advekcija (u, v, w, gustina, temperatura; kao u jednom koraku simulacije). ";
+    printMeasurementNote(o);
+    const std::vector<AdvectVersion> versions = advectionVersions();
+    for (const int n : o.grids) {
+        const GridSize g{n, n, n};
+        Field3D u(g), v(g), w(g), density(g), temperature(g);
+        fillRandom(u, 11);
+        fillRandom(v, 12);
+        fillRandom(w, 13);
+        fillRandom(density, 14);
+        fillRandom(temperature, 15);
+        std::vector<Field3D> out(5);
+        for (Field3D& f : out) f.resize(g);
+        const Field3D* sources[5] = {&u, &v, &w, &density, &temperature};
+        Case c;
+        for (const AdvectVersion& ver : versions) c.names.push_back(ver.name);
+        c.reset = [] {};  // the inputs are only read
+        c.run = [&](std::size_t ver) {
+            for (std::size_t f = 0; f < out.size(); ++f)
+                if (!versions[ver].fn(out[f], *sources[f], u, v, w, dt)) return false;
+            return true;
+        };
+        c.outputs = [&] {
+            std::vector<const Field3D*> p;
+            for (const Field3D& f : out) p.push_back(&f);
+            return p;
+        };
+        compareVersions(o, n, c);
+    }
 }
 
 bool parsePositive(const char* text, int& out) {
@@ -243,16 +353,24 @@ bool parseArgs(int argc, char** argv, Options& o) {
     for (int i = 1; i < argc; ++i) {
         const std::string_view a(argv[i]);
         int value = 0;
-        if (i + 1 >= argc && (a == "--grid" || a == "--rounds" || a == "--repeats" || a == "--warmup" || a == "--iters"))
+        if (i + 1 >= argc && (a == "--grid" || a == "--rounds" || a == "--repeats" || a == "--warmup" ||
+                              a == "--iters" || a == "--kernel"))
             return false;
         if (a == "--grid") {
             if (!parsePositive(argv[++i], value)) return false;
             if (!gridGiven) { o.grids.clear(); gridGiven = true; }
             o.grids.push_back(value);
-        } else if (a == "--rounds")  { if (!parsePositive(argv[++i], o.rounds)) return false; }
-        else if (a == "--repeats")   { if (!parsePositive(argv[++i], o.repeats)) return false; }
-        else if (a == "--warmup")    { if (!parsePositive(argv[++i], o.warmup)) return false; }
-        else if (a == "--iters")     { if (!parsePositive(argv[++i], o.iterations)) return false; }
+        } else if (a == "--kernel") {
+            const std::string_view k(argv[++i]);
+            if (k == "jacobi")         { o.jacobi = true;  o.advection = false; }
+            else if (k == "advekcija") { o.jacobi = false; o.advection = true; }
+            else if (k == "sve")       { o.jacobi = true;  o.advection = true; }
+            else return false;
+        }
+        else if (a == "--rounds")  { if (!parsePositive(argv[++i], o.rounds)) return false; }
+        else if (a == "--repeats") { if (!parsePositive(argv[++i], o.repeats)) return false; }
+        else if (a == "--warmup")  { if (!parsePositive(argv[++i], o.warmup)) return false; }
+        else if (a == "--iters")   { if (!parsePositive(argv[++i], o.iterations)) return false; }
         else return false;
     }
     return true;
@@ -263,8 +381,10 @@ bool parseArgs(int argc, char** argv, Options& o) {
 int main(int argc, char** argv) {
     Options o;
     if (!parseArgs(argc, argv, o)) {
-        std::cout << "Koriscenje: smoke_lab [--grid N]... [--rounds R] [--repeats M] [--warmup W] [--iters K]\n"
-                  << "  zadano: mreze 32 64 96 128, 3 runde, 10 mjerenja, 1 zagrijavanje, 40 iteracija\n";
+        std::cout << "Koriscenje: smoke_lab [--kernel jacobi|advekcija|sve] [--grid N]... [--rounds R] [--repeats M]\n"
+                  << "                     [--warmup W] [--iters K]\n"
+                  << "  zadano: sva jezgra, mreze 32 64 96 128, 3 runde, 10 mjerenja, 1 zagrijavanje,\n"
+                  << "          40 Jacobi iteracija po mjerenju\n";
         return 2;
     }
     std::cout << "=== smoke_lab: poredjenje verzija jezgara (serijski, jedna nit) ===\n"
@@ -282,6 +402,10 @@ int main(int argc, char** argv) {
               << ", oznake: " << SMOKE_LAB_FLAGS << ", commit: " << SMOKE_LAB_COMMIT << "\n"
               << "Napomena: ovo je ubrzanje JEDNOG jezgra. Ubrzanje cijelog koraka: docs/plan/PERF_LOG.md.\n"
               << "Za vrijeme mjerenja racunar treba biti miran (bez igara, videa, kompajliranja).\n\n";
-    runJacobi(o);
+    if (o.jacobi) runJacobi(o);
+    if (o.jacobi && o.advection) std::cout << "\n";
+    if (o.advection) runAdvection(o);
+    std::cout << "\nKako citati: razlika izmedju dvije verzije je pouzdana tek kad je veca od raspona rundi\n"
+              << "(odluka D10). Za cijeli korak simulacije vidi docs/plan/PERF_LOG.md.\n";
     return 0;
 }

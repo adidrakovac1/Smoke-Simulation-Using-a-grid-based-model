@@ -169,13 +169,15 @@ if(SMOKE_BUILD_LAB)
     lab/lab_main.cpp
     lab/jacobi_m3_scalar.cpp
     lab/jacobi_m3_auto.cpp
+    lab/advection_m3_scalar.cpp
+    lab/advection_m3_auto.cpp
   )
   target_link_libraries(smoke_lab PRIVATE smoke_solver)
   target_include_directories(smoke_lab PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/lab)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set_source_files_properties(lab/jacobi_m3_scalar.cpp PROPERTIES COMPILE_OPTIONS "-fno-tree-vectorize")
+    set_source_files_properties(lab/jacobi_m3_scalar.cpp lab/advection_m3_scalar.cpp PROPERTIES COMPILE_OPTIONS "-fno-tree-vectorize")
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set_source_files_properties(lab/jacobi_m3_scalar.cpp PROPERTIES COMPILE_OPTIONS "-fno-vectorize;-fno-slp-vectorize")
+    set_source_files_properties(lab/jacobi_m3_scalar.cpp lab/advection_m3_scalar.cpp PROPERTIES COMPILE_OPTIONS "-fno-vectorize;-fno-slp-vectorize")
   endif()
   target_compile_definitions(smoke_lab PRIVATE
     SMOKE_LAB_FLAGS="${CMAKE_CXX_FLAGS_RELEASE}"

@@ -449,11 +449,17 @@ Nalazi:
 `Solver/build/smoke_lab` pokazuje verzije jezgra jednu do druge, po uzoru na primjer iz laba
 (`BenchmarkRunner::run()`, `measure()`, `check_vector`).
 - Svaka verzija je zasebna funkcija i prvo se provjerava prema verziji 1, bit po bit.
-- Zatim se mjeri u 3 naizmjenične runde, svaka sa 1 zagrijavanjem i 10 mjerenja. Jedno mjerenje je
-  40 Jacobi iteracija.
+- Zatim se mjeri u 3 naizmjenične runde, svaka sa 1 zagrijavanjem i 10 mjerenja.
+- Jezgra (`--kernel jacobi|advekcija|sve`, zadano sve):
+  - **Jacobi:** jedno mjerenje je 40 Jacobi iteracija; verzije M3 bez vektorizacije, M3 auto, M4-007,
+    M4-009, M4-010.
+  - **Advekcija** (dodano poslije M4-014): jedno mjerenje je 5 advekcija (u, v, w, gustina, temperatura),
+    kao u jednom koraku. Verzije: M3 kod bez vektorizacije, M3 kod sa zadanim oznakama (g++ ga ne
+    vektorizira, pa je isto kao verzija 1), vektorizirani SSE kod (M4-011 do M4-013) i AVX2 po fajlu
+    (M4-014). M3 kod je sačuvan u `Solver/lab/AdvectionM3.inc`.
 - Ispisuje medijan, minimum, raspon rundi, S prema verziji 1 i poboljšanje prema prethodnoj verziji.
-- Traje oko 14 s. Mjeri samo jezgro (bez `setBoundary`), pa je dopuna ovom dnevniku, a ne zamjena
-  za mjerenje cijelog koraka.
+- Mjeri samo jezgro (bez `setBoundary`), pa je dopuna ovom dnevniku, a ne zamjena za mjerenje cijelog
+  koraka.
 
 ### M4-010: T9 ručne AVX2 intrinsics za Jacobi: NE KORISTITI U SOLVERU (bez dobitka prema M4-009)
 
