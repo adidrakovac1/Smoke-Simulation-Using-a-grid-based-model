@@ -32,7 +32,8 @@ Ako Windows blokira `smoke_tests.exe` ("Application Control policy"), iste testo
 include/smoke/   javni headeri; SmokeSolver.h je jedina klasa koju drugi koriste
 src/             implementacija; src/stages/ ima po jednu datoteku za svaku fazu koraka
 apps/smoke_cli/  konzolni program
-tests/           testovi (check.h je mini-okvir dok se ne odluči o doctest-u, odluka D5)
+tests/           testovi (doctest, odluka D5); pokretanje: smoke_tests ili smoke_cli --selftest
+third_party/     doctest.h (zapakovan u repozitorij, bez preuzimanja pri gradnji)
 bench/           mjerenje
 reference/       referentni rezultati (kasnije)
 ```

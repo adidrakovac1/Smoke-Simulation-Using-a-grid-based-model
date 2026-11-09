@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(SmokeSolver VERSION 0.1.0 LANGUAGES CXX)
 
-# Solver is a standalone project: no OpenGL, no GLFW, no GLM, no Renderer headers,
-# and (for now) no third-party dependencies at all. See docs/plan/ARCHITECTURE.md.
+# Solver is a standalone project: no OpenGL, no GLFW, no GLM, no Renderer headers.
+# The solver library itself has no third-party dependencies. The tests use doctest, vendored as a
+# single header in third_party/doctest (decision D5): nothing is downloaded at configure time.
+# See docs/plan/ARCHITECTURE.md.
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -53,7 +55,12 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/test_solver_skeleton.cpp
   )
   target_link_libraries(smoke_selftest PUBLIC smoke_solver)
-  target_include_directories(smoke_selftest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+  target_include_directories(smoke_selftest
+    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src            # tests check the internal stages directly
+  )
+  # SYSTEM: warnings coming from inside doctest.h are not ours and must not hide our own warnings.
+  target_include_directories(smoke_selftest SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
   smoke_set_warnings(smoke_selftest)
 endif()
 
