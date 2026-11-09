@@ -358,3 +358,39 @@ Nalazi:
 - **Odluka:** ubrzanja nema. Kompajler je odabire vjerovatno već sveo na isto. Izmjena je ipak
   zadržana, jer kod čini jednostavnijim (manje operacija i čitanja), a rezultat je isti.
   Oznake u CSV-u: `PC2-20261109-M4-006-*`, presuda `keep_simpler`.
+
+### Profil kompajlera za projekciju na PC-2 (T7, g++ `-fopt-info-vec`)
+
+- Divergencija i Jacobi **jesu** vektorizirani, ali samo s 16-bajtnim vektorima (SSE, 4 floata), jer
+  x86-64 bez `-mavx2` ima samo SSE2. Uz to su "versioned for possible aliasing": u toku rada se
+  provjerava da li se nizovi preklapaju.
+- `subtractPressureGradient` **nije** vektoriziran ("evolution of base is not affine"). Petlja piše u
+  u, v i w, pa kompajler ne može dokazati da ti upisi ne mijenjaju pokazivače unutar `Field3D`.
+- T4/T5: `i` je najunutrašnja petlja u sva tri jezgra, pa se redoslijed petlji ne mijenja.
+
+### M4-007: T12 `restrict` u jezgrima projekcije: ZADRŽATI
+
+- **Izmjena:** unutrašnja petlja svakog jezgra (divergencija, Jacobi, gradijent) je izdvojena u
+  funkciju po redu. Parametri te funkcije su `SMOKE_RESTRICT` pokazivači (`Solver/src/Restrict.h`).
+  Prvi pokušaj, `restrict` na lokalnim pokazivačima, g++ je ignorisao: izvještaj se nije promijenio.
+- **Profil poslije izmjene:** sve tri petlje su vektorizirane, i to bez provjere preklapanja.
+- **Tačnost:** 43/43 testa; `--verify` daje bit po bit isto.
+- **Mjerenje:** osnova je M4-006 (`b01216e`). Za 32³ do 96³ su 3 runde, za 128³ 5 rundi (s 3 runde
+  presuda je bila "mixed", pa je 128³ ponovljena).
+
+| Mreža | Projekcija: osnova / nova (ms) | Projekcija S / Δ | Jacobi iter. S | Cijeli korak S / Δ | Presude (proj. / Jacobi / korak) |
+| :--- | :--- | :--- | ---: | :--- | :--- |
+| 32³ | 0.681 / 0.558 | 1.220x / 18.0% | 1.178x | 1.064x / 6.0% | brže / brže / brže |
+| 64³ | 5.402 / 4.709 | 1.147x / 12.8% | 1.109x | 1.062x / 5.8% | brže / brže / šum |
+| 96³ | 25.828 / 17.533 | 1.473x / 32.1% | 1.110x | 1.022x / 2.2% | brže / šum / šum |
+| 128³ | 59.585 / 56.099 | 1.062x / 5.9% | 1.049x | 1.024x / 2.4% | šum / šum / šum (brže u svih 5 rundi) |
+
+- **96³:** S = 1.47 za projekciju je vjerovatno precijenjen. Osnova na 96³ je bučna (inače je
+  oko 19 do 22 ms), a pouzdaniji je S Jacobi iteracije od 1.11.
+- **128³:** polja ne staju u L3, pa je jezgro ograničeno memorijom. Uklanjanje provjere preklapanja
+  tamo ne pomaže pouzdano, a usporenja nema.
+- **Odluka:** zadržati. Na 32³ i 64³ je ubrzanje jasno i ponovljivo (Jacobi 1.11 do 1.18x).
+  Oznake u CSV-u: `PC2-20261109-M4-007-*`.
+- **Razlika od M4-001 na PC-1:** tamo je ista ideja odbačena po starom pravilu šuma, a i AppleClang
+  je kod već vektorizirao bez nje. Na g++ je `restrict` na parametrima ono što omogućava
+  vektorizaciju gradijenta i uklanja provjeru preklapanja.
