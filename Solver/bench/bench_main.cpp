@@ -57,6 +57,7 @@ struct Options {
     bool outputExplicit = false;
     bool referenceExplicit = false;
     std::string referencePath;
+    std::string verifyPath;
     std::string outputPath;
     std::vector<int> gridSizes{32, 64, 96, 128};
     int steps = 100;
@@ -81,7 +82,8 @@ bool parsePositiveInt(std::string_view text, int& value, bool allowZero = false)
 void printUsage(std::ostream& out) {
     out << "Usage: smoke_bench [--grid N] [--steps N] [--warmup N] [--output FILE]\n"
            "       smoke_bench --calibrate\n"
-           "       smoke_bench --reference FILE [--grid N] [--steps N]\n";
+           "       smoke_bench --reference FILE [--grid N] [--steps N]\n"
+           "       smoke_bench --verify FILE [--grid N] [--steps N]\n";
 }
 
 bool parseArgs(int argc, char** argv, Options& options) {
@@ -92,7 +94,7 @@ bool parseArgs(int argc, char** argv, Options& options) {
             if (options.calibrate) return false;
             options.calibrate = true;
         } else if (arg == "--grid" || arg == "--steps" || arg == "--warmup" ||
-                   arg == "--output" || arg == "--reference") {
+                   arg == "--output" || arg == "--reference" || arg == "--verify") {
             if (i + 1 >= argc) return false;
             const std::string value(argv[++i]);
             if (arg == "--grid") {
@@ -117,6 +119,9 @@ bool parseArgs(int argc, char** argv, Options& options) {
                 options.outputPath = value;
                 if (options.outputPath.empty()) return false;
                 options.outputExplicit = true;
+            } else if (arg == "--verify") {
+                if (!options.verifyPath.empty() || value.empty()) return false;
+                options.verifyPath = value;
             } else {
                 if (options.referenceExplicit) return false;
                 options.referencePath = value;
@@ -131,9 +136,10 @@ bool parseArgs(int argc, char** argv, Options& options) {
         }
     }
     if (options.calibrate)
-        return options.referencePath.empty() && options.outputPath.empty() && !options.gridExplicit &&
-               !options.stepsExplicit && !options.warmupExplicit;
-    if (!options.referencePath.empty())
+        return options.referencePath.empty() && options.verifyPath.empty() && options.outputPath.empty() &&
+               !options.gridExplicit && !options.stepsExplicit && !options.warmupExplicit;
+    if (!options.referencePath.empty() && !options.verifyPath.empty()) return false;
+    if (!options.referencePath.empty() || !options.verifyPath.empty())
         return options.outputPath.empty() && !options.warmupExplicit;
     return true;
 }
@@ -414,6 +420,62 @@ bool runReference(const Options& options) {
     return writeReference(options.referencePath, solver, options.steps, diagnostics);
 }
 
+// Runs the same fixed scenario as --reference and compares the final density with a reference file
+// cell by cell (docs/plan/VERIFICATION.md, section 3). It only REPORTS the differences: the pass/fail
+// tolerance is TODO(measure) and is decided from these numbers, not guessed.
+bool runVerify(const Options& options) {
+    const int n = options.gridExplicit ? options.gridSizes.front() : 64;
+    if (options.gridExplicit && options.gridSizes.size() != 1) {
+        std::cerr << "--verify accepts exactly one --grid size\n";
+        return false;
+    }
+    const std::uint64_t cells = static_cast<std::uint64_t>(n) * n * n;
+
+    std::ifstream file(options.verifyPath, std::ios::binary);
+    if (!file) {
+        std::cerr << "Cannot open reference file: " << options.verifyPath << '\n';
+        return false;
+    }
+    std::vector<unsigned char> bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    if (bytes.size() != cells * sizeof(float)) {
+        std::cerr << "Reference file has " << bytes.size() << " bytes, expected " << cells * sizeof(float)
+                  << " for " << n << "^3 (use --grid N to match the reference)\n";
+        return false;
+    }
+
+    smoke::SolverConfig config;
+    config.grid = {n, n, n};
+    smoke::SmokeSolver solver(config);
+    for (int step = 0; step < options.steps; ++step) solver.step();
+    const smoke::DensityView density = solver.density();
+
+    double maxAbs = 0.0, maxRef = 0.0;
+    std::uint64_t different = 0, index = 0;
+    int worstI = 0, worstJ = 0, worstK = 0;
+    for (int k = 0; k < density.nz; ++k)
+        for (int j = 0; j < density.ny; ++j)
+            for (int i = 0; i < density.nx; ++i, ++index) {
+                std::uint32_t bits = 0;  // the file is little-endian, as written by writeReference
+                for (int byte = 0; byte < 4; ++byte)
+                    bits |= static_cast<std::uint32_t>(bytes[index * 4 + byte]) << (8 * byte);
+                float reference;
+                std::memcpy(&reference, &bits, sizeof(reference));
+                const float value = density.origin[i + density.strideJ * j + density.strideK * k];
+                const double diff = std::fabs(static_cast<double>(value) - reference);
+                if (value != reference) ++different;
+                if (diff > maxAbs) { maxAbs = diff; worstI = i + 1; worstJ = j + 1; worstK = k + 1; }
+                maxRef = std::max(maxRef, std::fabs(static_cast<double>(reference)));
+            }
+
+    std::cout << "Verify against " << options.verifyPath << " (" << n << "^3, " << options.steps << " steps)\n"
+              << std::setprecision(6)
+              << "  cells_different: " << different << " of " << cells << '\n'
+              << "  max_abs_diff: " << maxAbs << " at cell (" << worstI << ", " << worstJ << ", " << worstK << ")\n"
+              << "  max_abs_diff / max|reference|: " << (maxRef > 0.0 ? maxAbs / maxRef : 0.0) << '\n'
+              << "  bit_identical: " << (different == 0 ? "yes" : "no") << '\n';
+    return true;
+}
+
 bool runBenchmarks(const Options& options, std::ostream& csv) {
     csv << "grid,stage,median_ms,min_ms,max_ms,steps\n";
     for (const int n : options.gridSizes) {
@@ -464,6 +526,7 @@ int main(int argc, char** argv) {
         return 0;
     }
     if (!options.referencePath.empty()) return runReference(options) ? 0 : 1;
+    if (!options.verifyPath.empty()) return runVerify(options) ? 0 : 1;
 
     if (!options.outputPath.empty()) {
         if (!createParentDirectories(options.outputPath)) return 1;
