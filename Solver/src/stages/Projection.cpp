@@ -58,6 +58,8 @@ void computeDivergence(const Field3D& u, const Field3D& v, const Field3D& w, Fie
 // Defined in Projection_avx2.cpp (compiled with -mavx2). Only call it when avx2Supported() is true.
 void jacobiSlabAvx2(float* pNew, const float* pOld, const float* div, int nx, int ny, int k0, int k1,
                     std::ptrdiff_t sJ, std::ptrdiff_t sK);
+void jacobiSlabAvx2Intrinsics(float* pNew, const float* pOld, const float* div, int nx, int ny, int k0, int k1,
+                              std::ptrdiff_t sJ, std::ptrdiff_t sK);
 #endif
 
 bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range, KernelIsa isa) {
@@ -65,8 +67,12 @@ bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, Sla
     const std::ptrdiff_t sJ = pNew.strideJ(), sK = pNew.strideK();
     assert(pOld.strideK() == sK && div.strideK() == sK);
     const bool haveAvx2 = avx2Supported();  // always false when the AVX2 file is not built
-    if (isa == KernelIsa::Avx2 && !haveAvx2) return false;
+    if ((isa == KernelIsa::Avx2 || isa == KernelIsa::Avx2Intrinsics) && !haveAvx2) return false;
 #if defined(SMOKE_HAS_AVX2_BINARY)
+    if (isa == KernelIsa::Avx2Intrinsics) {
+        jacobiSlabAvx2Intrinsics(pNew.data(), pOld.data(), div.data(), g.nx, g.ny, range.k0, range.k1, sJ, sK);
+        return true;
+    }
     if (isa != KernelIsa::Scalar && haveAvx2) {
         jacobiSlabAvx2(pNew.data(), pOld.data(), div.data(), g.nx, g.ny, range.k0, range.k1, sJ, sK);
         return true;

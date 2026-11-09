@@ -443,3 +443,38 @@ Nalazi:
   - Na 128³ je dobitak 1.11x. Polja tamo ne staju u L3, pa računanje više nije usko grlo. E se ne
     računa dok se ne provjeri kalibracija (vidi uvod odjeljka 6).
 - **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-009-*`.
+
+### `smoke_lab`: poređenje verzija jednog jezgra (od 2026-11-09)
+
+`Solver/build/smoke_lab` pokazuje verzije jezgra jednu do druge, po uzoru na primjer iz laba
+(`BenchmarkRunner::run()`, `measure()`, `check_vector`).
+- Svaka verzija je zasebna funkcija i prvo se provjerava prema verziji 1, bit po bit.
+- Zatim se mjeri u 3 naizmjenične runde, svaka sa 1 zagrijavanjem i 10 mjerenja. Jedno mjerenje je
+  40 Jacobi iteracija.
+- Ispisuje medijan, minimum, raspon rundi, S prema verziji 1 i poboljšanje prema prethodnoj verziji.
+- Traje oko 14 s. Mjeri samo jezgro (bez `setBoundary`), pa je dopuna ovom dnevniku, a ne zamjena
+  za mjerenje cijelog koraka.
+
+### M4-010: T9 ručne AVX2 intrinsics za Jacobi: NE KORISTITI U SOLVERU (bez dobitka prema M4-009)
+
+- **Izmjena:** `jacobiSlabAvx2Intrinsics` u `Projection_avx2.cpp` koristi `_mm256_loadu_ps`,
+  `_mm256_add_ps`, `_mm256_div_ps`, a ostatak reda radi skalarno. Šest susjeda se sabira istim
+  redoslijedom kao u skalarnom kodu, bez FMA, pa je rezultat bit po bit isti (dodano u test
+  `jacobi_avx2_and_scalar_builds_are_bit_identical`).
+- **Dostupnost:** `KernelIsa::Avx2Intrinsics`; `KernelIsa::Auto` ga **ne** bira.
+- **Mjerenje (`smoke_lab`, PC-2, 3 runde, jezgro bez `setBoundary`):**
+
+| Mreža | AVX2 po fajlu (M4-009) ms | AVX2 intrinsics ms | prema M4-009 | raspon rundi (M4-009 / intr.) |
+| :--- | ---: | ---: | ---: | :--- |
+| 32³ | 0.322 | 0.311 | +3.3% | 0.006 / 0.008 |
+| 64³ | 2.566 | 2.563 | +0.1% | 0.519 / 0.117 |
+| 96³ | 11.197 | 11.084 | +1.0% | 0.944 / 1.496 |
+| 128³ | 42.596 | 42.464 | +0.3% | 2.895 / 2.948 |
+
+- **Tumačenje:** g++ iz istog C++ koda (M4-009) već pravi jednako dobar AVX2 kod: 8 floatova,
+  neporavnata učitavanja, unroll 8. Razlika je unutar raspona rundi, osim možda na 32³ (+3%).
+- **Odluka:** solver ostaje na M4-009 (jednostavniji kod, jedan izvor za obje putanje). Intrinsics
+  verzija ostaje samo za demonstraciju u `smoke_lab` (verzija 5) i za test tačnosti. Put kroz solver
+  se nije promijenio, pa cijeli korak nije ponovo mjeren.
+- Za poređenje, ukupno na Jacobi jezgru prema M3 kodu bez vektorizacije: **3.7x (32³), 3.9x (64³),
+  2.9x (96³), 2.0x (128³)** (verzija 4 u `smoke_lab`).

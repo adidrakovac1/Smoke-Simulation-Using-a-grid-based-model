@@ -74,9 +74,13 @@ TEST_CASE("jacobi_avx2_and_scalar_builds_are_bit_identical") {
     }
     CHECK(cellsDifferent(pScalar, pAvx2) == 0);
 
-    Field3D pAuto(g);  // Auto must pick AVX2 here and therefore also match
+    Field3D pAuto(g);  // Auto must pick an AVX2 version here and therefore also match
     jacobiIteration(pAuto, pOld, div, wholeInterior(g));
     CHECK(cellsDifferent(pScalar, pAuto) == 0);
+
+    Field3D pIntrinsics(g);  // M4-010: hand-written intrinsics, same order of additions
+    REQUIRE(jacobiIteration(pIntrinsics, pOld, div, wholeInterior(g), KernelIsa::Avx2Intrinsics));
+    CHECK(cellsDifferent(pScalar, pIntrinsics) == 0);
 }
 
 namespace {

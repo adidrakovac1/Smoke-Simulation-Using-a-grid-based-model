@@ -67,8 +67,9 @@ void computeDivergence(const Field3D& u, const Field3D& v, const Field3D& w, Fie
 /// Reads only pOld, writes only pNew (interior), so the cells are independent of each other.
 /// `isa` picks the implementation (M4-009): Auto uses the AVX2 build when the CPU supports it, otherwise
 /// the default build; Scalar forces the default build; Avx2 forces AVX2 and returns false (doing nothing)
-/// when it is not available. Both builds give bit-identical results. Tests use Scalar/Avx2 to compare them.
-enum class KernelIsa { Auto, Scalar, Avx2 };
+/// when it is not available; Avx2Intrinsics forces the hand-written AVX2 version (M4-010, same rule).
+/// All versions give bit-identical results. Tests and smoke_lab use the explicit values to compare them.
+enum class KernelIsa { Auto, Scalar, Avx2, Avx2Intrinsics };
 bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range,
                      KernelIsa isa = KernelIsa::Auto);
 

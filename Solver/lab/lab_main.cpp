@@ -41,10 +41,17 @@ using smoke::GridSize;
 
 struct Options {
     std::vector<int> grids{32, 64, 96, 128};
+    int rounds = 3;       // interleaved rounds (decision D10)
     int repeats = 10;
     int warmup = 1;
     int iterations = 40;  // Jacobi iterations per run, as in one simulation step (SmokeParams default)
 };
+
+double medianOf(std::vector<double> v) {
+    std::sort(v.begin(), v.end());
+    const std::size_t m = v.size() / 2;
+    return (v.size() % 2) ? v[m] : 0.5 * (v[m - 1] + v[m]);
+}
 
 struct Sample {
     double medianMs = 0.0;
@@ -132,6 +139,10 @@ std::vector<Version> jacobiVersions() {
          [](Field3D& n, const Field3D& o, const Field3D& d) {
              return jacobiIteration(n, o, d, wholeInterior(n.size()), KernelIsa::Avx2);
          }},
+        {"5. AVX2 intrinsics, rucno (M4-010)",
+         [](Field3D& n, const Field3D& o, const Field3D& d) {
+             return jacobiIteration(n, o, d, wholeInterior(n.size()), KernelIsa::Avx2Intrinsics);
+         }},
     };
 }
 
@@ -147,8 +158,10 @@ bool runIterations(const JacobiFn& fn, Field3D& a, Field3D& b, const Field3D& di
 
 void runJacobi(const Options& o) {
     std::cout << "=== Jezgro: Jacobi iteracija (projekcija pritiska) ===\n"
-              << "Jedno mjerenje = " << o.iterations << " Jacobi iteracija (kao u jednom koraku simulacije); "
-              << o.warmup << " zagrijavanje + " << o.repeats << " mjerenja, medijan i minimum.\n";
+              << "Jedno mjerenje = " << o.iterations << " Jacobi iteracija (kao u jednom koraku simulacije). "
+              << o.rounds << " naizmjenicne runde; u svakoj rundi svaka verzija: " << o.warmup << " zagrijavanje + "
+              << o.repeats << " mjerenja.\nMedijan = medijan medijana rundi; minimum = najbrze pojedinacno "
+              << "mjerenje; raspon rundi = najveci - najmanji medijan runde (sum).\n";
     const std::vector<Version> versions = jacobiVersions();
 
     for (const int n : o.grids) {
@@ -157,45 +170,64 @@ void runJacobi(const Options& o) {
         fillRandom(start, 42);
         fillRandom(div, 7);
 
-        std::cout << "\nMreza " << n << "^3\n"
-                  << "  " << std::left << std::setw(42) << "verzija" << std::right << std::setw(12) << "medijan ms"
-                  << std::setw(12) << "minimum ms" << std::setw(10) << "S (od 1.)" << std::setw(18) << "prema prethodnoj"
-                  << "   tacnost\n";
-
+        // 1. Accuracy first (like check_vector in the lab): every version against version 1, bit by bit.
+        std::vector<bool> available(versions.size(), false);
+        std::vector<std::string> accuracy(versions.size());
         Field3D expected;
-        double firstMedian = 0.0, previousMedian = 0.0;
         for (std::size_t v = 0; v < versions.size(); ++v) {
-            const Version& version = versions[v];
             Field3D a, b;
             copyField(a, start);
             copyField(b, start);
-            if (!runIterations(version.fn, a, b, div, o.iterations)) {
-                std::cout << "  " << std::left << std::setw(42) << version.name << std::right
+            if (!runIterations(versions[v].fn, a, b, div, o.iterations)) continue;
+            available[v] = true;
+            if (v == 0) { copyField(expected, a); accuracy[v] = "referenca"; continue; }
+            const long long diff = cellsDifferent(a, expected);
+            accuracy[v] = diff == 0 ? "bit po bit isto" : "RAZLIKA u " + std::to_string(diff) + " celija";
+        }
+
+        // 2. Interleaved rounds; the order of the versions is rotated every round (as perf/run_rounds.sh).
+        std::vector<std::vector<double>> roundMedians(versions.size());
+        std::vector<double> minimum(versions.size(), 1e300);
+        for (int r = 0; r < o.rounds; ++r)
+            for (std::size_t step = 0; step < versions.size(); ++step) {
+                const std::size_t v = (step + static_cast<std::size_t>(r)) % versions.size();
+                if (!available[v]) continue;
+                Field3D a, b;
+                copyField(a, start);
+                copyField(b, start);
+                const Sample s = measure(o, [&] { runIterations(versions[v].fn, a, b, div, o.iterations); },
+                                         [&] { return checksum(a); });
+                roundMedians[v].push_back(s.medianMs);
+                minimum[v] = std::min(minimum[v], s.minMs);
+            }
+
+        // 3. Table.
+        std::cout << "\nMreza " << n << "^3\n"
+                  << "  " << std::left << std::setw(42) << "verzija" << std::right << std::setw(11) << "medijan ms"
+                  << std::setw(11) << "minimum ms" << std::setw(13) << "raspon rundi" << std::setw(10) << "S (od 1.)"
+                  << std::setw(18) << "prema prethodnoj" << "   tacnost\n";
+        double firstMedian = 0.0, previousMedian = 0.0;
+        for (std::size_t v = 0; v < versions.size(); ++v) {
+            if (!available[v]) {
+                std::cout << "  " << std::left << std::setw(42) << versions[v].name << std::right
                           << "  nije dostupno (procesor ili gradnja bez AVX2)\n";
                 continue;
             }
-            std::string accuracy = "referenca";
-            if (v == 0) copyField(expected, a);
-            else {
-                const long long diff = cellsDifferent(a, expected);
-                accuracy = diff == 0 ? "bit po bit isto" : "RAZLIKA u " + std::to_string(diff) + " celija";
-            }
-
-            copyField(a, start);
-            copyField(b, start);
-            const Sample s = measure(o, [&] { runIterations(version.fn, a, b, div, o.iterations); },
-                                     [&] { return checksum(a); });
-            if (v == 0) firstMedian = s.medianMs;
-            std::cout << "  " << std::left << std::setw(42) << version.name << std::right << std::fixed
-                      << std::setprecision(3) << std::setw(12) << s.medianMs << std::setw(12) << s.minMs
-                      << std::setw(9) << std::setprecision(2) << firstMedian / s.medianMs << "x";
+            std::vector<double> rm = roundMedians[v];
+            const double med = medianOf(rm);
+            const double spread = *std::max_element(rm.begin(), rm.end()) - *std::min_element(rm.begin(), rm.end());
+            if (v == 0) firstMedian = med;
+            std::cout << "  " << std::left << std::setw(42) << versions[v].name << std::right << std::fixed
+                      << std::setprecision(3) << std::setw(11) << med << std::setw(11) << minimum[v] << std::setw(13)
+                      << spread << std::setw(9) << std::setprecision(2) << firstMedian / med << "x";
             if (v == 0) std::cout << std::setw(18) << "-";
-            else std::cout << std::setw(16) << std::setprecision(1) << 100.0 * (previousMedian - s.medianMs) / previousMedian
-                           << " %";
-            std::cout << "   " << accuracy << "\n" << std::defaultfloat;
-            previousMedian = s.medianMs;
+            else std::cout << std::setw(16) << std::setprecision(1) << 100.0 * (previousMedian - med) / previousMedian << " %";
+            std::cout << "   " << accuracy[v] << "\n" << std::defaultfloat;
+            previousMedian = med;
         }
     }
+    std::cout << "\nKako citati: razlika izmedju dvije verzije je pouzdana tek kad je veca od raspona rundi\n"
+              << "(odluka D10). Za cijeli korak simulacije vidi docs/plan/PERF_LOG.md.\n";
 }
 
 bool parsePositive(const char* text, int& out) {
@@ -211,12 +243,14 @@ bool parseArgs(int argc, char** argv, Options& o) {
     for (int i = 1; i < argc; ++i) {
         const std::string_view a(argv[i]);
         int value = 0;
-        if (i + 1 >= argc && (a == "--grid" || a == "--repeats" || a == "--warmup" || a == "--iters")) return false;
+        if (i + 1 >= argc && (a == "--grid" || a == "--rounds" || a == "--repeats" || a == "--warmup" || a == "--iters"))
+            return false;
         if (a == "--grid") {
             if (!parsePositive(argv[++i], value)) return false;
             if (!gridGiven) { o.grids.clear(); gridGiven = true; }
             o.grids.push_back(value);
-        } else if (a == "--repeats") { if (!parsePositive(argv[++i], o.repeats)) return false; }
+        } else if (a == "--rounds")  { if (!parsePositive(argv[++i], o.rounds)) return false; }
+        else if (a == "--repeats")   { if (!parsePositive(argv[++i], o.repeats)) return false; }
         else if (a == "--warmup")    { if (!parsePositive(argv[++i], o.warmup)) return false; }
         else if (a == "--iters")     { if (!parsePositive(argv[++i], o.iterations)) return false; }
         else return false;
@@ -229,8 +263,8 @@ bool parseArgs(int argc, char** argv, Options& o) {
 int main(int argc, char** argv) {
     Options o;
     if (!parseArgs(argc, argv, o)) {
-        std::cout << "Koriscenje: smoke_lab [--grid N]... [--repeats R] [--warmup W] [--iters K]\n"
-                  << "  zadano: mreze 32 64 96 128, 10 mjerenja, 1 zagrijavanje, 40 iteracija\n";
+        std::cout << "Koriscenje: smoke_lab [--grid N]... [--rounds R] [--repeats M] [--warmup W] [--iters K]\n"
+                  << "  zadano: mreze 32 64 96 128, 3 runde, 10 mjerenja, 1 zagrijavanje, 40 iteracija\n";
         return 2;
     }
     std::cout << "=== smoke_lab: poredjenje verzija jezgara (serijski, jedna nit) ===\n"
