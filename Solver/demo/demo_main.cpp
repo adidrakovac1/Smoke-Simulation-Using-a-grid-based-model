@@ -28,6 +28,16 @@
 #include <string_view>
 #include <vector>
 
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #ifndef SMOKE_DEMO_COMMIT
 #define SMOKE_DEMO_COMMIT "unknown"
 #endif
@@ -282,15 +292,29 @@ bool parseArgs(int argc, char** argv, Options& o) {
     return true;
 }
 
+// When smoke_demo is started by double-click, Windows opens a console window just for it and closes the
+// window as soon as the program ends, so the results would vanish. In that case (this process is the only
+// one attached to the console) wait for Enter. Started from a terminal, it returns at once as before.
+void waitIfOwnConsole() {
+#if defined(_WIN32)
+    DWORD processes[2];
+    if (GetConsoleProcessList(processes, 2) == 1) {
+        std::cout << "\nPritisni Enter za kraj..." << std::flush;
+        std::cin.get();
+    }
+#endif
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
     Options o;
     if (!parseArgs(argc, argv, o)) {
         std::cout << "Koriscenje: smoke_demo [--puno] [--grid N]... [--koraci K] [--runde R] [--bez-jezgara]\n"
-                  << "  zadano (brzi mod): mreza 64^3, 100 koraka, 3 runde, pa poredjenje tehnika na 64^3 (~30 s)\n"
+                  << "  zadano (brzi mod): mreza 64^3, 100 koraka, 3 runde, pa poredjenje tehnika na 64^3 (~20 s)\n"
                   << "  --puno: mreze 32, 64, 96 i 128 (nekoliko minuta)\n"
                   << "  --bez-jezgara: samo cijela simulacija (bez dijela 2)\n";
+        waitIfOwnConsole();
         return 2;
     }
     std::cout << "==========================================================================================================\n"
@@ -344,5 +368,6 @@ int main(int argc, char** argv) {
                   << "x brze od Neoptimizirane verzije (A),  " << s.speedupVsB << "x brze od M3 + auto-vektorizacije (B)\n"
                   << std::defaultfloat;
     std::cout << "  Rezultat (gustina dima) je u svim verzijama bit po bit isti (vidi kolonu 'tacnost' u dijelu 1).\n";
+    waitIfOwnConsole();
     return 0;
 }
