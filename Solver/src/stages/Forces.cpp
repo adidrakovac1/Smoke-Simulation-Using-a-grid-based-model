@@ -61,15 +61,21 @@ void applyVorticityConfinement(SmokeState& s, float epsilon, float dt, SlabRange
                 const float nz = 0.5f * (s.vorticityMagnitude.at(i, j, k + 1) -
                                          s.vorticityMagnitude.at(i, j, k - 1));
                 const float gradientMagnitude = std::sqrt(nx * nx + ny * ny + nz * nz);
-                if (gradientMagnitude > 0.0f) {
-                    const float scale = epsilon * dt / gradientMagnitude;  // h = 1 cell
-                    const float wx = s.vorticityX.at(i, j, k);
-                    const float wy = s.vorticityY.at(i, j, k);
-                    const float wz = s.vorticityZ.at(i, j, k);
-                    s.u.at(i, j, k) += scale * (ny * wz - nz * wy);
-                    s.v.at(i, j, k) += scale * (nz * wx - nx * wz);
-                    s.w.at(i, j, k) += scale * (nx * wy - ny * wx);
-                }
+                const bool hasGradient = gradientMagnitude > 0.0f;
+                // Use a finite denominator so the zero-gradient case can be selected without a branch.
+                const float scale = epsilon * dt / (hasGradient ? gradientMagnitude : 1.0f);  // h = 1 cell
+                const float wx = s.vorticityX.at(i, j, k);
+                const float wy = s.vorticityY.at(i, j, k);
+                const float wz = s.vorticityZ.at(i, j, k);
+                const float forceX = scale * (ny * wz - nz * wy);
+                const float forceY = scale * (nz * wx - nx * wz);
+                const float forceZ = scale * (nx * wy - ny * wx);
+                const float u = s.u.at(i, j, k);
+                const float v = s.v.at(i, j, k);
+                const float w = s.w.at(i, j, k);
+                s.u.at(i, j, k) = hasGradient ? u + forceX : u;
+                s.v.at(i, j, k) = hasGradient ? v + forceY : v;
+                s.w.at(i, j, k) = hasGradient ? w + forceZ : w;
             }
         }
     }

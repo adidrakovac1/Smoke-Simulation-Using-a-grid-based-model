@@ -80,7 +80,8 @@ Serijska referenca je snimljena:
 3. Ista komanda podržava druge veličine (`--grid N`) kad se želi dodatna referenca.
 4. **Poređenje:** `smoke_bench --verify FILE [--grid N] [--steps N]` pokreće isti scenarij i ispisuje
    broj različitih ćelija, `max_abs_diff`, `max_abs_diff / max|reference|` i da li je rezultat bit po
-   bit isti. Prag za "prošlo" je `TODO(measure)`: određuje se iz prvih M4 mjerenja, ne pogađa se.
+   bit isti. M4 prag je **1e-4 relativne maksimalne greške** (u skladu s tolerancijom za vektorizirane
+   rezultate iz OPTIMIZATION.md); `--verify` vraća izlazni kod 1 ako se prag pređe ili stanje nije konačno.
 
 **Referenca zavisi od računara i kompajlera (izmjereno 2026-11-09).** Isti commit, izgrađen s
 g++ 16.2.0 (MSYS2, x86-64, Release) i poređen s ovom referencom (AppleClang 21, Apple M4, ARM):

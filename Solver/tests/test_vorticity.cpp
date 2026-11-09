@@ -56,3 +56,25 @@ TEST_CASE("zero_vorticity_epsilon_leaves_velocity_unchanged") {
     CHECK(cellsDifferent(state.v, v) == 0);
     CHECK(cellsDifferent(state.w, w) == 0);
 }
+
+TEST_CASE("zero_vorticity_magnitude_gradient_leaves_local_velocity_unchanged") {
+    const GridSize g{10, 10, 10};
+    SmokeState state;
+    state.resize(g);
+    fillInterior(state.u, 2.0f);
+    fillInterior(state.v, -3.0f);
+    for (int k = 1; k <= g.nz; ++k)
+        for (int j = 1; j <= g.ny; ++j)
+            for (int i = 1; i <= g.nx; ++i) state.w.at(i, j, k) = static_cast<float>(j);
+    setVelocityBoundary(state);
+
+    constexpr int i = 5, j = 5, k = 5;
+    const float u = state.u.at(i, j, k);
+    const float v = state.v.at(i, j, k);
+    const float w = state.w.at(i, j, k);
+    applyVorticityConfinement(state, 5.0f, 0.1f, wholeInterior(g));
+
+    CHECK(state.u.at(i, j, k) == u);
+    CHECK(state.v.at(i, j, k) == v);
+    CHECK(state.w.at(i, j, k) == w);
+}
