@@ -1,5 +1,7 @@
 #include "stages/Stages.h"
 
+#include <cmath>
+
 namespace smoke::serial {
 
 // Buoyancy, Fedkiw et al. 2001, eq. (8):  f = ( -alpha * rho + beta * (T - T_amb) ) * up.
@@ -24,7 +26,54 @@ void applyBuoyancy(SmokeState& s, const SmokeParams& p, float dt, SlabRange rang
 
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range) {
     applyBuoyancy(state, params, dt, range);
-    // TODO(M3): vorticity confinement (eps = 0 means off)   (Fedkiw et al. 2001, eq. 9-11)
+    applyVorticityConfinement(state, params.vorticityEps, dt, range);
+}
+
+void applyVorticityConfinement(SmokeState& s, float epsilon, float dt, SlabRange range) {
+    if (!(epsilon > 0.0f)) return;
+
+    const GridSize g = s.u.size();
+    for (int k = range.k0; k < range.k1; ++k) {
+        for (int j = 1; j <= g.ny; ++j) {
+            for (int i = 1; i <= g.nx; ++i) {
+                const float wx = 0.5f * ((s.w.at(i, j + 1, k) - s.w.at(i, j - 1, k)) -
+                                         (s.v.at(i, j, k + 1) - s.v.at(i, j, k - 1)));
+                const float wy = 0.5f * ((s.u.at(i, j, k + 1) - s.u.at(i, j, k - 1)) -
+                                         (s.w.at(i + 1, j, k) - s.w.at(i - 1, j, k)));
+                const float wz = 0.5f * ((s.v.at(i + 1, j, k) - s.v.at(i - 1, j, k)) -
+                                         (s.u.at(i, j + 1, k) - s.u.at(i, j - 1, k)));
+                s.vorticityX.at(i, j, k) = wx;
+                s.vorticityY.at(i, j, k) = wy;
+                s.vorticityZ.at(i, j, k) = wz;
+                s.vorticityMagnitude.at(i, j, k) = std::sqrt(wx * wx + wy * wy + wz * wz);
+            }
+        }
+    }
+    setBoundary(s.vorticityMagnitude, BoundaryKind::Scalar);
+
+    for (int k = range.k0; k < range.k1; ++k) {
+        for (int j = 1; j <= g.ny; ++j) {
+            for (int i = 1; i <= g.nx; ++i) {
+                const float nx = 0.5f * (s.vorticityMagnitude.at(i + 1, j, k) -
+                                         s.vorticityMagnitude.at(i - 1, j, k));
+                const float ny = 0.5f * (s.vorticityMagnitude.at(i, j + 1, k) -
+                                         s.vorticityMagnitude.at(i, j - 1, k));
+                const float nz = 0.5f * (s.vorticityMagnitude.at(i, j, k + 1) -
+                                         s.vorticityMagnitude.at(i, j, k - 1));
+                const float gradientMagnitude = std::sqrt(nx * nx + ny * ny + nz * nz);
+                if (gradientMagnitude > 0.0f) {
+                    const float scale = epsilon * dt / gradientMagnitude;  // h = 1 cell
+                    const float wx = s.vorticityX.at(i, j, k);
+                    const float wy = s.vorticityY.at(i, j, k);
+                    const float wz = s.vorticityZ.at(i, j, k);
+                    s.u.at(i, j, k) += scale * (ny * wz - nz * wy);
+                    s.v.at(i, j, k) += scale * (nz * wx - nx * wz);
+                    s.w.at(i, j, k) += scale * (nx * wy - ny * wx);
+                }
+            }
+        }
+    }
+    setVelocityBoundary(s);
 }
 
 } // namespace smoke::serial

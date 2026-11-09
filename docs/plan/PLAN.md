@@ -75,14 +75,19 @@ Divergencija poslije projekcije: 0.229, 0.154, 0.125 za K = 20, 40, 80 (100 kora
 je izmjerljivo manja nego prije i opada s brojem iteracija; 500 koraka bez NaN.
 
 ### M3: ljepota i mjerenje (sedmica 4 do 5)
-- [ ] Vorticity confinement (opcionalno uključiv parametrom `ε`).
-- [ ] Parametri podešeni da dim izgleda uvjerljivo (zapisati vrijednosti).
-- [ ] `StepTimings` i `ScopedTimer` oko svake faze.
-- [ ] `smoke_bench`: CSV po fazi za 32³, 64³, 96³, 128³ (VERIFICATION.md, odjeljak 4).
-- [ ] Referentni rezultat snimljen (`Solver/reference/`).
-- [ ] Osnove **B0** (bez vektorizacije) i **B1** (zadani kompajler) izmjerene i upisane kao prvi unosi u
+- [x] Vorticity confinement (opcionalno uključiv parametrom `ε`).
+- [x] Parametri podešeni da dim izgleda uvjerljivo (zapisati vrijednosti).
+- [x] `StepTimings` i `ScopedTimer` oko svake faze; mjeri se i prosjek po Jacobi iteraciji.
+- [x] `smoke_bench`: CSV po fazi za 32³, 64³, 96³, 128³ (VERIFICATION.md, odjeljak 4).
+- [x] Referentni rezultat snimljen (`Solver/reference/`).
+- [x] Osnove **B0** (bez vektorizacije) i **B1** (zadani kompajler) izmjerene i upisane kao prvi unosi u
       `PERF_LOG.md` i `perf/results.csv`; `smoke_bench --calibrate` ispisuje otisak računara (OPTIMIZATION.md, odjeljak 5).
-- [ ] T10 izmjeren i upisan.
+- [x] T10 izmjeren i upisan.
+
+**Rezultat (2026-11-09, Apple M4, AppleClang 21.0.0, B1):** projekcija je najveća pojedinačna faza
+na svim izmjerenim mrežama, s udjelom 37.45% (64³) do 41.89% (32³). Na 128³ iznosi 39.46%;
+advekcija brzine je sljedeća s 30.05%. Serijska tabela i B0/B1 poređenje su u
+[VERIFICATION.md](VERIFICATION.md), odjeljak 4, a puni CSV u `perf/results.csv`.
 
 **Kriterij:** postoji tabela serijskih vremena po fazi i udio svake faze (procjena `f` za Amdahlov
 zakon), i očekivano najveći udio ima projekcija (potvrditi mjerenjem; ako nije, to je nalaz,

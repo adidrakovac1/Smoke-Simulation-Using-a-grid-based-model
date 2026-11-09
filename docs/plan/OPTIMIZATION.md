@@ -208,7 +208,19 @@ Zato izvještavamo ove metrike, tim redoslijedom važnosti:
 
 `smoke_bench` treba imati mod `--calibrate` koji ispiše otisak računara i izmjeri kalibracione
 vrijednosti (propusnost memorije, ns po zavisnoj operaciji). Kalibracija se pokreće u istoj sesiji kao
-i mjerenje i upisuje u unos. Dok taj mod ne postoji, koriste se S i Δ, koji su glavne metrike u svakom slučaju.
+i mjerenje i upisuje u unos. `smoke_bench --calibrate` ispisuje CPU, OS, broj hardverskih niti,
+RAM, dostupne podatke o cacheu, vektorsku ISA, kompajler, Release oznake, varijantu i commit; zatim
+mjeri triad memorije i zavisni lanac. Mjerenje triadom je približno i zavisi od računara/opterećenja.
+
+Osnovne gradnje M3:
+
+```sh
+cmake -S Solver -B Solver/build-b1 -DCMAKE_BUILD_TYPE=Release
+cmake -S Solver -B Solver/build-b0 -DCMAKE_BUILD_TYPE=Release -DSMOKE_DISABLE_VECTORIZATION=ON
+```
+
+`B0` isključuje kompajlersku vektorizaciju na GCC-u/Clang-u; `B1` je zadana optimizirana gradnja.
+Na Windowsu gdje CMake generator koristi MSVC, B0 opcija trenutno nije podržana.
 
 ---
 

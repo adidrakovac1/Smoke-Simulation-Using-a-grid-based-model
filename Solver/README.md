@@ -20,9 +20,16 @@ Linux / macOS: isto, bez `-G "MinGW Makefiles"`.
 | :--- | :--- |
 | `smoke_cli` | konzolni program: pokreće simulaciju i ispisuje vrijeme po fazi (`../docs/plan/CLI_OUTPUT.md`) |
 | `smoke_tests` | provjere tačnosti (`../docs/plan/VERIFICATION.md`) |
-| `smoke_bench` | mjerenje (zasad prazan stub, M3) |
+| `smoke_bench` | CSV benchmark, referentni rezultat i kalibracija računara |
 
 Primjeri: `smoke_cli --grid 128 --steps 200`, `smoke_cli --nx 64 --ny 128 --nz 64 --quiet`.
+Benchmark: `Solver/build/smoke_bench --steps 100 --warmup 10 --output perf.csv`;
+kalibracija: `Solver/build/smoke_bench --calibrate`;
+referenca: `Solver/build/smoke_bench --reference Solver/reference/serial_64_100steps.bin`.
+poređenje s referencom: `Solver/build/smoke_bench --verify Solver/reference/serial_64_100steps.bin`
+(referenca zavisi od računara i kompajlera, vidi `../docs/plan/VERIFICATION.md`, odjeljak 3).
+B0 bez vektorizacije gradi se s `-DSMOKE_DISABLE_VECTORIZATION=ON`; zadani B1 koristi optimizacije
+kompajlera.
 Testovi: `ctest --test-dir Solver/build --output-on-failure` ili direktno `smoke_tests`.
 Ako Windows blokira `smoke_tests.exe` ("Application Control policy"), iste testove pokreće `smoke_cli --selftest`.
 
@@ -38,11 +45,8 @@ bench/           mjerenje
 reference/       referentni rezultati (kasnije)
 ```
 
-## Stanje (M2)
+## Stanje (M3)
 
-Radi cijeli korak: izvor dima, uzgon (temperatura), advekcija brzine, projekcija (divergencija, Jacobi,
-korekcija), advekcija gustoće i temperature; rubni uslovi; dijagnostika na zahtjev (`diagnostics()`);
-mjerenje vremena po fazi; konzolni program (`--dt`, `--jacobi`, `--dump-slices`, `--demo advect`);
-testovi T1 do T9.
-
-**Ne radi još** (M3): vorticity confinement, `smoke_bench`, referentni rezultat, T10.
+Radi cijeli korak s opcionim vorticity confinementom; dijagnostika i mjerenje po fazi (uključujući
+Jacobi iteraciju); `smoke_bench` s CSV, kalibracijom i serijskom referencom; testovi T1 do T10.
+Zadani confinement `ε = 5` vizualno je podešen na 64³; `smoke_cli --vorticity-eps 0` ga isključuje.

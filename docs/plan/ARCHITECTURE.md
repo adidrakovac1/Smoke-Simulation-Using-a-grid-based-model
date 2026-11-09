@@ -89,8 +89,8 @@ Smoke-Simulation-Using-a-grid-based-model/
 │   ├── apps/smoke_cli/main.cpp    konzolni program (bez prozora)
 │   ├── tests/                     provjere tačnosti (doctest, odluka D5)
 │   ├── third_party/doctest/       doctest.h, zapakovan u repozitorij (odluka D5)
-│   ├── bench/                     mjerenje vremena po fazama (zasad prazan stub)
-│   └── reference/                 referentni rezultati za poređenje verzija (kasnije)
+│   ├── bench/                     smoke_bench: CSV po fazama, kalibracija, reference
+│   └── reference/                 spremljeni referentni rezultati za poređenje verzija
 │
 └── Integration/               TEK U ZADNJEM MILESTONE-U (M-VIZ): spoj Solvera i Renderera
     ├── CMakeLists.txt
@@ -123,7 +123,8 @@ struct GridSize { int nx = 64, ny = 64, nz = 64; };   // unutrašnje ćelije
 - `resize()` ponovo alocira sva polja i resetuje simulaciju. Zbog toga je u meniju dugme
   Apply, a ne klizač koji bi alocirao memoriju svakog frejma.
 
-Memorija (procjena, oko 10 polja tipa `float` po ćeliji): 64³ je oko 10 MB, 128³ oko 84 MB.
+Memorija (procjena, 17 polja tipa `float` po ćeliji, uključujući četiri privremena polja za
+vorticity confinement): 64³ je oko 17 MB, 128³ oko 136 MB.
 
 ### 3.2 Raspored u memoriji
 
@@ -160,6 +161,7 @@ class Field3D {
 | `u`, `v`, `w` | brzina po x, y, z | |
 | `pressure` p | pritisak | |
 | `divergence` | pomoćno polje | za projekciju |
+| `vorticityX/Y/Z`, `vorticityMagnitude` | privremena vrtložnost | samo za vorticity confinement; ne izlaže se javno |
 | `*_prev` ili scratch | druga kopija za dvostruko baferovanje | advekcija i Jacobi čitaju staro, pišu novo |
 
 ---
@@ -175,10 +177,10 @@ namespace smoke {
 struct SmokeParams {          // sve se može mijenjati u toku rada
     float dt = 1.0f / 60.0f;
     int   jacobiIterations = 40;     // 20 do 80 po planu
-    float buoyancyAlpha = 0.f;       // koeficijent težine dima (vrijednosti se biraju vizuelno)
-    float buoyancyBeta  = 0.f;       // koeficijent uzgona od temperature
+    float buoyancyAlpha = 0.05f;     // eksperimentalno podešeno na 64^3
+    float buoyancyBeta  = 2.0f;      // eksperimentalno podešeno na 64^3
     float ambientTemp   = 0.f;
-    float vorticityEps  = 0.f;       // 0 = isključen vorticity confinement
+    float vorticityEps  = 5.0f;      // M3 vizuelno podešeno na 64^3; 0 = isključeno
     float viscosity     = 0.f;       // 0 = preskoči difuziju brzine (kod dima je mala)
     float diffusion     = 0.f;
     // izvor dima: pozicija, radijus, jačina, temperatura
@@ -230,8 +232,8 @@ Slijedi plan iz našeg dokumenta ("Simulacije dima, grid model, naša zamisao"):
 4. `project`: divergencija, Jacobi iteracije, korekcija brzine. **Najskuplji dio.**
 5. `advectScalar` za gustoću (i temperaturu): popravljena struja nosi dim.
 
-Svaka faza mjeri svoje vrijeme (`StepTimings`), jer prije paralelizacije moramo znati gdje
-se troši vrijeme.
+Svaka faza mjeri svoje vrijeme (`StepTimings`); dodatno se mjeri prosječno vrijeme jedne Jacobi
+iteracije unutar projekcije, jer prije optimizacije moramo znati gdje se troši vrijeme.
 
 ---
 

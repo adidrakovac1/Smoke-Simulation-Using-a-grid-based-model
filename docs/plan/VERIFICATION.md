@@ -24,8 +24,8 @@ Isti testovi se pokreću i komandom `smoke_cli --selftest` (za računare na koji
 | T9 | Promjena veličine | `resize` 64³, pa 32³, pa 128³ | nema pada programa, polja su nulirana, dimenzije tačne |
 | T10 | Sačuvana ukupna masa (približno) | zatvorena kutija bez izvora | ukupna masa se **ne mora** tačno održati (semi-Lagrangian ne čuva masu tačno), ali promjena je ograničena; **prag određujemo mjerenjem, ne pogađamo** |
 
-**O pragovima:** brojeve u T3 i T10 ne smijemo izmisliti unaprijed. U fazi 2 se izmjere na
-stvarnom solveru, pa se upišu u test kao komentar s datumom i veličinom mreže.
+**O pragovima:** brojevi u T3 i T10 mjere se na stvarnom solveru, pa se upisuju u test kao komentar
+s datumom i veličinom mreže.
 
 **Napomena o T1.** Daleko od zidova linearna interpolacija s konstantnom brzinom pomjera težište **tačno**
 za `c·dt` (dokaz u IMPLEMENTATION_PLAN.md, odjeljak 4.4). Zato je tolerancija za T1 reda greške zaokruživanja
@@ -45,6 +45,14 @@ Jacobiju daje omjere od 1.4 do 1.9 koji rastu s K, pa oba testa padaju.
 
 **Napomena o T3.** Divergencija poslije projekcije ne ide u nulu (objašnjenje u MATH.md,
 odjeljak 5). Zato test traži omjer prije/poslije i monotono opadanje po iteracijama, a ne `== 0`.
+T3 radi s izdvojenom projekcijom, bez confinementa. U cijelom koraku s confinementom (ε = 5)
+divergencija poslije projekcije je oko 12 puta veća nego uz ε = 0 (1.94 prema 0.154 na 64³,
+K = 40) i skoro ne zavisi od K; mjerenje i uzrok su u MATH.md, odjeljak 3 (vorticity confinement).
+
+**T10, izmjereno (2026-11-09, Apple M4, AppleClang 21.0.0, Release).** Na zatvorenoj 24³ mreži,
+bez izvora, gusta kugla je advektirana 100 puta poljem kružnog toka. Relativna promjena mase bila je
+**7.29746%**; prag testa je **10%**. To je tolerancija za ovu postavku semi-Lagrangian advekcije,
+ne tvrdnja da algoritam čuva masu.
 
 ---
 
@@ -62,12 +70,30 @@ Ovo je prva linija odbrane: ako nešto krene krivo, vidi se u brojevima prije ne
 
 ## 3. Referentni rezultat za poređenje paralelnih verzija
 
-Kad je serijska verzija gotova i provjerena:
-1. Pokrene se fiksan scenarij (veličina mreže, parametri, `seed`, 100 koraka) i snimi se
-   `density` na kraju kao binarni fajl `Solver/reference/serial_64_100steps.bin` + sažetak (kontrolni zbroj,
-   min, max, srednja vrijednost).
-2. Isto za 32³ i 128³ ako je izvodljivo.
-3. Svaka kasnija verzija (OpenMP, SIMD, GPU) se poredi s ovim fajlom:
+Serijska referenca je snimljena:
+1. `smoke_bench --reference Solver/reference/serial_64_100steps.bin --steps 100` pokreće fiksni
+   scenarij na 64³ bez zagrijavanja i snima `density` kao little-endian IEEE-754 float32 u
+   z/y/x redoslijedu; sažetak i parametri su u pratećem `.bin.txt` fajlu.
+2. Referentni fajl je `Solver/reference/serial_64_100steps.bin`; FNV-1a 64-bit kontrolni zbroj je
+   `165cde9630821391`, min 0, max 12.9589844, sredina 0.032197039. B0 i B1 daju identičan rezultat
+   (najveća apsolutna razlika 0).
+3. Ista komanda podržava druge veličine (`--grid N`) kad se želi dodatna referenca.
+4. **Poređenje:** `smoke_bench --verify FILE [--grid N] [--steps N]` pokreće isti scenarij i ispisuje
+   broj različitih ćelija, `max_abs_diff`, `max_abs_diff / max|reference|` i da li je rezultat bit po
+   bit isti. Prag za "prošlo" je `TODO(measure)`: određuje se iz prvih M4 mjerenja, ne pogađa se.
+
+**Referenca zavisi od računara i kompajlera (izmjereno 2026-11-09).** Isti commit, izgrađen s
+g++ 16.2.0 (MSYS2, x86-64, Release) i poređen s ovom referencom (AppleClang 21, Apple M4, ARM):
+32 940 od 262 144 ćelija se razlikuje, `max_abs_diff` 0.00183, relativno 1.4·10⁻⁴. Najvjerovatniji
+uzrok (nije dokazano) je da Clang na ARM-u spaja `a*b+c` u FMA, a g++ na x86-64 bez `-mfma` ne.
+Na istom računaru i istoj gradnji rezultat je **bit po bit isti** (solver je determinističan).
+Zato:
+- izmjene iz M4 se porede s referencom **snimljenom na istom računaru i istim kompajlerom**;
+- ova referenca je snimljena iz necommitanog stanja (`58d0e18-dirty`) i na računaru PC-1. Prije M4
+  je ponovo snima onaj ko radi M4, na svom računaru, iz čistog commita i s konačnim ε (MATH.md,
+  odjeljak 3, nalaz o divergenciji).
+
+5. Svaka kasnija verzija (OpenMP, SIMD, GPU) se poredi s referencom:
 
 | Verzija | Očekivano poređenje | Napomena |
 | :--- | :--- | :--- |
@@ -96,7 +122,8 @@ Profilisanje dolazi prije paralelizacije jer bez njega ne znamo šta paralelizir
 - Za projekciju posebno: vrijeme po Jacobi iteraciji.
 
 ### 4.2 Kako mjerimo (da brojevi vrijede)
-- **Release gradnja** (`-O2`), nikad Debug. Debug je desetke puta sporiji i bezvrijedan za ubrzanje.
+- **Release gradnja** s optimizacijama zadanog kompajlera, nikad Debug. Debug je desetke puta sporiji
+  i bezvrijedan za ubrzanje; konkretne oznake se upisuju uz rezultat.
 - Prije mjerenja **10 koraka zagrijavanja**, zatim **100 koraka** koji se broje. Prijavljuje se
   **medijan** i raspon, ne jedno mjerenje.
 - Fiksni scenarij, parametri i `seed`. Svako mjerenje na veličinama 32³, 64³, 96³, 128³.
@@ -105,8 +132,25 @@ Profilisanje dolazi prije paralelizacije jer bez njega ne znamo šta paralelizir
 - Zapiše se opis mašine uz rezultate: procesor, broj jezgara, RAM, kompajler i oznake.
 
 ### 4.3 Izlaz
-`smoke_bench` piše CSV (jedna linija po veličini mreže i fazi), npr.:
-`grid,stage,median_ms,min_ms,max_ms,steps`. Iz CSV-a se prave tabele i grafici za izvještaj.
+`smoke_bench` po zadanom mjeri 32³, 64³, 96³ i 128³, uz 10 koraka zagrijavanja i 100 mjerenih
+koraka; `--grid N`, `--warmup N`, `--steps N` i `--output FILE` mijenjaju postavke. CSV ima
+`grid,stage,median_ms,min_ms,max_ms,steps`, sa redovima za pet faza, `jacobi_iteration` (prosjek
+po iteraciji, unutar projekcije) i `total`. `smoke_bench --calibrate` ispisuje otisak mašine,
+memorijski triad i latenciju zavisnog lanca.
+
+**M3, izmjereno 2026-11-09:** B1 medijani u ms po koraku (100 koraka + 10 zagrijavanja), Apple M4,
+AppleClang 21.0.0.21000101, Release, `-O3 -DNDEBUG`, `dt=1/60`, K=40, `ε=5`, jedna nit:
+
+| Mreža | Izvor | Sile | Advekcija brzine | Projekcija | Advekcija skalara | Ukupno | Udio projekcije `f` |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 32³ | 0.0061 | 0.2151 | 0.5589 | 0.8349 | 0.3717 | 1.9930 | 41.89% |
+| 64³ | 0.0291 | 1.6371 | 4.5709 | 5.6225 | 3.0498 | 15.0142 | 37.45% |
+| 96³ | 0.0921 | 5.2146 | 15.4112 | 19.4295 | 10.2533 | 50.3578 | 38.58% |
+| 128³ | 0.2578 | 11.9998 | 36.2063 | 47.5469 | 24.2548 | 120.4847 | 39.46% |
+
+Udio je medijan faze podijeljen medijanom ukupnog koraka; medijani pojedinačnih faza ne moraju se
+tačno sabrati u medijan ukupnog vremena. Projekcija je najveća faza na sve četiri mreže; to je
+izmjeren nalaz, ne pretpostavka. Svi B0/B1 redovi, rasponi i ubrzanja su u `perf/results.csv`.
 
 ### 4.4 Metrike za izvještaj
 - **Udio svake faze** u ukupnom vremenu. To je procjena `f` za Amdahlov zakon.

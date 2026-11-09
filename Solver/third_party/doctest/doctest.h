@@ -3559,7 +3559,7 @@ using ticks_t = timer_large_integer::type;
             if(numAssertsFailedCurrentTest)
                 failure_flags |= TestCaseFailureReason::AssertFailure;
 
-            if(Approx(currentTest->m_timeout).epsilon(DBL_EPSILON) != 0 &&
+            if(Approx(currentTest->m_timeout).epsilon(DBL_EPSILON) != 0.0 &&
                Approx(seconds).epsilon(DBL_EPSILON) > currentTest->m_timeout)
                 failure_flags |= TestCaseFailureReason::Timeout;
 

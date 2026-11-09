@@ -1,0 +1,43 @@
+SAZETAK MJERENJA BRZINE - M3
+================================
+
+Datum mjerenja: 2026-11-09
+Računar: Apple M4, 10 hardverskih niti, 16 GiB RAM
+Sistem i kompajler: macOS 25.6.0, AppleClang 21.0.0.21000101
+Gradnja: Release, -O3 -DNDEBUG
+Postavke simulacije: dt=1/60, Jacobi K=40, vorticity epsilon=5, jedna nit
+Protokol: 10 koraka zagrijavanja i 100 mjerenih koraka po mreži
+Jedinice vremena: milisekunde po koraku (ms)
+
+VREMENA PO FAZAMA - B1 (kompajlerske optimizacije po zadanim postavkama)
+
+Mreža  Izvor    Sile     Advekcija   Projekcija  Advekcija   Ukupno    Udio
+                       brzine                  skalara              projekcije
+32^3    0.0061   0.2151   0.5589      0.8349      0.3717      1.9930    41.89%
+64^3    0.0291   1.6371   4.5709      5.6225      3.0498     15.0142    37.45%
+96^3    0.0921   5.2146  15.4112     19.4295     10.2533     50.3578    38.58%
+128^3   0.2578  11.9998  36.2063     47.5469     24.2548    120.4847    39.46%
+
+GLAVNI NALAZI
+
+- Projekcija je najveća pojedinačna faza na sve četiri veličine mreže.
+- Projekcija zauzima približno 37-42% vremena koraka; ovo je izmjereni udio f za Amdahlovu procjenu.
+- B1 je za cijeli korak 1.576x, 1.636x, 1.624x i 1.616x brži od B0 na 32^3, 64^3, 96^3 i 128^3.
+- To odgovara smanjenju vremena cijelog koraka od 36.55%, 38.89%, 38.44% i 38.11%.
+- Projekcija u B1 je 2.36-2.68x brža nego u B0, zavisno od veličine mreže.
+- B0 i B1 dali su identičnu gustoću u provjerenim rezultatima (maksimalna razlika 0).
+
+ŠTA ZNAČE B0 I B1
+
+B0 je Release gradnja bez kompajlerske vektorizacije.
+B1 je Release gradnja s optimizacijama i vektorizacijom po zadanim postavkama kompajlera.
+Obje varijante su mjerene na istom računaru uz iste postavke simulacije.
+
+DETALJNI REZULTATI
+
+results.csv sadrži pojedinačne redove za B0 i B1, svaku fazu, Jacobi iteraciju i cijeli korak,
+uključujući medijan, minimum, maksimum, ubrzanje, delta i provjeru razlike rezultata.
+PERF_LOG.md u ../docs/plan/ sadrži opis mjernog protokola i tumačenje.
+
+Napomena: vremena i ubrzanja zavise od računara, temperature, napajanja i pozadinskog opterećenja.
+Kalibracijske vrijednosti memorijskog protoka su približne i nisu kriterij za zaključke ovog mjerenja.

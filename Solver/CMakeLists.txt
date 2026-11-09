@@ -18,6 +18,7 @@ endif()
 option(SMOKE_BUILD_CLI   "Build the console program smoke_cli" ON)
 option(SMOKE_BUILD_TESTS "Build the tests (smoke_tests)"       ON)
 option(SMOKE_BUILD_BENCH "Build the benchmark (smoke_bench)"   ON)
+option(SMOKE_DISABLE_VECTORIZATION "Build the B0 scalar baseline" OFF)
 
 # Reference build rules (docs/plan/ARCHITECTURE.md, section 5):
 #   - no -ffast-math  (changes results)
@@ -46,6 +47,23 @@ target_include_directories(smoke_solver
 )
 smoke_set_warnings(smoke_solver)
 
+if(SMOKE_DISABLE_VECTORIZATION)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(smoke_solver PRIVATE -fno-tree-vectorize)
+    set(SMOKE_BASELINE_FLAGS "-fno-tree-vectorize")
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(smoke_solver PRIVATE -fno-vectorize -fno-slp-vectorize)
+    set(SMOKE_BASELINE_FLAGS "-fno-vectorize -fno-slp-vectorize")
+  elseif(MSVC)
+    message(FATAL_ERROR "SMOKE_DISABLE_VECTORIZATION is currently supported with GCC and Clang only")
+  else()
+    message(FATAL_ERROR "SMOKE_DISABLE_VECTORIZATION is unsupported by ${CMAKE_CXX_COMPILER_ID}")
+  endif()
+  set(SMOKE_BENCH_VARIANT "B0")
+else()
+  set(SMOKE_BENCH_VARIANT "B1")
+endif()
+
 # The tests are compiled once into an OBJECT library and linked into both smoke_tests and
 # smoke_cli (--selftest). OBJECT, not STATIC: tests register themselves through static objects
 # that nothing references by name, so a static archive would let the linker drop them.
@@ -60,6 +78,7 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/test_sources.cpp
     tests/test_symmetry_determinism.cpp
     tests/test_forces.cpp
+    tests/test_vorticity.cpp
     tests/test_projection.cpp
     tests/test_stability.cpp
     tests/demo_advect.cpp                              # M1 demo, started by "smoke_cli --demo advect"
@@ -86,6 +105,35 @@ endif()
 if(SMOKE_BUILD_BENCH)
   add_executable(smoke_bench bench/bench_main.cpp)
   target_link_libraries(smoke_bench PRIVATE smoke_solver)
+  # The commit id is read when CMake CONFIGURES, not on every build. After a new commit, re-run
+  # cmake (or delete the build folder) before measuring, or smoke_bench reports a stale id.
+  execute_process(
+    COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+    OUTPUT_VARIABLE SMOKE_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(NOT SMOKE_COMMIT)
+    set(SMOKE_COMMIT "unknown")
+  endif()
+  execute_process(
+    COMMAND git diff HEAD --quiet   # HEAD: staged changes also count as dirty
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+    RESULT_VARIABLE SMOKE_WORKTREE_DIFF
+    ERROR_QUIET
+  )
+  if(NOT SMOKE_WORKTREE_DIFF EQUAL 0)
+    string(APPEND SMOKE_COMMIT "-dirty")
+  endif()
+  target_compile_definitions(smoke_bench PRIVATE
+    SMOKE_BENCH_BUILD_TYPE="$<CONFIG>"
+    SMOKE_BENCH_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"
+    SMOKE_BENCH_COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}"
+    SMOKE_BENCH_VARIANT="${SMOKE_BENCH_VARIANT}"
+    SMOKE_BENCH_FLAGS="${CMAKE_CXX_FLAGS_RELEASE} ${SMOKE_BASELINE_FLAGS}"
+    SMOKE_BENCH_COMMIT="${SMOKE_COMMIT}"
+  )
   smoke_set_warnings(smoke_bench)
 endif()
 

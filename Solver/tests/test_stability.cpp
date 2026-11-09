@@ -7,6 +7,7 @@
 #include "test_helpers.h"
 
 #include <limits>
+#include <cmath>
 
 using smoke::GridSize;
 using smoke::SmokeParams;
@@ -90,4 +91,41 @@ TEST_CASE("diagnostics_report_mass_speed_and_nan_count") {
     CHECK(d.maxSpeed == doctest::Approx(5.0));
     CHECK(d.cfl == doctest::Approx(0.5));
     CHECK(d.nonFiniteCells == 1);
+}
+
+TEST_CASE("T10_closed_box_advects_smoke_without_excessive_mass_drift") {
+    const GridSize g{24, 24, 24};
+    SmokeState state;
+    state.resize(g);
+    fillSphere(state.density, 12.5f, 12.5f, 12.5f, 5.0f, 1.0f);
+    setBoundary(state.density, BoundaryKind::Scalar);
+
+    constexpr float pi = 3.14159265358979323846f;
+    constexpr float amplitude = 24.0f;
+    for (int k = 1; k <= g.nz; ++k)
+        for (int j = 1; j <= g.ny; ++j)
+            for (int i = 1; i <= g.nx; ++i) {
+                const float x = static_cast<float>(i) - 0.5f;
+                const float y = static_cast<float>(j) - 0.5f;
+                const float sx = std::sin(pi * x / g.nx), cx = std::cos(pi * x / g.nx);
+                const float sy = std::sin(pi * y / g.ny), cy = std::cos(pi * y / g.ny);
+                state.u.at(i, j, k) = amplitude * sx * sx * (2.0f * sy * cy * pi / g.ny);
+                state.v.at(i, j, k) = -amplitude * sy * sy * (2.0f * sx * cx * pi / g.nx);
+            }
+    setVelocityBoundary(state);
+
+    const double initialMass = totalMass(state.density);
+    const float dt = 1.0f / 60.0f;
+    for (int step = 0; step < 100; ++step) {
+        state.density.swap(state.density0);
+        advectScalar(state.density, state.density0, state.u, state.v, state.w, dt, wholeInterior(g));
+        setBoundary(state.density, BoundaryKind::Scalar);
+    }
+    const double finalMass = totalMass(state.density);
+    const double relativeDrift = std::fabs(finalMass - initialMass) / initialMass;
+    MESSAGE("T10 measured on 24^3 after 100 source-free steps: relative mass drift = " << relativeDrift);
+
+    // Measured 2026-11-09 on Apple M4 / AppleClang 21.0.0, Release: 7.29746%; gate is 10%.
+    CHECK(relativeDrift < 0.10);
+    CHECK(countNonFinite(state.density) == 0);
 }

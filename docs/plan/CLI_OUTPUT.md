@@ -33,7 +33,7 @@ M-VIZ. Zato poruka kaže "simulaciju", da ne zbunjuje kad se doda renderer.
 === Smoke Solver (serijska verzija) ===
 Pocinjemo simulaciju dima.
 
-Racunar:    <procesor>, <jezgara/niti>, AVX2: <da/ne>
+Racunar:    otisak iz `smoke_bench --calibrate`
 Gradnja:    <Release>, <kompajler>, oznake: <...>
 Konfig:     mreza <nx>x<ny>x<nz>, koraka <N> (+ <W> zagrijavanja), dt <dt>,
             Jacobi iteracija <K>, temperatura <da/ne>, vorticity <eps>
@@ -54,6 +54,7 @@ Vrijeme po fazi (medijan po koraku):
   Projekcija (Jacobi)       <..>     <..>%
   Advekcija gustoce         <..>     <..>%
   UKUPNO po koraku          <..>     100%
+  Jacobi po iteraciji (unutar projekcije): <..> ms
 
 Propusnost (projekcija):   <GB/s>
 Dijagnostika:
@@ -80,6 +81,7 @@ Status: OK
 | `--grid N` ili `--nx/--ny/--nz` | veličina mreže (zadano 64) |
 | `--steps N`, `--warmup W` | broj mjerenih koraka i zagrijavanja |
 | `--dt X`, `--jacobi K` | vremenski korak, broj Jacobi iteracija |
+| `--vorticity-eps X` | confinement jačina (zadano 5; `0` isključuje) |
 | `--seed S` | sjeme za determinističke testove |
 | `--quiet` | bez napretka; samo sažetak (za mjerenje) |
 | `--csv FAJL` | dopisuje liniju u CSV (šema u PERF_LOG.md) |
