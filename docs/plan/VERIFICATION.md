@@ -27,6 +27,14 @@ Isti testovi se pokreću i komandom `smoke_cli --selftest` (za računare na koji
 **O pragovima:** brojeve u T3 i T10 ne smijemo izmisliti unaprijed. U fazi 2 se izmjere na
 stvarnom solveru, pa se upišu u test kao komentar s datumom i veličinom mreže.
 
+**Napomena o T1.** Daleko od zidova linearna interpolacija s konstantnom brzinom pomjera težište **tačno**
+za `c·dt` (dokaz u IMPLEMENTATION_PLAN.md, odjeljak 4.4). Zato je tolerancija za T1 reda greške zaokruživanja
+`float`, a ne "greške interpolacije". Tačan broj upisujemo poslije mjerenja (M1), a kugla u testu je daleko
+od zidova.
+
+**Napomena o T6.** Simetrija se ne može provjeriti bit po bit: zrcalna koordinata `(n+1-i) + dt·u` se
+drugačije zaokružuje nego `i - dt·u`. T6 zato poredi s tolerancijom, koju određujemo mjerenjem (M1).
+
 **Napomena o T3.** Divergencija poslije projekcije ne ide u nulu (objašnjenje u MATH.md,
 odjeljak 5). Zato test traži omjer prije/poslije i monotono opadanje po iteracijama, a ne `== 0`.
 

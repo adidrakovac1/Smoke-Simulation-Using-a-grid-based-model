@@ -87,7 +87,8 @@ Smoke-Simulation-Using-a-grid-based-model/
 │   │       ├── Projection.cpp      divergencija, Jacobi, korekcija brzine
 │   │       └── Boundary.cpp        rubni uslovi (set_bnd)
 │   ├── apps/smoke_cli/main.cpp    konzolni program (bez prozora)
-│   ├── tests/                     provjere tačnosti (zasad mini-okvir u check.h; doctest nakon odluke D5)
+│   ├── tests/                     provjere tačnosti (doctest, odluka D5)
+│   ├── third_party/doctest/       doctest.h, zapakovan u repozitorij (odluka D5)
 │   ├── bench/                     mjerenje vremena po fazama (zasad prazan stub)
 │   └── reference/                 referentni rezultati za poređenje verzija (kasnije)
 │
@@ -295,13 +296,14 @@ i upisuje u ovaj odjeljak.
 | :--- | :--- | :--- |
 | Solver je odvojena biblioteka bez OpenGL-a | **Donesena** | odjeljak 1 |
 | Veličina mreže se mijenja u toku rada, zadano 64³ | **Donesena** | po zahtjevu tima |
-| Ghost sloj i Stamova konvencija | Preporuka | literatura koristi isto |
+| Ghost sloj i Stamova konvencija | **Donesena** (D2) | literatura koristi isto |
 | Spajanje preko `Integration/` (+ 2 izmjene u test-app) | Preporuka, potvrditi prije M-VIZ (zadnji milestone) | najmanje diranje Renderera |
 | Solver se gradi i pokreće potpuno bez Renderera | **Donesena** | `cmake -S Solver ...`, bez OpenGL-a i bez preuzimanja biblioteka |
-| Alat za testove: doctest preko `FetchContent` | Preporuka | jedan header, brz |
+| Alat za testove: doctest, header zapakovan u `Solver/third_party/doctest/` | **Donesena** (D5) | jedan header, brz; bez `FetchContent`, pa gradnja ne treba internet |
+| Optimizacija u ovoj fazi samo sekvencijalna; paralelizacija nije milestone | **Donesena** (D8) | PLAN.md, M4 |
 
 Ostala pitanja (temperatura da/ne, jedinice, granični uslovi na vrhu kutije) vode se kao
-D1 do D7 u [PLAN.md](PLAN.md), odjeljak "Otvorene odluke".
+D1 do D8 u [PLAN.md](PLAN.md), odjeljak 3 "Odluke" (sve donesene 2026-11-09).
 
 ---
 

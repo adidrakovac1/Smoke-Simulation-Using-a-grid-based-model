@@ -18,7 +18,7 @@ Literatura (sve u `docs/`):
 ## 1. Mreža i oznake
 
 - Prostor je kocka od `nx × ny × nz` ćelija. Ćelija `(i, j, k)` čuva sve veličine u svom centru.
-- `h` je dužina stranice ćelije. **Preporuka (odluka D4): radimo u jedinicama ćelije, dakle
+- `h` je dužina stranice ćelije. **Odluka D4 (donesena): radimo u jedinicama ćelije, dakle
   `h = 1`.** Brzina je tada "ćelija u sekundi", pa nema faktora `h` u formulama.
   Cijena: parametri (uzgon i sl.) se ne prenose automatski s 64³ na 128³ i podešavaju se
   ponovo. Alternativa je fiksna fizička veličina kocke, uz `h = 1/N`.
@@ -35,6 +35,8 @@ Literatura (sve u `docs/`):
 5. Advekcija gustoće (i temperature) popravljenom brzinom.
 
 Isti redoslijed imaju [Stam99] i [Fedkiw01]. Projekcija je dio koji troši najviše vremena.
+[Stam03] (`vel_step`) projicira dva puta, prije i poslije advekcije brzine; mi projiciramo jednom, kao
+[Fedkiw01]. Druga projekcija je moguća kasnija opcija za kvalitet.
 
 ---
 
@@ -55,10 +57,17 @@ f_uzgon = ( -α · ρ  +  β · (T - T_amb) ) · (jedinični vektor "gore")
 u  ←  u + dt · f_uzgon
 ```
 
-**Odluka D1:** naš plan navodi samo gustoću, brzinu i pritisak, a rečenica "topao i rijedak zrak
+**Odluka D1 (donesena: uvodimo `T`):** naš plan navodi samo gustoću, brzinu i pritisak, a rečenica "topao i rijedak zrak
 se diže" traži temperaturu. Preporuka: uvesti polje `T` (jedno polje više) jer daje
 vjerodostojnije kovitlanje, uz mogućnost da se `β = 0` pa se model svede na gustoću.
 Vrijednosti `α`, `β` biramo eksperimentalno, ne prepisujemo ih iz rada.
+
+**Smjer "gore":** [Fedkiw01] uzima `z`, a mi `+y` (ARCHITECTURE.md, odjeljak 8). Zato uzgon mijenja
+komponentu `v`: `v ← v + dt · ( -α·ρ + β·(T - T_amb) )`.
+
+**Izvor (odobreno 2026-11-09):** kao `add_source` u [Stam03], izvor **dodaje** `dt · brzina`:
+`ρ += dt · densityRate`, `T += dt · temperatureRate`, u ćelijama unutar kugle izvora. Pozicija i poluprečnik
+su relativni (poluprečnik kao udio od `nx`), da ne zavise od veličine mreže.
 
 ### Vorticity confinement (opcionalno)
 Numerička difuzija izgladi sitne vrtloge i dim izgleda "mrtvo". [Fedkiw01] (jednadžbe 9 do 11)
@@ -91,7 +100,12 @@ okolnih ćelija (trilinearna interpolacija). Posljedice:
   **ne može eksplodirati ni za velik `dt`**. To je pogodno za provjeru: nova vrijednost mora ležati
   između najmanje i najveće stare u okolini.
 - Cijena je **blago razmazivanje** dima (numerička difuzija).
-- Ako `x - dt·u` izađe izvan kutije, pozicija se ograničava (clamp) na unutrašnjost.
+- Ako `x - dt·u` izađe izvan kutije, pozicija se ograničava (clamp). **Tačno pravilo** (kao `advect` u
+  [Stam03], i kao sječenje putanje na zidu u [Fedkiw01], sl. 2): unutrašnja ćelija `i` pokriva
+  `[i-0.5, i+0.5]`, pa kutija ide od `0.5` do `n+0.5`, i koordinata se ograničava na `[0.5, n+0.5]` po
+  svakoj osi. Interpolacija tada smije čitati i ghost ćelije, zato one moraju biti ažurne (odjeljak 6).
+- Tačka unazad se računa jednim Eulerovim korakom `x - dt·u(x)`, kao u [Stam03]. [Stam99] koristi RK2,
+  što je kasnija opcija za kvalitet.
 - Isti postupak koristimo za brzinu (`u`, `v`, `w` se advektiraju poljem brzine) i za `T`.
   Brzinu advektiramo iz **starog** polja, pa nema ovisnosti o redoslijedu ćelija.
 
@@ -114,6 +128,15 @@ Popravljamo brzinu u tri koraka:
    (predznak i faktor `h²` zavise od tačne konvencije [Stam03]; **usvajamo onu iz `project()` u
    [Stam03] i provjeravamo je testom iz VERIFICATION.md, T3**). Radi se 20 do 80 prolaza po koraku.
 3. **Korekcija brzine** gradijentom pritiska: `u ← u - ∇p`.
+
+**Napomena o `Δt` (provjereno u radovima 2026-11-09):** [Fedkiw01], jednačine (4) i (5), pišu
+`∇²p = (1/Δt)·∇·u*` i `u = u* - Δt·∇p`. Mi koristimo oblik iz [Stam03] i [Stam99] (dodatak B), bez `Δt`.
+Oba oblika daju istu brzinu; naš `p` je samo `Δt·p` iz [Fedkiw01], dakle nije fizički pritisak.
+Predznak: [Stam03] ima `div = -0.5·h·(...)` i `p = (div + Σ)/4`; naš `div` ima suprotan znak, pa je
+`p = (Σ - div)/6` ista jednačina.
+
+**Početna vrijednost:** kao u [Stam03], pritisak kreće od `p = 0` u svakom koraku. Kretanje od prošlog `p`
+("topli start") brže konvergira, ali mijenja rezultate; to je kandidat za M4b.
 
 Razlog zašto je ovo najskuplje: 20 do 80 prolaza kroz **cijelu** mrežu po koraku, a svaki
 prolaz čita oko 7 vrijednosti da bi upisao jednu (memorija je usko grlo, ne računanje).
@@ -149,8 +172,14 @@ Prema planu i [Stam03] (`set_bnd`):
 - **Brzina:** komponenta okomita na zid je nula (nema protoka kroz zid).
 - **Gustoća i pritisak:** kopiraju se iz najbliže unutrašnje ćelije (nulti gradijent).
 - Ghost sloj čuva ove vrijednosti, pa unutrašnje petlje nemaju posebne slučajeve.
+- **Ivice i uglovi u 3D:** `set_bnd` u [Stam03] je 2D i uglove popunjava prosjekom. U 3D trilinearna
+  interpolacija čita i ghost ivice i uglove. Zato `setBoundary` ide po osama redom (x, pa y, pa z), a svaki
+  sljedeći prolaz pokriva i ghost redove prethodnih osa. Ivice i uglovi tako dobiju vrijednost istim pravilom
+  (kopija ili promjena znaka), bez prosjeka. Ovo je namjerno odstupanje od [Stam03].
+- Pravilo u kodu: svaka faza koja upiše polje na kraju poziva `setBoundary` za to polje, pa je ghost sloj
+  uvijek ažuran za sljedeću fazu.
 
-**Odluka D3:** treba li vrh kutije biti otvoren da dim može izaći? Zatvorena kutija je
+**Odluka D3 (donesena: zatvoren vrh u serijskoj fazi):** treba li vrh kutije biti otvoren da dim može izaći? Zatvorena kutija je
 jednostavnija i dobra za testove; otvoren vrh je ljepši za demo. Preporuka: zatvorena u
 serijskoj fazi, otvoren vrh kao opcija kasnije.
 
