@@ -18,6 +18,7 @@ endif()
 option(SMOKE_BUILD_CLI   "Build the console program smoke_cli" ON)
 option(SMOKE_BUILD_TESTS "Build the tests (smoke_tests)"       ON)
 option(SMOKE_BUILD_BENCH "Build the benchmark (smoke_bench)"   ON)
+option(SMOKE_BUILD_LAB   "Build smoke_lab (side-by-side kernel versions)" ON)
 option(SMOKE_DISABLE_VECTORIZATION "Build the B0 scalar baseline" OFF)
 
 # Reference build rules (docs/plan/ARCHITECTURE.md, section 5):
@@ -123,11 +124,9 @@ if(SMOKE_BUILD_CLI)
   smoke_set_warnings(smoke_cli)
 endif()
 
-if(SMOKE_BUILD_BENCH)
-  add_executable(smoke_bench bench/bench_main.cpp)
-  target_link_libraries(smoke_bench PRIVATE smoke_solver)
-  # The commit id is read when CMake CONFIGURES, not on every build. After a new commit, re-run
-  # cmake (or delete the build folder) before measuring, or smoke_bench reports a stale id.
+# The commit id (for smoke_bench and smoke_lab output) is read when CMake CONFIGURES, not on every build.
+# After a new commit, re-run cmake (or delete the build folder) before measuring, or a stale id is reported.
+if(SMOKE_BUILD_BENCH OR SMOKE_BUILD_LAB)
   execute_process(
     COMMAND git rev-parse --short HEAD
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
@@ -147,6 +146,11 @@ if(SMOKE_BUILD_BENCH)
   if(NOT SMOKE_WORKTREE_DIFF EQUAL 0)
     string(APPEND SMOKE_COMMIT "-dirty")
   endif()
+endif()
+
+if(SMOKE_BUILD_BENCH)
+  add_executable(smoke_bench bench/bench_main.cpp)
+  target_link_libraries(smoke_bench PRIVATE smoke_solver)
   target_compile_definitions(smoke_bench PRIVATE
     SMOKE_BENCH_BUILD_TYPE="$<CONFIG>"
     SMOKE_BENCH_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"
@@ -156,6 +160,27 @@ if(SMOKE_BUILD_BENCH)
     SMOKE_BENCH_COMMIT="${SMOKE_COMMIT}"
   )
   smoke_set_warnings(smoke_bench)
+endif()
+
+# smoke_lab: side-by-side kernel versions for demonstrations (Solver/lab, style of the lab example).
+# Version 1 files are compiled without vectorization, like the *_scalar.cpp files of the lab.
+if(SMOKE_BUILD_LAB)
+  add_executable(smoke_lab
+    lab/lab_main.cpp
+    lab/jacobi_m3_scalar.cpp
+    lab/jacobi_m3_auto.cpp
+  )
+  target_link_libraries(smoke_lab PRIVATE smoke_solver)
+  target_include_directories(smoke_lab PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/lab)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set_source_files_properties(lab/jacobi_m3_scalar.cpp PROPERTIES COMPILE_OPTIONS "-fno-tree-vectorize")
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set_source_files_properties(lab/jacobi_m3_scalar.cpp PROPERTIES COMPILE_OPTIONS "-fno-vectorize;-fno-slp-vectorize")
+  endif()
+  target_compile_definitions(smoke_lab PRIVATE
+    SMOKE_LAB_FLAGS="${CMAKE_CXX_FLAGS_RELEASE}"
+    SMOKE_LAB_COMMIT="${SMOKE_COMMIT}")
+  smoke_set_warnings(smoke_lab)
 endif()
 
 if(SMOKE_BUILD_TESTS)
