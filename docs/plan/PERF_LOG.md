@@ -459,7 +459,16 @@ Nalazi:
     vektorizira, pa je isto kao verzija 1), vektorizirani SSE kod (M4-011 do M4-013) i AVX2 po fajlu
     (M4-014). M3 kod je sačuvan u `Solver/lab/AdvectionM3.inc`. Verzija 5 (od M4-017) je spojena
     advekcija (`advectFields`, 3 + 2 polja), kao u solveru.
-- Ispisuje medijan, minimum, raspon rundi, S prema verziji 1 i poboljšanje prema prethodnoj verziji.
+  - **Demonstracione verzije (dodano uz `smoke_demo`)**, nisu dio solvera: ručno odmotan M3 Jacobi
+    (4 ćelije po prolazu, bez vektorizacije; tehnika T3, `lab/JacobiM3.inc`) i M3 advekcija na AoS
+    rasporedu (`struct` sa u, v, w, gustinom i temperaturom po ćeliji; `lab/advection_aos.cpp`) kao
+    poređenje sa SoA rasporedom koji solver koristi od M0. Obje daju bit po bit isti rezultat. Brojevi iz
+    kratkih proba nisu mjerenje po D10 i ovdje se ne upisuju.
+- Ispisuje medijan, minimum, raspon rundi, S prema verziji 1 i poboljšanje prema verziji navedenoj u
+  zagradi (obično prethodnoj; AoS se poredi sa M3 SoA kodom sa istim oznakama).
+- `smoke_demo` (`Solver/demo`) koristi iste tablice i ispred njih mjeri cijelu simulaciju: Neoptimizirana
+  verzija (M3 kod iz `73ceb9e`, bez vektorizacije), M3 sa zadanim oznakama i Optimizirana verzija (M4),
+  uz provjeru da je gustina na kraju bit po bit ista.
 - Mjeri samo jezgro (bez `setBoundary`), pa je dopuna ovom dnevniku, a ne zamjena za mjerenje cijelog
   koraka.
 

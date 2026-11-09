@@ -21,7 +21,14 @@ Linux / macOS: isto, bez `-G "MinGW Makefiles"`.
 | `smoke_cli` | konzolni program: pokreće simulaciju i ispisuje vrijeme po fazi (`../docs/plan/CLI_OUTPUT.md`) |
 | `smoke_tests` | provjere tačnosti (`../docs/plan/VERIFICATION.md`) |
 | `smoke_bench` | CSV benchmark, referentni rezultat i kalibracija računara |
-| `smoke_lab` | poređenje verzija jednog jezgra jednu do druge (M3 bez vektorizacije, auto, restrict, AVX2...), s vremenom, ubrzanjem i provjerom tačnosti, kao primjer iz laba; za demonstraciju |
+| `smoke_lab` | poređenje verzija jednog jezgra jednu do druge (M3 bez vektorizacije, ručno odmotavanje, AoS/SoA, auto, restrict, AVX2, fuzija), s vremenom, ubrzanjem i provjerom tačnosti, kao primjer iz laba; za demonstraciju |
+| `smoke_demo` | **program za prezentaciju**: cijela simulacija u tri verzije (Neoptimizirana M3, M3 + auto-vektorizacija, Optimizirana M4), ukupno vrijeme, ms po koraku, koraka u sekundi, vrijeme po fazi, ubrzanje S i provjera tačnosti; zatim tablice `smoke_lab` i spisak izmijenjenih funkcija i tehnika |
+
+`smoke_demo` bez argumenata (mreža 64³, 100 koraka, 3 runde) traje oko pola minute; `smoke_demo --puno` radi
+mreže 32³ do 128³ (nekoliko minuta). Ostale opcije: `--grid N`, `--koraci K`, `--runde R`, `--bez-jezgara`.
+Neoptimizirana verzija je M3 kod (commit `73ceb9e`), kopiran u `demo/M3Solver.inc` i preveden dvaput
+(`demo/m3_b0.cpp` bez vektorizacije, `demo/m3_b1.cpp` sa zadanim oznakama); Optimizirana verzija je
+`smoke::SmokeSolver`. Računar za vrijeme mjerenja treba biti miran.
 
 `smoke_lab` (npr. `Solver/build/smoke_lab --grid 64`, ili samo jedno jezgro sa `--kernel jacobi` /
 `--kernel advekcija`) traje nekoliko sekundi i pokazuje ubrzanje **jednog jezgra** (Jacobi i advekcija). Ubrzanje cijelog koraka, mjereno po protokolu iz `../docs/plan/OPTIMIZATION.md` (odjeljak 4,

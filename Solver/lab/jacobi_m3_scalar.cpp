@@ -10,4 +10,7 @@ namespace smoke_lab {
 void jacobiM3Scalar(smoke::Field3D& pNew, const smoke::Field3D& pOld, const smoke::Field3D& div) {
     jacobiM3(pNew, pOld, div);
 }
+void jacobiM3ScalarUnrolled(smoke::Field3D& pNew, const smoke::Field3D& pOld, const smoke::Field3D& div) {
+    jacobiM3Unrolled(pNew, pOld, div);
+}
 } // namespace smoke_lab

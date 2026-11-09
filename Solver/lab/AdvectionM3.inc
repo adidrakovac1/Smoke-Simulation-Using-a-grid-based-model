@@ -27,7 +27,7 @@ inline float sampleTrilinearM3(const smoke::Field3D& f, float x, float y, float 
                   sy1 * (sx0 * f.at(i0, j1, k1) + sx1 * f.at(i1, j1, k1)));
 }
 
-void advectM3(smoke::Field3D& dst, const smoke::Field3D& src, const smoke::Field3D& u, const smoke::Field3D& v,
+[[maybe_unused]] void advectM3(smoke::Field3D& dst, const smoke::Field3D& src, const smoke::Field3D& u, const smoke::Field3D& v,
               const smoke::Field3D& w, float dt) {
     const smoke::GridSize s = dst.size();
     for (int k = 1; k <= s.nz; ++k) {

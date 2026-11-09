@@ -167,27 +167,49 @@ if(SMOKE_BUILD_BENCH)
   smoke_set_warnings(smoke_bench)
 endif()
 
-# smoke_lab: side-by-side kernel versions for demonstrations (Solver/lab, style of the lab example).
-# Version 1 files are compiled without vectorization, like the *_scalar.cpp files of the lab.
+# smoke_lab and smoke_demo: side-by-side versions for demonstrations (Solver/lab, Solver/demo; style of the
+# lab example). The *_scalar.cpp / m3_b0.cpp files are compiled without vectorization, like the lab's
+# *_scalar.cpp files; the others use the default Release flags.
 if(SMOKE_BUILD_LAB)
-  add_executable(smoke_lab
-    lab/lab_main.cpp
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(SMOKE_NO_VECTORIZE_FLAGS "-fno-tree-vectorize")
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(SMOKE_NO_VECTORIZE_FLAGS "-fno-vectorize;-fno-slp-vectorize")
+  else()
+    set(SMOKE_NO_VECTORIZE_FLAGS "")
+  endif()
+
+  # Old (M3) kernel versions, AoS and unrolled demonstration versions, and the comparison tables.
+  add_library(smoke_lab_kernels STATIC
+    lab/LabRunner.cpp
     lab/jacobi_m3_scalar.cpp
     lab/jacobi_m3_auto.cpp
     lab/advection_m3_scalar.cpp
     lab/advection_m3_auto.cpp
+    lab/advection_aos.cpp
   )
-  target_link_libraries(smoke_lab PRIVATE smoke_solver)
-  target_include_directories(smoke_lab PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/lab)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set_source_files_properties(lab/jacobi_m3_scalar.cpp lab/advection_m3_scalar.cpp PROPERTIES COMPILE_OPTIONS "-fno-tree-vectorize")
-  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set_source_files_properties(lab/jacobi_m3_scalar.cpp lab/advection_m3_scalar.cpp PROPERTIES COMPILE_OPTIONS "-fno-vectorize;-fno-slp-vectorize")
-  endif()
+  target_link_libraries(smoke_lab_kernels PUBLIC smoke_solver)
+  target_include_directories(smoke_lab_kernels PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/lab)
+  set_source_files_properties(lab/jacobi_m3_scalar.cpp lab/advection_m3_scalar.cpp
+                              PROPERTIES COMPILE_OPTIONS "${SMOKE_NO_VECTORIZE_FLAGS}")
+  smoke_set_warnings(smoke_lab_kernels)
+
+  add_executable(smoke_lab lab/lab_main.cpp)
+  target_link_libraries(smoke_lab PRIVATE smoke_lab_kernels)
   target_compile_definitions(smoke_lab PRIVATE
     SMOKE_LAB_FLAGS="${CMAKE_CXX_FLAGS_RELEASE}"
     SMOKE_LAB_COMMIT="${SMOKE_COMMIT}")
   smoke_set_warnings(smoke_lab)
+
+  # smoke_demo: the whole simulation, Neoptimizirana (M3, demo/M3Solver.inc) vs Optimizirana (M4) verzija.
+  add_executable(smoke_demo demo/demo_main.cpp demo/m3_b0.cpp demo/m3_b1.cpp)
+  target_link_libraries(smoke_demo PRIVATE smoke_lab_kernels)
+  target_include_directories(smoke_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/demo)
+  set_source_files_properties(demo/m3_b0.cpp PROPERTIES COMPILE_OPTIONS "${SMOKE_NO_VECTORIZE_FLAGS}")
+  target_compile_definitions(smoke_demo PRIVATE
+    SMOKE_DEMO_FLAGS="${CMAKE_CXX_FLAGS_RELEASE}"
+    SMOKE_DEMO_COMMIT="${SMOKE_COMMIT}")
+  smoke_set_warnings(smoke_demo)
 endif()
 
 if(SMOKE_BUILD_TESTS)
