@@ -17,6 +17,9 @@ unose s otiskom tog računara i snima referencu na tom računaru (VERIFICATION.m
 radi tek kad je ε konačno izabran (MATH.md, odjeljak 3, nalaz o divergenciji), jer ε mijenja i
 vremena i rezultat.
 
+**Stanje (2026-11-09):** ε = 5 je konačan (odluka D9). M4 nastavlja Ermin na **PC-2**; PC-2 osnove i
+referenca su u odjeljku 6. Unosi M4-001 do M4-005 (odjeljak 5) vrijede za PC-1 i AppleClang.
+
 ---
 
 ## 1. Otisci računara tima
@@ -27,7 +30,7 @@ plan napajanja).
 | Oznaka | Vlasnik | Procesor | Jezgara/niti | L2 / L3 | RAM | AVX2 | Kompajler | Napomena |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | PC-1 | Adi | Apple M4 | 10/10 | L2 4 MiB / L3 nije prijavljen | 16 GiB | AVX2 ne, ARM NEON da | AppleClang 21.0.0.21000101 | macOS 25.6.0 |
-| PC-2 | | | | | | | | |
+| PC-2 | Ermin | AMD Ryzen 5 5500 (Zen 3) | 6/12 | L2 6×512 KiB / L3 16 MiB | 32 GiB | AVX2 da, FMA da, AVX-512 ne | g++ 16.2.0 (MSYS2 UCRT64) | Windows 11 Pro 10.0.26300, plan napajanja High performance |
 | PC-3 | | | | | | | | |
 
 Komanda za procesor (PowerShell):

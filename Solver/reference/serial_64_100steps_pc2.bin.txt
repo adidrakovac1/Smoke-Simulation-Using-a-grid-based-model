@@ -1,0 +1,21 @@
+format: raw IEEE-754 float32, little-endian, interior cells in z/y/x order
+grid: 64x64x64
+steps: 100
+build_type: Release
+compiler: GNU 16.2.0
+variant: B1
+flags: -O3 -DNDEBUG 
+commit: 73ceb9e
+dt: 0.0166667
+jacobi_iterations: 40
+buoyancy_alpha: 0.05
+buoyancy_beta: 2
+ambient_temperature: 0
+vorticity_epsilon: 5
+source: (0.5, 0.1, 0.5), radius=0.08, density_rate=10, temperature_rate=10
+fnv1a64: 4acffd90eeb386f1
+min: 0
+max: 12.9590082
+mean: 0.0321969849
+max_div_after: 1.94062448
+non_finite_cells: 0

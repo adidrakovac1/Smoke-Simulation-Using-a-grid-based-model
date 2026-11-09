@@ -156,6 +156,7 @@ izabran način bez preuzimanja s interneta. D8 je dodana istog dana.
 | D6 | Jezik komentara u kodu | Engleski (kao Renderer); objašnjenja u razgovoru i dokumentima na bosanskom |
 | D7 | Jezik i kodiranje ispisa konzolnog programa ([CLI_OUTPUT.md](CLI_OUTPUT.md)) | Bosanski bez dijakritika (ASCII) |
 | D8 | Opseg optimizacije u ovoj fazi | M4 je **samo sekvencijalan**: prvo tehnike iz laboratorijske vježbe 1 (uključujući SIMD na jednoj niti), pa dodatne sekvencijalne tehnike. OpenMP niti i GPU nisu milestone; planiraju se tek kad tim odluči |
+| D9 | Konačni ε (vorticity confinement) i računar za M4 (2026-11-09) | ε = 5 ostaje zadano, uz poznatu veću preostalu divergenciju (MATH.md, odjeljak 3). M4 nastavlja Ermin na PC-2 (x86, AVX2); M4 se poredi samo s PC-2 osnovama i PC-2 referencom |
 
 ---
 

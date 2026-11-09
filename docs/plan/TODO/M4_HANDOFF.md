@@ -7,8 +7,9 @@ M4b nije počeo, a M4c nije urađen. M4 ostaje sekvencijalan, bez CPU niti i GPU
 
 - Grana: `feature/m4`
 - Osnova/HEAD pri predaji: `73ceb9e` (`feat(solver): add vorticity confinement, smoke_bench and M3 baselines`)
-- Sve M4 izmjene su necommitane. Prije nastavka provjeriti `git status` i sačuvati postojeće promjene;
-  ne resetovati ih niti ih slučajno prepisati.
+- Sve M4 izmjene s PC-1 su commitane u `eeb591d` (`docs(m4): add serial optimization handoff`).
+- **Nastavak (2026-11-09):** M4 preuzima Ermin na PC-2 (odluka D9). PC-1 brojevi ne služe kao osnova
+  za PC-2; referenca je sada po računaru (`serial_64_100steps_pc1.bin`, `serial_64_100steps_pc2.bin`).
 - M4 checklist u [PLAN.md](../PLAN.md) i dalje je neoznačen, ispravno: nijedan milestone nije zatvoren.
 
 ## Šta je urađeno
@@ -86,15 +87,10 @@ Prošlo je:
 ```sh
 cmake --build Solver/build --target smoke_bench smoke_tests --parallel
 ctest --test-dir Solver/build --output-on-failure
-Solver/build/smoke_bench --verify Solver/reference/serial_64_100steps.bin --steps 100
+Solver/build/smoke_bench --verify Solver/reference/serial_64_100steps_pc1.bin --steps 100   # na PC-1
 git diff --check
 ```
 
 Posljednja izmjena buoyancy kernelu je vraćena, a build, `ctest`, `--verify` i `git diff --check`
 ponovo su prošli nakon vraćanja.
 
-## Predloženi kratki naziv commita
-
-`docs(m4): add serial optimization handoff`
-
-Ovo je samo prijedlog poruke za commit dokumentacije; ništa nije commitano.
