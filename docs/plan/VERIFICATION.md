@@ -27,6 +27,22 @@ Isti testovi se pokreću i komandom `smoke_cli --selftest` (za računare na koji
 **O pragovima:** brojeve u T3 i T10 ne smijemo izmisliti unaprijed. U fazi 2 se izmjere na
 stvarnom solveru, pa se upišu u test kao komentar s datumom i veličinom mreže.
 
+**Napomena o T1.** Daleko od zidova linearna interpolacija s konstantnom brzinom pomjera težište **tačno**
+za `c·dt` (dokaz u IMPLEMENTATION_PLAN.md, odjeljak 4.4). Zato je tolerancija za T1 reda greške zaokruživanja
+`float`, a ne "greške interpolacije". Tačan broj upisujemo poslije mjerenja (M1), a kugla u testu je daleko
+od zidova.
+
+**Napomena o T6.** Simetrija se ne može provjeriti bit po bit: zrcalna koordinata `(n+1-i) + dt·u` se
+drugačije zaokružuje nego `i - dt·u`. T6 zato poredi s tolerancijom, koju određujemo mjerenjem (M1).
+
+**T3, izmjereno (2026-11-09, g++ 16.2.0, Release, sjeme 42).** Slučajno polje u `[-1, 1)`: omjer
+`max|div|` poslije / prije za K = 10, 20, 40, 80 je 0.721, 0.715, 0.711, 0.710 na 32³ i 0.745, 0.740, 0.737,
+0.736 na 64³; granica je **0.8**, uz strogo opadanje s K. Omjer ostaje visok jer bijeli šum ima mnogo
+"šahovske" komponente koju projekcija na mreži s vrijednostima u centru ćelije ne može ukloniti
+(MATH.md, odjeljak 5). Zato postoji i dopunski test na glatkom polju (gradijent Gausove funkcije, 16³): 0.421,
+0.117, 0.111, 0.111 za K = 10, 100, 1000, 5000, granica **0.15** za K = 1000. Namjerno pogrešan predznak u
+Jacobiju daje omjere od 1.4 do 1.9 koji rastu s K, pa oba testa padaju.
+
 **Napomena o T3.** Divergencija poslije projekcije ne ide u nulu (objašnjenje u MATH.md,
 odjeljak 5). Zato test traži omjer prije/poslije i monotono opadanje po iteracijama, a ne `== 0`.
 

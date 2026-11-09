@@ -2,9 +2,12 @@
 // Output layout: docs/plan/CLI_OUTPUT.md. Text is ASCII only (Windows console code pages).
 
 #include "smoke/SmokeSolver.h"
+#include "PgmWriter.h"
 #include "selftest.h"
 
 #include <algorithm>
+#include <filesystem>
+#include <sstream>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
@@ -25,25 +28,46 @@ struct Options {
     int  warmup  = 10;
     bool quiet   = false;
     bool selftest = false;     // run the correctness tests instead of the simulation
+    std::string demo;          // "advect": the M1 demo (tests/demo_advect.cpp)
+    std::string dumpFolder;    // if set, save x-y density slices as PGM (docs/plan/CLI_OUTPUT.md)
+    int  every   = 10;         // save a slice every N steps
+    float dt     = 0.0f;       // > 0: override SmokeParams::dt
+    int  jacobi  = 0;          // > 0: override SmokeParams::jacobiIterations
 };
 
-bool parseInt(const char* text, int& out) {
+bool parseInt(const char* text, int& out, int minValue = 1) {
     char* end = nullptr;
     const long v = std::strtol(text, &end, 10);
-    if (end == text || *end != '\0' || v <= 0 || v > 4096) return false;
+    if (end == text || *end != '\0' || v < minValue || v > 4096) return false;
     out = static_cast<int>(v);
+    return true;
+}
+
+bool parseFloat(const char* text, float& out) {
+    char* end = nullptr;
+    const float v = std::strtof(text, &end);
+    if (end == text || *end != '\0' || !(v > 0.0f) || v > 1.0f) return false;  // dt in (0, 1] s
+    out = v;
     return true;
 }
 
 void printUsage() {
     std::cout << "Koriscenje: smoke_cli [--grid N] [--nx N --ny N --nz N] [--steps N] [--warmup N] [--quiet]\n"
-              << "            smoke_cli --selftest   (pokrece iste testove tacnosti kao smoke_tests)\n";
+              << "                      [--dt X] [--jacobi K] [--dump-slices FOLDER] [--every N]\n"
+              << "            smoke_cli --selftest   (pokrece iste testove tacnosti kao smoke_tests)\n"
+              << "            smoke_cli --demo advect [--dump-slices FOLDER] [--every N]\n"
+              << "                                    (M1: kugla gustoce nosena konstantnom brzinom)\n";
 }
 
 bool parseArgs(int argc, char** argv, Options& o) {
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
         auto next = [&](int& dst) { return i + 1 < argc && parseInt(argv[++i], dst); };
+        auto nextText = [&](std::string& dst) {
+            if (i + 1 >= argc) return false;
+            dst = argv[++i];
+            return !dst.empty();
+        };
         if (a == "--grid") {
             int n = 0;
             if (!next(n)) return false;
@@ -52,9 +76,14 @@ bool parseArgs(int argc, char** argv, Options& o) {
         else if (a == "--ny")   { if (!next(o.grid.ny)) return false; }
         else if (a == "--nz")   { if (!next(o.grid.nz)) return false; }
         else if (a == "--steps")  { if (!next(o.steps)) return false; }
-        else if (a == "--warmup") { if (!next(o.warmup)) return false; }
+        else if (a == "--warmup") { if (i + 1 >= argc || !parseInt(argv[++i], o.warmup, 0)) return false; }
         else if (a == "--quiet")  { o.quiet = true; }
         else if (a == "--selftest") { o.selftest = true; }
+        else if (a == "--demo")        { if (!nextText(o.demo) || o.demo != "advect") return false; }
+        else if (a == "--dump-slices") { if (!nextText(o.dumpFolder)) return false; }
+        else if (a == "--every")       { if (!next(o.every)) return false; }
+        else if (a == "--dt")          { if (i + 1 >= argc || !parseFloat(argv[++i], o.dt)) return false; }
+        else if (a == "--jacobi")      { if (!next(o.jacobi)) return false; }
         else if (a == "--help" || a == "-h") { printUsage(); std::exit(0); }
         else return false;
     }
@@ -80,9 +109,12 @@ int main(int argc, char** argv) {
                   << "Pokrecemo iste testove tacnosti kao smoke_tests.\n\n";
         return smoke_test::runAll(std::cout);
     }
+    if (!opt.demo.empty()) return smoke_test::runAdvectionDemo(opt.dumpFolder, opt.every, std::cout);
 
     smoke::SolverConfig cfg;
     cfg.grid = opt.grid;
+    if (opt.dt > 0.0f) cfg.params.dt = opt.dt;
+    if (opt.jacobi > 0) cfg.params.jacobiIterations = opt.jacobi;
     smoke::SmokeSolver solver(cfg);
 
     std::cout << "=== Smoke Solver (serijska verzija) ===\n"
@@ -92,7 +124,34 @@ int main(int argc, char** argv) {
               << "Konfig:   mreza " << cfg.grid.nx << "x" << cfg.grid.ny << "x" << cfg.grid.nz
               << ", koraka " << opt.steps << " (+ " << opt.warmup << " zagrijavanja)"
               << ", dt " << cfg.params.dt << ", Jacobi iteracija " << cfg.params.jacobiIterations << "\n"
-              << "NAPOMENA: ovo je skelet. Faze simulacije jos nisu implementirane (vidi docs/plan/PLAN.md).\n\n";
+              << "Izvor:    pozicija (" << cfg.params.source.x << ", " << cfg.params.source.y << ", "
+              << cfg.params.source.z << "), r = " << cfg.params.source.radius << "*nx, gustoca "
+              << cfg.params.source.densityRate << "/s, toplota " << cfg.params.source.temperatureRate << "/s\n"
+              << "Uzgon:    alpha " << cfg.params.buoyancyAlpha << ", beta " << cfg.params.buoyancyBeta
+              << ", T_amb " << cfg.params.ambientTemp << "\n"
+              << "Faze:     izvor, uzgon, advekcija brzine, projekcija (Jacobi), advekcija gustoce (M2);\n"
+              << "          vorticity confinement dolazi u M3.\n\n";
+
+    // Diagnostics cost several passes over the grid, so they are computed only when printed, between
+    // steps, outside the per-stage timers (docs/plan/IMPLEMENTATION_PLAN.md, P3).
+    auto printDiagnosticsShort = [&](const smoke::Diagnostics& d) {
+        std::cout << std::scientific << std::setprecision(2) << "   max|div| " << d.maxDivBefore << " -> "
+                  << d.maxDivAfter << "   masa " << d.totalMass << "   max|u| " << d.maxSpeed
+                  << (d.nonFiniteCells ? "   NaN/Inf!" : "") << std::defaultfloat << "\n";
+    };
+
+    // Slices are written between steps, so file output is never part of the measured step time.
+    const bool dump = !opt.dumpFolder.empty();
+    if (dump) std::filesystem::create_directories(opt.dumpFolder);
+    auto saveSlice = [&](int step) {
+        const smoke::DensityView v = solver.density();
+        const int k = v.nz / 2;
+        const float peak = smoke_io::maxInSliceXY(v, k);  // auto grey scale: brightest pixel = slice maximum
+        std::ostringstream name;
+        name << opt.dumpFolder << "/slice_" << std::setw(5) << std::setfill('0') << step << ".pgm";
+        if (!smoke_io::writePgmSliceXY(name.str(), v, k, peak))
+            std::cout << "  GRESKA: ne mogu pisati " << name.str() << "\n";
+    };
 
     for (int i = 0; i < opt.warmup; ++i) solver.step();
 
@@ -106,15 +165,18 @@ int main(int argc, char** argv) {
         const smoke::StepTimings& t = solver.lastTimings();
         for (std::size_t s = 0; s < smoke::kStageCount; ++s) perStage[s].push_back(t.ms[s]);
         perStep.push_back(t.total());
+        if (dump && i % std::max(1, opt.every) == 0) saveSlice(i);
         // Printing is done between steps and is NOT part of the timed code.
-        if (!opt.quiet && (i % std::max(1, opt.steps / 10) == 0))
-            std::cout << "  [" << std::setw(4) << i << "/" << opt.steps << "]  "
-                      << std::fixed << std::setprecision(4) << t.total() << " ms/korak\n";
+        if (!opt.quiet && (i % std::max(1, opt.steps / 10) == 0)) {
+            std::cout << "  [" << std::setw(4) << i << "/" << opt.steps << "]  " << std::fixed
+                      << std::setprecision(3) << std::setw(8) << t.total() << " ms/korak";
+            printDiagnosticsShort(solver.diagnostics());
+        }
     }
     const double wallSeconds = std::chrono::duration<double>(Clock::now() - t0).count();
 
-    std::cout << "\nZavrseno. Ukupno vrijeme: " << std::fixed << std::setprecision(3) << wallSeconds
-              << " s (" << opt.steps << " koraka)\n\n"
+    std::cout << "\nZavrseno. Ukupno vrijeme (zidni sat, ukljucuje ispis): " << std::fixed << std::setprecision(3)
+              << wallSeconds << " s (" << opt.steps << " koraka)\n\n"
               << "Vrijeme po fazi (medijan po koraku):\n"
               << "  " << std::left << std::setw(26) << "Faza" << std::right << std::setw(12) << "ms" << std::setw(10) << "udio\n";
 
@@ -128,14 +190,13 @@ int main(int argc, char** argv) {
     std::cout << "  " << std::left << std::setw(26) << "UKUPNO po koraku" << std::right << std::setw(12)
               << std::setprecision(4) << medTotal << "\n\n";
 
-    const smoke::Diagnostics& d = solver.diagnostics();
-    std::cout << "Dijagnostika: " << (d.computed ? "" : "jos nije implementirana (TODO M2)") << "\n";
-    if (d.computed) {
-        std::cout << "  max|div| prije/poslije projekcije: " << d.maxDivBefore << " / " << d.maxDivAfter << "\n"
-                  << "  ukupna masa dima:                  " << d.totalMass << "\n"
-                  << "  max|u|, CFL:                       " << d.maxSpeed << ", " << d.cfl << "\n"
-                  << "  NaN/Inf celija:                    " << d.nonFiniteCells << "\n";
-    }
+    const smoke::Diagnostics d = solver.diagnostics();
+    std::cout << "Dijagnostika (stanje poslije zadnjeg koraka):\n" << std::scientific << std::setprecision(3)
+              << "  max|div| prije/poslije projekcije: " << d.maxDivBefore << " / " << d.maxDivAfter << "\n"
+              << "  ukupna masa dima:                  " << d.totalMass << "\n"
+              << "  max|u|, CFL:                       " << d.maxSpeed << ", " << d.cfl << "\n"
+              << std::defaultfloat
+              << "  NaN/Inf celija:                    " << d.nonFiniteCells << "\n";
 
     const bool ok = (d.nonFiniteCells == 0);
     std::cout << "Status: " << (ok ? "OK" : "GRESKA (NaN/Inf)") << "\n";

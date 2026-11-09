@@ -43,7 +43,9 @@ public:
     long long          stepCount() const;
 
     DensityView          density() const;
-    const Diagnostics&   diagnostics() const;
+    /// Computes the health numbers of the current state ON DEMAND (several passes over the grid).
+    /// Not part of step() and not included in lastTimings(), so measurements stay clean.
+    Diagnostics          diagnostics() const;
     const StepTimings&   lastTimings() const;
 
 private:

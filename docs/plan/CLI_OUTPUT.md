@@ -89,8 +89,8 @@ Status: OK
 
 ---
 
-## 4. Odluka D7 (dodati u PLAN.md, odjeljak 3)
+## 4. Odluka D7 (donesena 2026-11-09, upisana u PLAN.md, odjeljak 3)
 
-| ID | Pitanje | Preporuka |
+| ID | Pitanje | Odluka |
 | :--- | :--- | :--- |
 | D7 | Jezik i kodiranje ispisa konzolnog programa | Bosanski bez dijakritika (ASCII); isti raspored za sve članove |

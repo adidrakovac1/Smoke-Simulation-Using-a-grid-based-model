@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <utility>
 
 namespace smoke {
 
@@ -48,6 +49,19 @@ public:
     }
     float&       at(int i, int j, int k)       { return data_[index(i, j, k)]; }
     const float& at(int i, int j, int k) const { return data_[index(i, j, k)]; }
+
+    /// Exchanges the contents of two fields by swapping their pointers (no data is copied).
+    /// Used for double buffering: advection and Jacobi read the "old" field and write the "new" one,
+    /// and before each such stage the pair is swapped (docs/plan/ARCHITECTURE.md, section 5, rule 2).
+    void swap(Field3D& other) noexcept {
+        using std::swap;
+        swap(size_, other.size_);
+        swap(strideJ_, other.strideJ_);
+        swap(strideK_, other.strideK_);
+        swap(total_, other.total_);
+        data_.swap(other.data_);
+    }
+    friend void swap(Field3D& a, Field3D& b) noexcept { a.swap(b); }
 
 private:
     struct AlignedDeleter {

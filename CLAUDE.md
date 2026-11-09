@@ -8,8 +8,9 @@ Studentski projekat za predmet **Paralelni računarski sistemi** (ETF Sarajevo):
 dima na mreži ćelija (Eulerov pristup) u C++-u, koju kasnije paraleliziramo (OpenMP, SIMD,
 eventualno GPU) i mjerimo ubrzanje. Dim prikazujemo u postojećem OpenGL rendereru.
 
-**Trenutna faza: SAMO serijska verzija.** Paralelizaciju ne pišemo dok tim ne kaže, ali kod
-pišemo tako da je ne otežava.
+**Trenutna faza: SAMO serijska (sekvencijalna, jedna nit) verzija**, uključujući njenu optimizaciju u
+M4 (tehnike iz laba 1, pa dodatne sekvencijalne tehnike). Paralelizacija (OpenMP niti, GPU) **nije
+milestone** i ne pišemo je dok tim ne kaže (odluka D8), ali kod pišemo tako da je ne otežava.
 
 ## Gdje je šta
 
@@ -54,8 +55,10 @@ Detalji su u `docs/plan/OPTIMIZATION.md` i `docs/plan/PERF_LOG.md`. Ukratko:
 
 - Redoslijed: **prvo nivo 1** (tehnike iz laba u `docs/reference/PRS_Vektorizacija/`: redoslijed petlji,
   `restrict`, auto-vektorizacija, `omp simd`, poravnanje, maske bez grananja, AVX2 s rezervnom putanjom,
-  tiling), **tek poslije nivo 2** (OpenMP niti, fuzija jezgara, red-black, multigrid, GPU...). Ne prelazi na
-  nivo 2 bez odobrenja i bez dokaza da je nivo 1 iscrpljen.
+  tiling), **tek poslije nivo 2, i to samo sekvencijalni dio** (fuzija jezgara, red-black, multigrid,
+  FMA...; OPTIMIZATION.md, odjeljak 3.1). Ne prelazi na nivo 2 bez odobrenja i bez dokaza da je nivo 1
+  iscrpljen. OpenMP niti i GPU (odjeljak 3.2) se ne pišu (odluka D8).
+- Optimizacija počinje tek u M4; u M1 do M3 piši jasan i ispravan kod, bez optimizacija.
 - **Jedna izmjena po koraku.** Prvo tačnost (testovi i poređenje s referentnim rezultatom), pa mjerenje.
 - Svaka izmjena radi brzine mora imati: hipotezu, **poređenje s osnovom u istoj sesiji na istom računaru**
   (Release, zagrijavanje, najmanje 10 ponavljanja, medijan/minimum/raspon), ubrzanje **S** i deltu **Δ**,

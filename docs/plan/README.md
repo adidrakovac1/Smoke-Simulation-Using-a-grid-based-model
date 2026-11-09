@@ -4,6 +4,7 @@
 | :--- | :--- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Podjela na Solver / Renderer / Integration, struktura foldera, podaci, interfejs, pravila |
 | [PLAN.md](PLAN.md) | Milestone-ovi serijske faze, podjela posla, otvorene odluke, rizici |
+| [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Tačan plan pisanja za M0 do M2: fajlovi, potpisi, redoslijed, testovi, nalazi iz radova |
 | [MATH.md](MATH.md) | Matematika jednog koraka simulacije, s referencama na literaturu |
 | [VERIFICATION.md](VERIFICATION.md) | Testovi tačnosti, referentni rezultat, protokol mjerenja |
 | [CLI_OUTPUT.md](CLI_OUTPUT.md) | Šta ispisuje konzolni program `smoke_cli` (raspored ispisa, parametri) |

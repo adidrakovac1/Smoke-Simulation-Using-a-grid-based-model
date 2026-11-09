@@ -32,16 +32,17 @@ Ako Windows blokira `smoke_tests.exe` ("Application Control policy"), iste testo
 include/smoke/   javni headeri; SmokeSolver.h je jedina klasa koju drugi koriste
 src/             implementacija; src/stages/ ima po jednu datoteku za svaku fazu koraka
 apps/smoke_cli/  konzolni program
-tests/           testovi (check.h je mini-okvir dok se ne odluči o doctest-u, odluka D5)
+tests/           testovi (doctest, odluka D5); pokretanje: smoke_tests ili smoke_cli --selftest
+third_party/     doctest.h (zapakovan u repozitorij, bez preuzimanja pri gradnji)
 bench/           mjerenje
 reference/       referentni rezultati (kasnije)
 ```
 
-## Stanje skeleta
+## Stanje (M2)
 
-Radi: alokacija polja (`Field3D`: ghost sloj, padding reda na 8 floatova, poravnanje na 64 B), `SmokeSolver`
-(`step`, `reset`, `resize`, `density()`, `lastTimings()`), mjerenje vremena po fazi, konzolni program, testovi.
+Radi cijeli korak: izvor dima, uzgon (temperatura), advekcija brzine, projekcija (divergencija, Jacobi,
+korekcija), advekcija gustoće i temperature; rubni uslovi; dijagnostika na zahtjev (`diagnostics()`);
+mjerenje vremena po fazi; konzolni program (`--dt`, `--jacobi`, `--dump-slices`, `--demo advect`);
+testovi T1 do T9.
 
-**Ne radi još** (označeno `TODO(M1)`, `TODO(M2)`, `TODO(M3)` u `src/stages/`): rubni uslovi, izvor dima,
-uzgon, advekcija, projekcija, vorticity confinement, dijagnostika. Faze su prazne funkcije pa `step()`
-za sada ništa ne mijenja.
+**Ne radi još** (M3): vorticity confinement, `smoke_bench`, referentni rezultat, T10.

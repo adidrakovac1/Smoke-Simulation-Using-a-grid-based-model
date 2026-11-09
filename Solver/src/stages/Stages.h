@@ -6,6 +6,9 @@
 //
 // This is the SERIAL reference implementation. Later variants (OpenMP, SIMD, GPU) are added in
 // their own namespaces and this one stays as the correctness/speed reference.
+//
+// Invariant: every phase that writes a field calls setBoundary() for it at the end, so the ghost layer
+// is always up to date for the next phase (docs/plan/MATH.md, section 6).
 
 #include "SmokeState.h"
 #include "smoke/Field3D.h"
@@ -23,25 +26,55 @@ struct SlabRange {
 
 inline SlabRange wholeInterior(const GridSize& s) { return {1, s.nz + 1}; }
 
+/// How the ghost layer of a field is filled (Stam 2003, set_bnd):
+///   Scalar     ghost = nearest interior value (zero normal gradient): density, temperature, pressure;
+///   VelocityX  like Scalar, but the sign flips on the two walls normal to x (no flow through them);
+///   VelocityY / VelocityZ  the same for the walls normal to y / z.
 enum class BoundaryKind { Scalar, VelocityX, VelocityY, VelocityZ };
 
-/// Boundary conditions on the walls of the box (docs/plan/MATH.md, section 6). TODO(M1).
+/// Fills the whole ghost layer of `field`, including its edges and corners (docs/plan/MATH.md, section 6).
+/// Always works on the whole field, not on a SlabRange.
 void setBoundary(Field3D& field, BoundaryKind kind);
 
-/// 1. Inject smoke (and heat) into a few cells near the bottom. TODO(M1).
-void addSources(SmokeState& state, const SmokeParams& params, SlabRange range);
+/// setBoundary for u (VelocityX), v (VelocityY) and w (VelocityZ).
+void setVelocityBoundary(SmokeState& state);
 
-/// 2. Buoyancy, optionally vorticity confinement (docs/plan/MATH.md, section 3). TODO(M2) / TODO(M3).
+/// Semi-Lagrangian advection of one field (docs/plan/MATH.md, section 4; Stam 1999 and 2003, advect):
+/// for each interior cell, trace back x - dt*u, clamp to [0.5, n + 0.5] and interpolate `src` trilinearly.
+/// `dst` and `src` must be different fields. Does NOT call setBoundary (the caller knows the field kind).
+void advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Field3D& v, const Field3D& w,
+                  float dt, SlabRange range);
+
+/// 1. Inject smoke (and heat) inside the source sphere: += dt * rate (docs/plan/MATH.md, section 3).
+void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
+
+/// v += dt * ( -alpha * rho + beta * (T - T_amb) )  (Fedkiw et al. 2001, eq. 8; +y is up), then setBoundary(v).
+void applyBuoyancy(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
+
+/// 2. Forces: buoyancy now, vorticity confinement in M3 (docs/plan/MATH.md, section 3).
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 
-/// 3. Semi-Lagrangian advection of the velocity field (docs/plan/MATH.md, section 4). TODO(M2).
+/// 3. Semi-Lagrangian advection of u, v, w by the old velocity (docs/plan/MATH.md, section 4).
 void advectVelocity(SmokeState& state, float dt, SlabRange range);
 
-/// 4. Pressure projection: divergence, Jacobi iterations, velocity correction
-///    (docs/plan/MATH.md, section 5). The most expensive phase. TODO(M2).
+/// div = ( u(i+1) - u(i-1) + v(j+1) - v(j-1) + w(k+1) - w(k-1) ) / 2   (h = 1; docs/plan/MATH.md, section 5).
+/// Writes interior cells of `div` only.
+void computeDivergence(const Field3D& u, const Field3D& v, const Field3D& w, Field3D& div, SlabRange range);
+
+/// One Jacobi iteration for  laplacian(p) = div:  pNew = ( sum of the 6 neighbours of pOld - div ) / 6.
+/// Reads only pOld, writes only pNew (interior), so the cells are independent of each other.
+void jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range);
+
+/// u -= ( p(i+1) - p(i-1) ) / 2, and the same for v (in j) and w (in k). Interior cells only.
+void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D& p, SlabRange range);
+
+/// 4. Pressure projection (docs/plan/MATH.md, section 5; Stam 2003, project): divergence, p = 0,
+///    params.jacobiIterations Jacobi iterations, subtract the gradient. The most expensive phase.
+///    Afterwards state.divergence still holds the divergence BEFORE the correction (used by Diagnostics).
 void project(SmokeState& state, const SmokeParams& params, SlabRange range);
 
-/// 5. Semi-Lagrangian advection of density and temperature by the corrected velocity. TODO(M1).
+/// 5. Semi-Lagrangian advection of density and temperature by the (corrected) velocity.
+///    Swaps each field with its *0 partner, advects from *0 into the main field, then setBoundary.
 void advectScalars(SmokeState& state, float dt, SlabRange range);
 
 } // namespace smoke::serial

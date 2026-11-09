@@ -1,8 +1,10 @@
 # OPTIMIZATION: plan ubrzavanja, redoslijed tehnika i pravila mjerenja
 
-Ovaj dokument vrijedi za **cijeli rad na ubrzanju** (poslije serijske faze). Odgovara na tri pitanja:
-1. **Šta prvo isprobavamo?** Sve što smo već radili u laboratorijskoj vježbi o vektorizaciji (nivo 1).
-2. **Šta tek poslije?** Naprednije tehnike (nivo 2), tek kad se nivo 1 iscrpi.
+Ovaj dokument vrijedi za **cijeli rad na ubrzanju**, počevši od milestone-a **M4 (serijska optimizacija)**
+u PLAN.md. U M4 je sve **sekvencijalno (jedna nit)**: nivo 1 i sekvencijalni dio nivoa 2 (odjeljak 3.1).
+Paralelni dio (odjeljak 3.2) trenutno nije milestone (odluka D8). Dokument odgovara na tri pitanja:
+1. **Šta prvo isprobavamo?** Sve što smo već radili u laboratorijskoj vježbi o vektorizaciji (nivo 1, M4a).
+2. **Šta tek poslije?** Dodatne sekvencijalne tehnike (nivo 2, odjeljak 3.1, M4b), tek kad se nivo 1 iscrpi.
 3. **Kako se mjeri i poredi** tako da brojevi ne ovise o tome čiji je računar jači, i kako se vodi evidencija.
 
 Povezano: [VERIFICATION.md](VERIFICATION.md) (tačnost i protokol mjerenja), [PERF_LOG.md](PERF_LOG.md)
@@ -78,7 +80,7 @@ Napomene za naš kod koje proizlaze iz laba:
 - **Vektorizacija po fajlu.** `-mavx2` samo na fajlovima s AVX2 putanjom i provjera procesora u toku rada (T15, T16),
   umjesto `-march=native` za sve. To je isto pravilo kao u ARCHITECTURE.md, odjeljak 5.
 - **Komanda za OpenMP `simd` bez niti:** za `#pragma omp simd` na GCC-u dovoljna je opcija
-  `-fopenmp-simd` (ne treba pravi OpenMP s nitima, a tek ćemo ga uključiti u nivou 2). *Provjeriti na našem
+  `-fopenmp-simd` (ne treba pravi OpenMP s nitima, koji u ovoj fazi i ne koristimo, odluka D8). *Provjeriti na našem
   kompajleru pri prvom korištenju.*
 - **`PERF_NO_VECTORIZE`** za GCC koristi `#pragma GCC novector`, koji traži GCC 14 ili noviji (mi imamo 16.2).
 - **Redukcije mijenjaju zaokruživanje.** Zbir u 8 traka ne daje isti bit-rezultat kao serijski zbir
@@ -115,9 +117,10 @@ sljedeća tehnika ne daje poboljšanje veće od šuma mjerenja. Tek tada se prel
 Svaka stavka je **kandidat**, ne obaveza. Redoslijed biramo prema profilu i ograničenju
 (računanje ili memorija).
 
+### 3.1 Sekvencijalne tehnike (jedna nit): dio M4b
+
 | Tehnika | Ideja | Napomena |
 | :--- | :--- | :--- |
-| **OpenMP niti po slojevima** | podjela po `k` (`SlabRange`), `#pragma omp parallel for` | glavna tema predmeta; mjeriti na 1, 2, 4, ... niti; paziti na prvi dodir memorije (first touch) i na broj fizičkih jezgara |
 | **Fuzija jezgara** | spojiti faze koje prolaze kroz isti niz (npr. divergencija s prvom Jacobi iteracijom, uzgon s advekcijom) | smanjuje promet memorije, što je glavno usko grlo |
 | **Vremensko blokiranje Jacobija** | više iteracija na jednom bloku dok je u kešu | rezultat može ostati isti kao kod običnog Jacobija ako se ivice blokova pravilno obrade; složeno za pisanje i provjeru |
 | **Red-black Gauss-Seidel** | brža konvergencija, manje iteracija za isti kvalitet | mijenja rezultate (drugačiji algoritam), pa se poredi po kvalitetu, ne bit po bit |
@@ -125,7 +128,17 @@ Svaka stavka je **kandidat**, ne obaveza. Redoslijed biramo prema profilu i ogra
 | **FMA instrukcije** | množenje i sabiranje u jednoj instrukciji | mijenja zaokruživanje; opet tolerancije |
 | **Manji tip podataka** | npr. skladištenje u 16 bita za polja koja nisu kritična | mijenja tačnost; ide uz mjerenje kvaliteta |
 | **AVX-512** | 16 floatova odjednom | samo ako hardver postoji; provjera u toku rada |
-| **Prefetch, huge pages, NUMA** | fino podešavanje memorije | samo uz dokaz iz mjerenja da je memorija usko grlo |
+| **Prefetch, huge pages** | fino podešavanje memorije | samo uz dokaz iz mjerenja da je memorija usko grlo |
+
+### 3.2 Paralelne tehnike: NISU milestone (odluka D8)
+
+Navedene su samo da se zna kuda projekat ide. U ovoj fazi se **ne pišu**; milestone-ovi za njih se prave tek
+kad tim odluči da počinje paralelizacija.
+
+| Tehnika | Ideja | Napomena |
+| :--- | :--- | :--- |
+| **OpenMP niti po slojevima** | podjela po `k` (`SlabRange`), `#pragma omp parallel for` | glavna tema predmeta; mjeriti na 1, 2, 4, ... niti; paziti na prvi dodir memorije (first touch) i na broj fizičkih jezgara |
+| **NUMA** | raspored memorije po čvorovima | ima smisla tek uz više niti |
 | **GPU (compute shaderi ili CUDA)** | polja kao 3D teksture na GPU, bez prenosa na CPU | posljednja faza planskog dokumenta |
 
 Za svaku stavku prije početka upiši u PERF_LOG.md **hipotezu** ("očekujem X jer Y"), a poslije nje rezultat.
@@ -218,4 +231,5 @@ parametri (veličina mreže, broj Jacobi iteracija, broj niti, zastavice kompajl
 
 Pravilo u `CLAUDE.md`: **svaka izmjena koja ima za cilj brzinu** mora (1) proći testove tačnosti,
 (2) biti izmjerena prema osnovi u istoj sesiji, (3) biti upisana u PERF_LOG.md i `perf/results.csv`,
-(4) navesti tehniku iz ovog dokumenta (T-broj ili nivo 2), (5) tražiti odobrenje prije prelaska na nivo 2.
+(4) navesti tehniku iz ovog dokumenta (T-broj ili nivo 2), (5) tražiti odobrenje prije prelaska na nivo 2,
+(6) ostati sekvencijalna (bez OpenMP niti i GPU-a) dok tim ne odluči drugačije (odluka D8).
