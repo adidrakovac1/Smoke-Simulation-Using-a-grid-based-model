@@ -1,5 +1,6 @@
 #include "stages/Stages.h"
 
+#include "CpuFeatures.h"
 #include "Profiler.h"
 #include "Restrict.h"
 
@@ -28,14 +29,8 @@ void divergenceRow(float* SMOKE_RESTRICT d, const float* SMOKE_RESTRICT u, const
         d[i] = 0.5f * (u[i + 1] - u[i - 1] + v[i + sJ] - v[i - sJ] + w[i + sK] - w[i - sK]);
 }
 
-void jacobiRow(float* SMOKE_RESTRICT pNew, const float* SMOKE_RESTRICT pOld, const float* SMOKE_RESTRICT div,
-               int nx, std::ptrdiff_t sJ, std::ptrdiff_t sK) {
-    for (int i = 1; i <= nx; ++i) {
-        const float neighbours = pOld[i - 1] + pOld[i + 1] + pOld[i - sJ] + pOld[i + sJ] +
-                                 pOld[i - sK] + pOld[i + sK];
-        pNew[i] = (neighbours - div[i]) / 6.0f;
-    }
-}
+// jacobiRow / jacobiSlab: the same source is compiled again with -mavx2 in Projection_avx2.cpp (M4-009).
+#include "stages/JacobiRows.inc"
 
 void gradientRow(float* SMOKE_RESTRICT u, float* SMOKE_RESTRICT v, float* SMOKE_RESTRICT w,
                  const float* SMOKE_RESTRICT p, int nx, std::ptrdiff_t sJ, std::ptrdiff_t sK) {
@@ -59,15 +54,26 @@ void computeDivergence(const Field3D& u, const Field3D& v, const Field3D& w, Fie
         }
 }
 
-void jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range) {
+#if defined(SMOKE_HAS_AVX2_BINARY)
+// Defined in Projection_avx2.cpp (compiled with -mavx2). Only call it when avx2Supported() is true.
+void jacobiSlabAvx2(float* pNew, const float* pOld, const float* div, int nx, int ny, int k0, int k1,
+                    std::ptrdiff_t sJ, std::ptrdiff_t sK);
+#endif
+
+bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range, KernelIsa isa) {
     const GridSize g = pNew.size();
     const std::ptrdiff_t sJ = pNew.strideJ(), sK = pNew.strideK();
     assert(pOld.strideK() == sK && div.strideK() == sK);
-    for (int k = range.k0; k < range.k1; ++k)
-        for (int j = 1; j <= g.ny; ++j) {
-            const std::size_t row = pNew.index(0, j, k);
-            jacobiRow(pNew.data() + row, pOld.data() + row, div.data() + row, g.nx, sJ, sK);
-        }
+    const bool haveAvx2 = avx2Supported();  // always false when the AVX2 file is not built
+    if (isa == KernelIsa::Avx2 && !haveAvx2) return false;
+#if defined(SMOKE_HAS_AVX2_BINARY)
+    if (isa != KernelIsa::Scalar && haveAvx2) {
+        jacobiSlabAvx2(pNew.data(), pOld.data(), div.data(), g.nx, g.ny, range.k0, range.k1, sJ, sK);
+        return true;
+    }
+#endif
+    jacobiSlab(pNew.data(), pOld.data(), div.data(), g.nx, g.ny, range.k0, range.k1, sJ, sK);
+    return true;
 }
 
 void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D& p, SlabRange range) {

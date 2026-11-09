@@ -65,7 +65,12 @@ void computeDivergence(const Field3D& u, const Field3D& v, const Field3D& w, Fie
 
 /// One Jacobi iteration for  laplacian(p) = div:  pNew = ( sum of the 6 neighbours of pOld - div ) / 6.
 /// Reads only pOld, writes only pNew (interior), so the cells are independent of each other.
-void jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range);
+/// `isa` picks the implementation (M4-009): Auto uses the AVX2 build when the CPU supports it, otherwise
+/// the default build; Scalar forces the default build; Avx2 forces AVX2 and returns false (doing nothing)
+/// when it is not available. Both builds give bit-identical results. Tests use Scalar/Avx2 to compare them.
+enum class KernelIsa { Auto, Scalar, Avx2 };
+bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range,
+                     KernelIsa isa = KernelIsa::Auto);
 
 /// u -= ( p(i+1) - p(i-1) ) / 2, and the same for v (in j) and w (in k). Interior cells only.
 void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D& p, SlabRange range);

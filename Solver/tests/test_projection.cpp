@@ -58,6 +58,27 @@ TEST_CASE("jacobi_iteration_averages_the_six_neighbours_minus_divergence") {
     CHECK(pNew.at(2, 2, 2) == 3.0f);  // (21 - 3) / 6
 }
 
+TEST_CASE("jacobi_avx2_and_scalar_builds_are_bit_identical") {
+    // M4-009: the AVX2 build of the Jacobi kernel (Projection_avx2.cpp, -mavx2, no FMA) must give exactly
+    // the scalar result. nx = 13 is not a multiple of 8, so the vector loop AND its remainder are exercised.
+    const GridSize g{13, 7, 5};
+    Field3D pOld(g), div(g), pScalar(g), pAvx2(g);
+    SplitMix64 rng{2026};
+    fillRandom(pOld, rng, -1.0f, 1.0f);
+    fillRandom(div, rng, -1.0f, 1.0f);
+
+    REQUIRE(jacobiIteration(pScalar, pOld, div, wholeInterior(g), KernelIsa::Scalar));
+    if (!jacobiIteration(pAvx2, pOld, div, wholeInterior(g), KernelIsa::Avx2)) {
+        MESSAGE("AVX2 not available on this CPU/build: only the scalar path was checked");
+        return;
+    }
+    CHECK(cellsDifferent(pScalar, pAvx2) == 0);
+
+    Field3D pAuto(g);  // Auto must pick AVX2 here and therefore also match
+    jacobiIteration(pAuto, pOld, div, wholeInterior(g));
+    CHECK(cellsDifferent(pScalar, pAuto) == 0);
+}
+
 namespace {
 
 // Random velocity in [-1, 1) with a fixed seed (T3 in docs/plan/VERIFICATION.md), projected with K Jacobi

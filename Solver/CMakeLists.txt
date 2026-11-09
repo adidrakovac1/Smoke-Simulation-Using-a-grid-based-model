@@ -40,7 +40,28 @@ add_library(smoke_solver STATIC
   src/stages/Advection.cpp
   src/stages/Projection.cpp
   src/stages/Boundary.cpp
+  src/CpuFeatures.cpp
 )
+
+# AVX2 kernels (lab techniques T15/T16, docs/plan/OPTIMIZATION.md): only the *_avx2.cpp files get the AVX2
+# flag, so the program still runs on any x86-64 CPU; the choice is made at run time (CpuFeatures.h).
+# B0 (SMOKE_DISABLE_VECTORIZATION) keeps them out, so B0 stays "no vectorization".
+option(SMOKE_ENABLE_AVX2 "Build AVX2 kernels with a run-time CPU check (x86 only)" ON)
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SMOKE_CPU)
+if(SMOKE_ENABLE_AVX2 AND NOT SMOKE_DISABLE_VECTORIZATION AND SMOKE_CPU MATCHES "^(x86_64|amd64|x64|i[3-6]86)$")
+  set(SMOKE_AVX2_SOURCES src/stages/Projection_avx2.cpp)
+  target_sources(smoke_solver PRIVATE ${SMOKE_AVX2_SOURCES})
+  if(MSVC)
+    set_source_files_properties(${SMOKE_AVX2_SOURCES} PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
+  else()
+    set_source_files_properties(${SMOKE_AVX2_SOURCES} PROPERTIES COMPILE_OPTIONS "-mavx2")
+  endif()
+  target_compile_definitions(smoke_solver PRIVATE SMOKE_HAS_AVX2_BINARY=1)
+  set(SMOKE_AVX2_STATE "AVX2 kernels built (run-time check)")
+else()
+  set(SMOKE_AVX2_STATE "no AVX2 kernels")
+endif()
+message(STATUS "smoke_solver: ${SMOKE_AVX2_STATE}")
 target_include_directories(smoke_solver
   PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src

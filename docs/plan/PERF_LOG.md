@@ -408,3 +408,38 @@ Nalazi:
   može dati drugačije vrijeme.
 - **Zapažanje za kasnije:** Jacobi dijeli sa 6 (`divps`). Množenje sa `1/6` je brže, ali mijenja
   zaokruživanje (rezultat više nije bit po bit isti). Kandidat je za M4b, uz `--verify` s pragom.
+
+### M4-009: T15/T16 AVX2 po fajlu za Jacobi, s provjerom procesora: ZADRŽATI
+
+- **Izmjena:**
+  - Tijelo Jacobi petlje je u `Solver/src/stages/JacobiRows.inc`. Prevodi se dvaput: u
+    `Projection.cpp` sa zadanim opcijama i u `Projection_avx2.cpp` sa `-mavx2` (samo taj fajl, T16).
+  - `jacobiIteration` pri izvršavanju bira AVX2 kopiju ako `avx2Supported()`
+    (`Solver/src/CpuFeatures.cpp`, T15, iste provjere kao `avx2_supported()` iz laba) vrati true.
+    Inače koristi zadanu kopiju (rezervna putanja).
+  - CMake opcija `SMOKE_ENABLE_AVX2` (zadano ON) radi samo na x86. U B0 gradnji je isključena.
+- **Zamka koju dizajn izbjegava:** AVX2 fajl ne uključuje zajedničke inline funkcije (`Field3D`).
+  Inače bi linker mogao zadržati AVX2 kopiju za cijeli program, pa bi se program srušio na procesoru
+  bez AVX2.
+- **Profil:** AVX2 kopija je vektorizirana s 32-bajtnim vektorima (8 floatova, unroll 8), a ostatak
+  reda sa 16-bajtnim. Nema FMA instrukcija (`-mavx2` ne uključuje FMA), pa je aritmetika ista.
+- **Tačnost:**
+  - novi test `jacobi_avx2_and_scalar_builds_are_bit_identical` (nx = 13, pokriva i ostatak reda)
+    potvrđuje da su AVX2, skalarna i automatski izabrana putanja bit po bit iste;
+  - 44/44 testa; `--verify` daje bit po bit isto.
+- **Mjerenje:** osnova je M4-008 (`f1f7149`), 3 runde.
+
+| Mreža | Jacobi iter.: osnova / nova (ms) | Jacobi S | Projekcija S / Δ | Cijeli korak S / Δ | Presude (Jacobi / proj. / korak) |
+| :--- | :--- | ---: | :--- | :--- | :--- |
+| 32³ | 0.01281 / 0.00934 | 1.372x | 1.337x / 25.2% | 1.061x / 5.7% | brže / brže / brže |
+| 64³ | 0.1063 / 0.0774 | 1.375x | 1.340x / 25.4% | 1.074x / 6.9% | brže / brže / brže |
+| 96³ | 0.3729 / 0.2487 | 1.500x | 1.376x / 27.3% | 1.152x / 13.2% | brže / brže / šum |
+| 128³ | 1.2816 / 1.1512 | 1.113x | 1.101x / 9.2% | 1.038x / 3.7% | brže / brže / brže |
+
+- **Tumačenje:**
+  - Na 32³ do 96³ Jacobi je 1.37 do 1.50x brži, a ne 2x, iako je vektor dvostruko širi. Dio
+    vremena odlazi na čitanja iz memorije (6 susjeda, od kojih su `i±1` neporavnata) i na
+    `setBoundary` poslije svake iteracije.
+  - Na 128³ je dobitak 1.11x. Polja tamo ne staju u L3, pa računanje više nije usko grlo. E se ne
+    računa dok se ne provjeri kalibracija (vidi uvod odjeljka 6).
+- **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-009-*`.
