@@ -7,6 +7,16 @@ Strojno čitljiva kopija je `perf/results.csv`. Oba fajla se mijenjaju u istom c
 Prvi unosi su osnove **B0** i **B1**, izmjerene 2026-11-09 na istom računaru. Svi pojedinačni
 uzorci po fazi su u `perf/results.csv`.
 
+**Važno za M4:** P-001 i P-002 su izmjereni na PC-1 (Apple M4, ARM, AppleClang). Ostaju kao
+izmjereni podaci, ali **nisu osnova za M4**:
+- pravilo traži poređenje s osnovom na istom računaru u istoj sesiji;
+- tehnike iz laba (AVX2) na ARM-u ne postoje.
+
+Prije prve M4 izmjene, onaj ko radi M4 mjeri B0 i B1 na svom x86 računaru, upisuje ih kao nove
+unose s otiskom tog računara i snima referencu na tom računaru (VERIFICATION.md, odjeljak 3). To
+radi tek kad je ε konačno izabran (MATH.md, odjeljak 3, nalaz o divergenciji), jer ε mijenja i
+vremena i rezultat.
+
 ---
 
 ## 1. Otisci računara tima

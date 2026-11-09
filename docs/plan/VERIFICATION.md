@@ -45,6 +45,9 @@ Jacobiju daje omjere od 1.4 do 1.9 koji rastu s K, pa oba testa padaju.
 
 **Napomena o T3.** Divergencija poslije projekcije ne ide u nulu (objašnjenje u MATH.md,
 odjeljak 5). Zato test traži omjer prije/poslije i monotono opadanje po iteracijama, a ne `== 0`.
+T3 radi s izdvojenom projekcijom, bez confinementa. U cijelom koraku s confinementom (ε = 5)
+divergencija poslije projekcije je oko 12 puta veća nego uz ε = 0 (1.94 prema 0.154 na 64³,
+K = 40) i skoro ne zavisi od K; mjerenje i uzrok su u MATH.md, odjeljak 3 (vorticity confinement).
 
 **T10, izmjereno (2026-11-09, Apple M4, AppleClang 21.0.0, Release).** Na zatvorenoj 24³ mreži,
 bez izvora, gusta kugla je advektirana 100 puta poljem kružnog toka. Relativna promjena mase bila je
@@ -75,7 +78,22 @@ Serijska referenca je snimljena:
    `165cde9630821391`, min 0, max 12.9589844, sredina 0.032197039. B0 i B1 daju identičan rezultat
    (najveća apsolutna razlika 0).
 3. Ista komanda podržava druge veličine (`--grid N`) kad se želi dodatna referenca.
-4. Svaka kasnija verzija (OpenMP, SIMD, GPU) se poredi s ovim fajlom:
+4. **Poređenje:** `smoke_bench --verify FILE [--grid N] [--steps N]` pokreće isti scenarij i ispisuje
+   broj različitih ćelija, `max_abs_diff`, `max_abs_diff / max|reference|` i da li je rezultat bit po
+   bit isti. Prag za "prošlo" je `TODO(measure)`: određuje se iz prvih M4 mjerenja, ne pogađa se.
+
+**Referenca zavisi od računara i kompajlera (izmjereno 2026-11-09).** Isti commit, izgrađen s
+g++ 16.2.0 (MSYS2, x86-64, Release) i poređen s ovom referencom (AppleClang 21, Apple M4, ARM):
+32 940 od 262 144 ćelija se razlikuje, `max_abs_diff` 0.00183, relativno 1.4·10⁻⁴. Najvjerovatniji
+uzrok (nije dokazano) je da Clang na ARM-u spaja `a*b+c` u FMA, a g++ na x86-64 bez `-mfma` ne.
+Na istom računaru i istoj gradnji rezultat je **bit po bit isti** (solver je determinističan).
+Zato:
+- izmjene iz M4 se porede s referencom **snimljenom na istom računaru i istim kompajlerom**;
+- ova referenca je snimljena iz necommitanog stanja (`58d0e18-dirty`) i na računaru PC-1. Prije M4
+  je ponovo snima onaj ko radi M4, na svom računaru, iz čistog commita i s konačnim ε (MATH.md,
+  odjeljak 3, nalaz o divergenciji).
+
+5. Svaka kasnija verzija (OpenMP, SIMD, GPU) se poredi s referencom:
 
 | Verzija | Očekivano poređenje | Napomena |
 | :--- | :--- | :--- |

@@ -106,6 +106,31 @@ Zadana vrijednost je zato `5.0`; postaviti `0` za isključivanje. Ovo je vizualn
 vrijednost za 64³, a ne univerzalna fizička konstanta. Sa zadanim `ε = 5`, 500 koraka na 64³
 završilo je bez NaN/Inf, s CFL 0.644 i `max|u|` 38.63 ćelija/s.
 
+**Nalaz iz pregleda M3 (2026-11-09, g++ 16.2.0, Release, 64³, 100 koraka): confinement povećava
+divergenciju koja ostaje poslije projekcije.** `max|div|` prije / poslije projekcije:
+
+| ε | K | prije | poslije | rms poslije |
+| :--- | :--- | ---: | ---: | ---: |
+| 0 | 40 | 0.583 | 0.154 | 0.0063 |
+| 1 | 40 | 1.25 | 0.419 | |
+| 2 | 40 | 2.15 | 0.876 | |
+| 5 | 40 | 4.58 | 1.94 | 0.0319 |
+| 5 | 1000 (zadnji korak) | 4.58 | 1.87 | 0.0313 |
+| 5 | 5000 (zadnji korak) | 4.58 | 1.87 | 0.0313 |
+| 0 | 5000 (zadnji korak) | 0.583 | 0.106 | 0.0024 |
+
+- Najveća preostala divergencija **nije uz zidove**, nego u unutrašnjosti, odmah iznad izvora
+  (ćelija (29,12,29) na 64³), gdje uzgon stvara oštre vrtloge pa je i confinement najjači. Uz
+  zidove (prve tri ćelije) je ispod 0.24.
+- Uz K = 5000 Poissonova jednačina je riješena (`max|∇²p − div|` = 0.0002), a divergencija i
+  dalje ostaje 1.87. Dakle uzrok **nije** spora konvergencija Jacobija, niti greška u confinementu
+  (implementacija odgovara [Fedkiw01], jed. 9 do 11). To je granica projekcije na kolociranoj
+  mreži (odjeljak 5, "Važna napomena o tačnosti"): kratkotalasne komponente brzine, koje
+  confinement pojačava, projekcija ne vidi. Isti "pod" postoji i bez confinementa (0.106).
+- Posljedica: ε je kompromis između vidljivog kovitlanja i divergencije. Mjerenje je urađeno
+  privremenim programom koji ponavlja `SmokeSolver::step` preko funkcija faza (nije u repozitoriju).
+  Izbor ε je odluka tima; referenca i osnove B0/B1 se snimaju tek kad je ε konačan.
+
 ---
 
 ## 4. Advekcija (semi-Lagrangian)
