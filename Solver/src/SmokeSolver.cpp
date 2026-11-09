@@ -31,7 +31,7 @@ void SmokeSolver::step(float dt) {
     s.timings = StepTimings{};  // timings of the last step only
 
     // Order of the phases follows docs/plan/MATH.md, section 2 (and the project plan document).
-    { ScopedTimer t(s.timings[Stage::Sources]);        addSources(s.state, s.config.params, all); }
+    { ScopedTimer t(s.timings[Stage::Sources]);        addSources(s.state, s.config.params, dt, all); }
     { ScopedTimer t(s.timings[Stage::Forces]);         applyForces(s.state, s.config.params, dt, all); }
     { ScopedTimer t(s.timings[Stage::AdvectVelocity]); advectVelocity(s.state, dt, all); }
     { ScopedTimer t(s.timings[Stage::Project]);        project(s.state, s.config.params, all); }

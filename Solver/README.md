@@ -38,11 +38,12 @@ bench/           mjerenje
 reference/       referentni rezultati (kasnije)
 ```
 
-## Stanje skeleta
+## Stanje (M1)
 
-Radi: alokacija polja (`Field3D`: ghost sloj, padding reda na 8 floatova, poravnanje na 64 B), `SmokeSolver`
-(`step`, `reset`, `resize`, `density()`, `lastTimings()`), mjerenje vremena po fazi, konzolni program, testovi.
+Radi: polja (`Field3D`: ghost sloj, padding reda na 8 floatova, poravnanje na 64 B, `swap`), rubni uslovi
+(`setBoundary`), izvor dima, semi-Lagrangian advekcija gustoće i temperature, `SmokeSolver` (`step`, `reset`,
+`resize`, `density()`, `lastTimings()`), mjerenje vremena po fazi, konzolni program (`--dump-slices`,
+`--demo advect`), testovi T1, T2, T4, T5, T6, T7.
 
-**Ne radi još** (označeno `TODO(M1)`, `TODO(M2)`, `TODO(M3)` u `src/stages/`): rubni uslovi, izvor dima,
-uzgon, advekcija, projekcija, vorticity confinement, dijagnostika. Faze su prazne funkcije pa `step()`
-za sada ništa ne mijenja.
+**Ne radi još** (`TODO(M2)`, `TODO(M3)` u `src/stages/`): uzgon, advekcija brzine, projekcija, dijagnostika,
+vorticity confinement.

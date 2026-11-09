@@ -53,11 +53,18 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/selftest.cpp
     tests/test_field3d.cpp
     tests/test_solver_skeleton.cpp
+    tests/test_boundary.cpp
+    tests/test_interpolation.cpp
+    tests/test_advection.cpp
+    tests/test_sources.cpp
+    tests/test_symmetry_determinism.cpp
+    tests/demo_advect.cpp                              # M1 demo, started by "smoke_cli --demo advect"
   )
   target_link_libraries(smoke_selftest PUBLIC smoke_solver)
   target_include_directories(smoke_selftest
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src            # tests check the internal stages directly
+            ${CMAKE_CURRENT_SOURCE_DIR}/apps/common    # PgmWriter.h for the demo
   )
   # SYSTEM: warnings coming from inside doctest.h are not ours and must not hide our own warnings.
   target_include_directories(smoke_selftest SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
@@ -67,6 +74,7 @@ endif()
 if(SMOKE_BUILD_CLI)
   add_executable(smoke_cli apps/smoke_cli/main.cpp)
   target_link_libraries(smoke_cli PRIVATE smoke_solver smoke_selftest)
+  target_include_directories(smoke_cli PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/apps/common)
   target_compile_definitions(smoke_cli PRIVATE SMOKE_BUILD_TYPE="$<CONFIG>")
   smoke_set_warnings(smoke_cli)
 endif()

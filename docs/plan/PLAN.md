@@ -48,12 +48,13 @@ Svaki milestone ima **kriterij završetka**: bez ispunjenog kriterija se ne prel
 **Kriterij:** `cmake` konfiguriše i gradi `Solver/` na računaru svakog člana, a test prolazi.
 
 ### M1: osnova (sedmica 1 do 2)
-- [ ] `GridSize`, `Field3D` (ghost sloj, poravnanje, `at(i,j,k)`), `SolverConfig`, `SmokeParams`.
-- [ ] `setBoundary` za skalare i za komponente brzine.
-- [ ] Izvor dima.
-- [ ] Semi-Lagrangian advekcija skalara (trilinearna interpolacija) s ograničavanjem unutar kutije.
-- [ ] Testovi T1, T2, T4, T5, T6, T7.
-- [ ] `smoke_cli` pokreće korake, ispisuje dijagnostiku i snima presjek gustoće kao `.pgm`.
+- [x] `GridSize`, `Field3D` (ghost sloj, poravnanje, `at(i,j,k)`, `swap`), `SolverConfig`, `SmokeParams`.
+- [x] `setBoundary` za skalare i za komponente brzine (uključujući ivice i uglove ghost sloja).
+- [x] Izvor dima (`+= dt·rate` u kugli; P2).
+- [x] Semi-Lagrangian advekcija skalara (trilinearna interpolacija) s ograničavanjem na `[0.5, n+0.5]`.
+- [x] Testovi T1, T2, T4, T5, T6, T7 (tolerancije za T1 i T6 izmjerene 2026-11-09, upisane u testove).
+- [x] `smoke_cli` pokreće korake i snima presjek gustoće kao `.pgm` (`--dump-slices`, `--every`); demo
+      `--demo advect` ispisuje težište, masu i broj NaN. Puna dijagnostika (`diagnostics()`) je u M2 (P3).
 
 **Kriterij:** kugla gustoće u polju konstantne brzine se pomjera ispravno (T1) i simetrično (T6),
 bez NaN. Rezultat se vidi kao slika.

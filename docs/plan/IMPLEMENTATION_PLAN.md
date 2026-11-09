@@ -260,8 +260,8 @@ prilično gladak stub (gljivast vrh, slabo kovitlanje). To je poznata posljedica
 
 | Vrijednost | Oznaka u kodu | Kada se određuje |
 | :--- | :--- | :--- |
-| Tolerancija T1 | `TODO(measure)` | M1, mjerenjem (očekivano: greška zaokruživanja) |
-| Tolerancija T6 | `TODO(measure)` | M1, mjerenjem |
+| Tolerancija T1 | **izmjereno 2026-11-09:** greška 0 poslije 1 koraka i 4.9e-10 ćelije poslije 40; masa 2.4e-8 relativno. Granica 1e-6 | M1, gotovo |
+| Tolerancija T6 | **izmjereno 2026-11-09:** relativna asimetrija 1.8e-6 (oko 15 ulp). Granica 1e-5; namjerna greška od pola ćelije daje 0.34 | M1, gotovo |
 | Prag T3 (omjer max\|div\|) | `TODO(measure)` | M2, na 32³ i 64³ |
 | `α`, `β`, `T_amb` | `TODO(paper: Fedkiw01, eq. 8)` + `TODO(measure)` | M2, eksperimentalno (rad ne daje brojeve) |
 | Izvor: pozicija, radius, `densityRate`, `temperatureRate` | `TODO(measure)` | M2, eksperimentalno |

@@ -2,9 +2,12 @@
 // Output layout: docs/plan/CLI_OUTPUT.md. Text is ASCII only (Windows console code pages).
 
 #include "smoke/SmokeSolver.h"
+#include "PgmWriter.h"
 #include "selftest.h"
 
 #include <algorithm>
+#include <filesystem>
+#include <sstream>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
@@ -25,6 +28,9 @@ struct Options {
     int  warmup  = 10;
     bool quiet   = false;
     bool selftest = false;     // run the correctness tests instead of the simulation
+    std::string demo;          // "advect": the M1 demo (tests/demo_advect.cpp)
+    std::string dumpFolder;    // if set, save x-y density slices as PGM (docs/plan/CLI_OUTPUT.md)
+    int  every   = 10;         // save a slice every N steps
 };
 
 bool parseInt(const char* text, int& out) {
@@ -37,13 +43,21 @@ bool parseInt(const char* text, int& out) {
 
 void printUsage() {
     std::cout << "Koriscenje: smoke_cli [--grid N] [--nx N --ny N --nz N] [--steps N] [--warmup N] [--quiet]\n"
-              << "            smoke_cli --selftest   (pokrece iste testove tacnosti kao smoke_tests)\n";
+              << "                      [--dump-slices FOLDER] [--every N]\n"
+              << "            smoke_cli --selftest   (pokrece iste testove tacnosti kao smoke_tests)\n"
+              << "            smoke_cli --demo advect [--dump-slices FOLDER] [--every N]\n"
+              << "                                    (M1: kugla gustoce nosena konstantnom brzinom)\n";
 }
 
 bool parseArgs(int argc, char** argv, Options& o) {
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
         auto next = [&](int& dst) { return i + 1 < argc && parseInt(argv[++i], dst); };
+        auto nextText = [&](std::string& dst) {
+            if (i + 1 >= argc) return false;
+            dst = argv[++i];
+            return !dst.empty();
+        };
         if (a == "--grid") {
             int n = 0;
             if (!next(n)) return false;
@@ -55,6 +69,9 @@ bool parseArgs(int argc, char** argv, Options& o) {
         else if (a == "--warmup") { if (!next(o.warmup)) return false; }
         else if (a == "--quiet")  { o.quiet = true; }
         else if (a == "--selftest") { o.selftest = true; }
+        else if (a == "--demo")        { if (!nextText(o.demo) || o.demo != "advect") return false; }
+        else if (a == "--dump-slices") { if (!nextText(o.dumpFolder)) return false; }
+        else if (a == "--every")       { if (!next(o.every)) return false; }
         else if (a == "--help" || a == "-h") { printUsage(); std::exit(0); }
         else return false;
     }
@@ -80,6 +97,7 @@ int main(int argc, char** argv) {
                   << "Pokrecemo iste testove tacnosti kao smoke_tests.\n\n";
         return smoke_test::runAll(std::cout);
     }
+    if (!opt.demo.empty()) return smoke_test::runAdvectionDemo(opt.dumpFolder, opt.every, std::cout);
 
     smoke::SolverConfig cfg;
     cfg.grid = opt.grid;
@@ -92,7 +110,21 @@ int main(int argc, char** argv) {
               << "Konfig:   mreza " << cfg.grid.nx << "x" << cfg.grid.ny << "x" << cfg.grid.nz
               << ", koraka " << opt.steps << " (+ " << opt.warmup << " zagrijavanja)"
               << ", dt " << cfg.params.dt << ", Jacobi iteracija " << cfg.params.jacobiIterations << "\n"
-              << "NAPOMENA: ovo je skelet. Faze simulacije jos nisu implementirane (vidi docs/plan/PLAN.md).\n\n";
+              << "NAPOMENA: M1. Rade izvor dima i advekcija gustoce; sile, advekcija brzine i projekcija\n"
+              << "          dolaze u M2 (vidi docs/plan/PLAN.md). Bez brzine se dim samo skuplja u izvoru.\n\n";
+
+    // Slices are written between steps, so file output is never part of the measured step time.
+    const bool dump = !opt.dumpFolder.empty();
+    if (dump) std::filesystem::create_directories(opt.dumpFolder);
+    auto saveSlice = [&](int step) {
+        const smoke::DensityView v = solver.density();
+        const int k = v.nz / 2;
+        const float peak = smoke_io::maxInSliceXY(v, k);  // auto grey scale: brightest pixel = slice maximum
+        std::ostringstream name;
+        name << opt.dumpFolder << "/slice_" << std::setw(5) << std::setfill('0') << step << ".pgm";
+        if (!smoke_io::writePgmSliceXY(name.str(), v, k, peak))
+            std::cout << "  GRESKA: ne mogu pisati " << name.str() << "\n";
+    };
 
     for (int i = 0; i < opt.warmup; ++i) solver.step();
 
@@ -106,6 +138,7 @@ int main(int argc, char** argv) {
         const smoke::StepTimings& t = solver.lastTimings();
         for (std::size_t s = 0; s < smoke::kStageCount; ++s) perStage[s].push_back(t.ms[s]);
         perStep.push_back(t.total());
+        if (dump && i % std::max(1, opt.every) == 0) saveSlice(i);
         // Printing is done between steps and is NOT part of the timed code.
         if (!opt.quiet && (i % std::max(1, opt.steps / 10) == 0))
             std::cout << "  [" << std::setw(4) << i << "/" << opt.steps << "]  "

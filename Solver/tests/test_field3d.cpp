@@ -64,3 +64,22 @@ TEST_CASE("field3d_resize_reallocates_and_zeroes") {
     f.resize(GridSize{0, 0, 0});   // invalid size releases the memory
     CHECK(f.data() == nullptr);
 }
+
+TEST_CASE("field3d_swap_exchanges_buffers_without_copying") {
+    Field3D a(GridSize{8, 8, 8});
+    Field3D b(GridSize{4, 6, 2});
+    a.at(1, 1, 1) = 7.0f;
+    b.at(1, 1, 1) = 3.0f;
+    const float* aData = a.data();
+    const float* bData = b.data();
+
+    swap(a, b);
+
+    CHECK(a.data() == bData);  // pointers exchanged, nothing copied
+    CHECK(b.data() == aData);
+    CHECK(a.size() == (GridSize{4, 6, 2}));
+    CHECK(b.size() == (GridSize{8, 8, 8}));
+    CHECK(a.strideJ() == 8);   // 4 + 2 = 6, padded to 8
+    CHECK(a.at(1, 1, 1) == 3.0f);
+    CHECK(b.at(1, 1, 1) == 7.0f);
+}
