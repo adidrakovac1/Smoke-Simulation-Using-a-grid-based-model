@@ -667,40 +667,113 @@ Nalazi:
 - **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-017-*`. Verzija 5 u `smoke_lab --kernel advekcija`
   pokazuje spojenu advekciju.
 
+### Profil kompajlera za sile na PC-2 (T7)
+
+- Poslije M4-017 sile su u `smoke_demo` bile ubrzane samo oko 1.1x prema M3 i bile su oko 24% koraka na 64³.
+  `-fopt-info-vec` za `Forces.cpp`: uzgon je vektoriziran, a **obje petlje vorticity confinementa nisu**.
+- Uzroci: (1) `std::sqrt` bez `-fno-math-errno` ostavlja poziv biblioteke (zbog `errno`); (2) "evolution of
+  base is not affine" (preklapanje kroz `Field3D`, kao ranije kod projekcije i advekcije); (3) "unsupported
+  control flow": `?:` koji bira djelitelja (`|grad| > 0 ? |grad| : 1`) g++ ostavlja kao skok.
+
+### M4-018: `-fno-math-errno` za `Forces.cpp`: ZADRŽATI (preduslov, bez ubrzanja)
+
+- **Izmjena:** opcija u `Solver/CMakeLists.txt`, samo za `Forces.cpp` i `Forces_avx2.cpp`, samo g++/Clang.
+  Poziva `sqrt` u objektu više nema. Rezultat se ne mijenja: `sqrt` nenegativnog broja je tačan po IEEE 754,
+  a opcija samo izostavlja postavljanje `errno` za negativan ulaz. Nije dio opcija `-ffast-math` koje mijenjaju
+  vrijednosti (odluka D12).
+- **Tačnost:** 47/47; `--verify` bit po bit isto.
+- **Mjerenje:** osnova je `e9c2fa4`; jedna zajednička sesija za B0, B1, `e9c2fa4`, M4-018, M4-019 i M4-020
+  (6 programa, 3 rotirane runde).
+
+| Mreža | Sile: osnova / nova (ms) | S | Cijeli korak S | Presude (sile / korak) |
+| :--- | :--- | ---: | ---: | :--- |
+| 32³ | 0.220 / 0.224 | 0.980x | 0.985x | sporije / sporije |
+| 64³ | 1.888 / 1.904 | 0.992x | 1.003x | šum / šum |
+| 96³ | 10.292 / 10.530 | 0.977x | 0.955x | šum / šum |
+| 128³ | 17.445 / 17.023 | 1.025x | 1.018x | šum / šum |
+
+- **Tumačenje:** sam za sebe ne pomaže (petlje i dalje nisu vektorizirane); na 32³ je 2% sporije.
+- **Odluka:** zadržati kao preduslov za M4-019. Oznake u CSV-u: `PC2-20261109-M4-018-*`.
+
+### M4-019: T12 `restrict` + maska bez skoka u vorticity confinementu: ZADRŽATI
+
+- **Izmjena:** obje petlje su funkcije po redu sa `SMOKE_RESTRICT` (`Solver/src/stages/ForcesRows.inc`,
+  `vorticityRow` i `confinementRow`), kao kod projekcije (M4-007). Djelitelj je napisan kao aritmetička maska
+  `p*|grad| + (!p)*1` (`p = |grad| > 0`), što je tačno `|grad|` ili tačno 1, isto kao `?:` iz M4-003/M4-006.
+  Oblik sa `static_cast<float>(p)` i `1 - p` g++ 16 opet ne vektorizira, pa je izabran ovaj.
+- **Šta kompajler napravi:** obje petlje vektorizirane (SSE, 4 floata).
+- **Tačnost:** novi test `vorticity_row_kernels_are_bit_identical_to_the_m4_006_form` (stari oblik sa
+  `Field3D::at` je u testu kao referenca; uključuje dio s nultom brzinom, gdje je djelitelj 1); 48/48;
+  `--verify` bit po bit isto.
+- **Mjerenje:** osnova je M4-018, ista sesija.
+
+| Mreža | Sile: osnova / nova (ms) | S | Cijeli korak S | Presude (sile / korak) |
+| :--- | :--- | ---: | ---: | :--- |
+| 32³ | 0.224 / 0.101 | 2.221x | 1.136x | brže / brže |
+| 64³ | 1.904 / 0.855 | 2.226x | 1.146x | brže / brže |
+| 96³ | 10.530 / 4.331 | 2.431x | 1.256x | brže / brže |
+| 128³ | 17.023 / 10.136 | 1.679x | 1.090x | brže / brže |
+
+- **Tumačenje:** sile su 1.7 do 2.4x brže u svakoj rundi, cijeli korak 1.09 do 1.26x. Na 128³ manje, jer
+  dva prolaza kroz 7 polja postaju ograničena memorijom.
+- **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-019-*`.
+
+### M4-020: T15/T16 AVX2 po fajlu za vorticity confinement: ZADRŽATI
+
+- **Izmjena:** isti `ForcesRows.inc` se gradi i sa `-mavx2` u `Solver/src/stages/Forces_avx2.cpp`;
+  `applyVorticityConfinement` bira tu verziju kad `avx2Supported()` vrati true (sada ima `KernelIsa` i vraća
+  `bool`, kao `jacobiIteration`). 8 floatova odjednom (`vsqrtps` na `ymm`), bez FMA.
+- **Tačnost:** isti test za Scalar, Avx2 i Auto; 48/48; `--verify` bit po bit isto; gradnja bez AVX2 48/48 i
+  bit po bit isto.
+- **Mjerenje:** osnova je M4-019, ista sesija.
+
+| Mreža | Sile: osnova / nova (ms) | S | Cijeli korak S | Presude (sile / korak) |
+| :--- | :--- | ---: | ---: | :--- |
+| 32³ | 0.101 / 0.073 | 1.381x | 1.030x | brže / brže |
+| 64³ | 0.855 / 0.676 | 1.265x | 1.018x | brže / šum |
+| 96³ | 4.331 / 3.715 | 1.166x | 1.073x | šum / brže |
+| 128³ | 10.136 / 9.591 | 1.057x | 1.003x | brže / šum |
+
+- **Ukupno M4-018 do M4-020** prema `e9c2fa4`: sile 1.82 do 3.01x, cijeli korak 1.11 do 1.29x (sve "brže").
+- **Odluka:** zadržati. Oznake u CSV-u: `PC2-20261109-M4-020-*`.
+
 ---
 
 ## 7. Zbir M4 na PC-2 (2026-11-09)
 
-Konačna verzija M4 (M4-017) prema osnovama B0 i B1 iz M3 (`73ceb9e`), ista sesija kao M4-015 do M4-017
+Konačna verzija M4 (M4-020) prema osnovama B0 i B1 iz M3 (`73ceb9e`), ista sesija kao M4-018 do M4-020
 (3 rotirane runde, 100 koraka, 10 zagrijavanja, 40 Jacobi iteracija). Ćelija: **S prema B0 / S prema B1**.
 Rezultat je bit po bit isti kao PC-2 referenca (`serial_64_100steps_pc2.bin`), u AVX2 gradnji i u gradnji
-bez AVX2 (`-DSMOKE_ENABLE_AVX2=OFF`, 47/47 testova).
+bez AVX2 (`-DSMOKE_ENABLE_AVX2=OFF`, 48/48 testova).
 
 | Faza | 32³ | 64³ | 96³ | 128³ |
 | :--- | ---: | ---: | ---: | ---: |
-| izvori | 1.86x / 1.39x | 1.54x / 1.18x | 2.06x / 1.76x | 1.11x / 1.05x |
-| sile (uzgon, vorticity) | 1.30x / 1.21x | 1.32x / 1.30x | 1.19x / 0.91x | 1.19x / 1.23x |
-| advekcija brzine | 2.83x / 2.82x | 3.01x / 3.00x | 2.91x / 2.89x | 2.88x / 2.89x |
-| projekcija | 3.29x / 1.63x | 3.23x / 1.61x | 3.10x / 1.49x | 1.86x / 1.13x |
-| advekcija skalara | 2.84x / 2.88x | 2.85x / 2.84x | 2.76x / 2.73x | 2.78x / 2.78x |
-| **cijeli korak** | **2.68x / 2.02x** | **2.67x / 2.02x** | **2.32x / 1.69x** | **1.99x / 1.60x** |
+| izvori | 1.81x / 1.36x | 1.59x / 1.36x | 1.67x / 1.57x | 1.10x / 1.04x |
+| sile (uzgon, vorticity) | 3.91x / 3.68x | 3.64x / 3.47x | 4.70x / 3.00x | 2.24x / 2.15x |
+| advekcija brzine | 2.80x / 2.81x | 2.95x / 2.96x | 3.11x / 2.92x | 2.89x / 2.88x |
+| projekcija | 3.32x / 1.66x | 3.48x / 1.63x | 3.03x / 1.54x | 1.88x / 1.13x |
+| advekcija skalara | 2.63x / 2.65x | 2.81x / 2.81x | 2.55x / 2.57x | 2.77x / 2.77x |
+| **cijeli korak** | **3.08x / 2.34x** | **3.22x / 2.35x** | **3.24x / 2.33x** | **2.23x / 1.77x** |
 
-Sve presude za cijeli korak su "brže" (D10). Sile na 96³ su u šumu (poznata nestabilnost 96³ na PC-2).
+Sve presude za cijeli korak i za sile su "brže" (D10). Prethodni zbir (poslije M4-017, sesija M4-015 do
+M4-017) bio je 1.99 do 2.68x prema B0 i 1.60 do 2.02x prema B1; njegovi redovi u CSV-u ostaju
+(`PC2-20261109-M4-SUM-*`).
 
 **Šta je donijelo ubrzanje (po fazama):**
 - **Advekcija (oko 2.8x):** clamp bez grananja (M4-011), `restrict` (M4-012), 32-bitni indeks i red van
   linije, pa je petlja vektorizirana (M4-013), AVX2 po fajlu (M4-014) i fuzija (M4-015 do M4-017).
   Sve osim M4-014 i M4-017 vrijedi i bez AVX2.
-- **Projekcija (3.1 do 3.3x prema B0, 1.5 do 1.6x prema B1; na 128³ manje):** auto-vektorizacija iz M3 (B1),
+- **Projekcija (3.0 do 3.5x prema B0, 1.5 do 1.7x prema B1; na 128³ manje):** auto-vektorizacija iz M3 (B1),
   `restrict` (M4-007) i AVX2 po fajlu (M4-009). Na 128³ Jacobi je ograničen memorijom, pa SIMD daje manje.
-- **Sile:** vorticity confinement bez grananja (M4-003, M4-006).
+- **Sile (2.2 do 4.7x):** vorticity confinement bez grananja (M4-003, M4-006), `-fno-math-errno` (M4-018),
+  `restrict` i maska, pa su obje petlje vektorizirane (M4-019), AVX2 po fajlu (M4-020).
 
 **Ograničenja:**
-- Na 128³ projekcija je sada oko 53% koraka. Dalji dobitak traži manje prolaza kroz memoriju ili manje
+- Na 128³ projekcija je sada oko 59% koraka. Dalji dobitak traži manje prolaza kroz memoriju ili manje
   iteracija (vremensko blokiranje, red-black GS, multigrid), što D11 ostavlja za kasnije, jer je teže ili
   mijenja rezultat.
-- Brojevi vrijede za PC-2. Na računaru bez AVX2 otpadaju doprinosi M4-009, M4-014 i M4-017; ostalo ostaje.
-  Na PC-1 (Mac, ARM) M4 nije ponovo mjeren.
+- Brojevi vrijede za PC-2. Na računaru bez AVX2 otpadaju doprinosi M4-009, M4-014, M4-017 i M4-020; ostalo
+  ostaje. Na PC-1 (Mac, ARM) M4 nije ponovo mjeren.
 - E (efikasnost memorije) nije izračunat: kalibracija na PC-2 daje nevjerovatnih ~107 GB/s (odjeljak 6), pa
   zaključci stoje samo na S i Δ.
-- Oznake u CSV-u: `PC2-20261109-M4-SUM-B0-*` i `PC2-20261109-M4-SUM-B1-*`.
+- Oznake u CSV-u: `PC2-20261109-M4-SUM2-B0-*` i `PC2-20261109-M4-SUM2-B1-*`.

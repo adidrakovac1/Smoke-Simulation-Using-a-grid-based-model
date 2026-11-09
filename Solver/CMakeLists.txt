@@ -50,7 +50,7 @@ add_library(smoke_solver STATIC
 option(SMOKE_ENABLE_AVX2 "Build AVX2 kernels with a run-time CPU check (x86 only)" ON)
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SMOKE_CPU)
 if(SMOKE_ENABLE_AVX2 AND NOT SMOKE_DISABLE_VECTORIZATION AND SMOKE_CPU MATCHES "^(x86_64|amd64|x64|i[3-6]86)$")
-  set(SMOKE_AVX2_SOURCES src/stages/Projection_avx2.cpp src/stages/Advection_avx2.cpp)
+  set(SMOKE_AVX2_SOURCES src/stages/Projection_avx2.cpp src/stages/Advection_avx2.cpp src/stages/Forces_avx2.cpp)
   target_sources(smoke_solver PRIVATE ${SMOKE_AVX2_SOURCES})
   if(MSVC)
     set_source_files_properties(${SMOKE_AVX2_SOURCES} PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
@@ -68,6 +68,14 @@ else()
   set(SMOKE_AVX2_STATE "no AVX2 kernels")
 endif()
 message(STATUS "smoke_solver: ${SMOKE_AVX2_STATE}")
+
+# M4-018: without -fno-math-errno, std::sqrt in a loop keeps a library call (to set errno for negative input),
+# so the vorticity confinement loops cannot be vectorized. The flag does NOT change any result: sqrt of a
+# non-negative number is exact in IEEE 754, and it is not part of -ffast-math's value-changing options.
+# Only the force kernels get it.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set_property(SOURCE src/stages/Forces.cpp src/stages/Forces_avx2.cpp APPEND PROPERTY COMPILE_OPTIONS "-fno-math-errno")
+endif()
 target_include_directories(smoke_solver
   PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src

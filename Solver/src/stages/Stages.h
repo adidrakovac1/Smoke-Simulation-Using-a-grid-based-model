@@ -69,7 +69,9 @@ void applyBuoyancy(SmokeState& state, const SmokeParams& params, float dt, SlabR
 /// 2. Forces: buoyancy and optional vorticity confinement (docs/plan/MATH.md, section 3).
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 /// Add Fedkiw et al. vorticity confinement to the velocity field. A non-positive epsilon disables it.
-void applyVorticityConfinement(SmokeState& state, float epsilon, float dt, SlabRange range);
+/// `isa`: see KernelIsa (AVX2 build since M4-020); returns false only when the requested build is not available.
+bool applyVorticityConfinement(SmokeState& state, float epsilon, float dt, SlabRange range,
+                               KernelIsa isa = KernelIsa::Auto);
 
 /// 3. Semi-Lagrangian advection of u, v, w by the old velocity (docs/plan/MATH.md, section 4).
 void advectVelocity(SmokeState& state, float dt, SlabRange range);

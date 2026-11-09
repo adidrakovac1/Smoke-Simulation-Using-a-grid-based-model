@@ -234,8 +234,12 @@ Mijenjan je samo NACIN na koji procesor racuna (serijski, jedna nit; bez -ffast-
    - FUZIJA JEZGARA: u, v, w u jednom prolazu (jedan trag unazad za sva tri
      polja), gustina i temperatura u jednom prolazu ........................ nivo 2, M4-015/016
    - kompajler pusten na 8 floatova u spojenoj AVX2 petlji ................ M4-017
-3. Sile: applyVorticityConfinement (src/stages/Forces.cpp)
+3. Sile: applyVorticityConfinement (src/stages/Forces.cpp, ForcesRows.inc, Forces_avx2.cpp)
    - maske bez grananja umjesto if (gradijent 0) .......................... T10, M4-003, M4-006
+   - -fno-math-errno samo za taj fajl: sqrt bez poziva biblioteke ........ M4-018
+   - restrict + funkcije po redu + maska umjesto ?: kod djelitelja:
+     tek tada kompajler vektorizira obje petlje ............................ T12, M4-019
+   - AVX2 po fajlu s provjerom procesora ................................. T15/T16, M4-020
 4. Raspored memorije: SoA (poseban niz za svaku velicinu, red poravnat na 8 floatova / 32 bajta)
    je izabran od pocetka (M0), zato ga dio 2 poredi s AoS rasporedom (struct po celiji).
 5. Odmotavanje petlji: u verziji C ga radi kompajler (-O3, "unroll factor 4/8" u izvjestaju

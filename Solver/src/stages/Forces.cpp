@@ -1,6 +1,11 @@
 #include "stages/Stages.h"
 
+#include "CpuFeatures.h"
+#include "Restrict.h"
+
+#include <cassert>
 #include <cmath>
+#include <cstddef>
 
 namespace smoke::serial {
 
@@ -29,52 +34,54 @@ void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRan
     applyVorticityConfinement(state, params.vorticityEps, dt, range);
 }
 
-void applyVorticityConfinement(SmokeState& s, float epsilon, float dt, SlabRange range) {
-    if (!(epsilon > 0.0f)) return;
+namespace {
+// vorticityRow / confinementRow (M4-019): the same source is compiled again with -mavx2 in Forces_avx2.cpp.
+#include "stages/ForcesRows.inc"
+} // namespace
+
+#if defined(SMOKE_HAS_AVX2_BINARY)
+// Defined in Forces_avx2.cpp (compiled with -mavx2). Only call them when avx2Supported() is true.
+void vorticitySlabAvx2(float* u, float* v, float* w, float* ox, float* oy, float* oz, float* mag, int nx, int ny,
+                       int k0, int k1, std::ptrdiff_t sJ, std::ptrdiff_t sK);
+void confinementSlabAvx2(float* u, float* v, float* w, float* ox, float* oy, float* oz, float* mag, int nx, int ny,
+                         int k0, int k1, float epsilonDt, std::ptrdiff_t sJ, std::ptrdiff_t sK);
+#endif
+
+// Vorticity confinement (Fedkiw et al. 2001, eq. 9-11; docs/plan/MATH.md, section 3):
+//   pass 1: w = curl u and |w| for every interior cell (central differences, h = 1);
+//   pass 2: N = grad|w| / |grad|w||,  u += eps * dt * (N x w).
+// |w| needs its ghost layer between the passes (setBoundary), because pass 2 reads its neighbours.
+// The kernels are in ForcesRows.inc (M4-019); `isa` selects the build as for Jacobi (KernelIsa, M4-020).
+bool applyVorticityConfinement(SmokeState& s, float epsilon, float dt, SlabRange range, KernelIsa isa) {
+    const bool haveAvx2 = avx2Supported();  // always false when the AVX2 file is not built
+    if (isa == KernelIsa::Avx2Intrinsics) return false;  // there is no hand-written version
+    if (isa == KernelIsa::Avx2 && !haveAvx2) return false;
+    if (!(epsilon > 0.0f)) return true;
 
     const GridSize g = s.u.size();
-    for (int k = range.k0; k < range.k1; ++k) {
-        for (int j = 1; j <= g.ny; ++j) {
-            for (int i = 1; i <= g.nx; ++i) {
-                const float wx = 0.5f * ((s.w.at(i, j + 1, k) - s.w.at(i, j - 1, k)) -
-                                         (s.v.at(i, j, k + 1) - s.v.at(i, j, k - 1)));
-                const float wy = 0.5f * ((s.u.at(i, j, k + 1) - s.u.at(i, j, k - 1)) -
-                                         (s.w.at(i + 1, j, k) - s.w.at(i - 1, j, k)));
-                const float wz = 0.5f * ((s.v.at(i + 1, j, k) - s.v.at(i - 1, j, k)) -
-                                         (s.u.at(i, j + 1, k) - s.u.at(i, j - 1, k)));
-                s.vorticityX.at(i, j, k) = wx;
-                s.vorticityY.at(i, j, k) = wy;
-                s.vorticityZ.at(i, j, k) = wz;
-                s.vorticityMagnitude.at(i, j, k) = std::sqrt(wx * wx + wy * wy + wz * wz);
-            }
-        }
-    }
-    setBoundary(s.vorticityMagnitude, BoundaryKind::Scalar);
+    const std::ptrdiff_t sJ = s.u.strideJ(), sK = s.u.strideK();
+    assert(s.v.strideK() == sK && s.w.strideK() == sK && s.vorticityMagnitude.strideK() == sK &&
+           s.vorticityX.strideK() == sK && s.vorticityY.strideK() == sK && s.vorticityZ.strideK() == sK);
+    const VorticityFields f{s.u.data(),          s.v.data(),          s.w.data(),
+                            s.vorticityX.data(), s.vorticityY.data(), s.vorticityZ.data(),
+                            s.vorticityMagnitude.data()};
+    const float epsilonDt = epsilon * dt;
 
-    for (int k = range.k0; k < range.k1; ++k) {
-        for (int j = 1; j <= g.ny; ++j) {
-            for (int i = 1; i <= g.nx; ++i) {
-                const float nx = 0.5f * (s.vorticityMagnitude.at(i + 1, j, k) -
-                                         s.vorticityMagnitude.at(i - 1, j, k));
-                const float ny = 0.5f * (s.vorticityMagnitude.at(i, j + 1, k) -
-                                         s.vorticityMagnitude.at(i, j - 1, k));
-                const float nz = 0.5f * (s.vorticityMagnitude.at(i, j, k + 1) -
-                                         s.vorticityMagnitude.at(i, j, k - 1));
-                const float gradientMagnitude = std::sqrt(nx * nx + ny * ny + nz * nz);
-                // Branchless (M4-003): a finite denominator replaces the "if (|grad| > 0)" test. When the
-                // gradient is zero, nx = ny = nz = 0, so the force below is exactly 0 and no extra select is
-                // needed on the velocity (M4-006).
-                const float scale = epsilon * dt / (gradientMagnitude > 0.0f ? gradientMagnitude : 1.0f);  // h = 1
-                const float wx = s.vorticityX.at(i, j, k);
-                const float wy = s.vorticityY.at(i, j, k);
-                const float wz = s.vorticityZ.at(i, j, k);
-                s.u.at(i, j, k) += scale * (ny * wz - nz * wy);
-                s.v.at(i, j, k) += scale * (nz * wx - nx * wz);
-                s.w.at(i, j, k) += scale * (nx * wy - ny * wx);
-            }
-        }
+#if defined(SMOKE_HAS_AVX2_BINARY)
+    if (isa != KernelIsa::Scalar && haveAvx2) {  // M4-020
+        vorticitySlabAvx2(f.u, f.v, f.w, f.ox, f.oy, f.oz, f.mag, g.nx, g.ny, range.k0, range.k1, sJ, sK);
+        setBoundary(s.vorticityMagnitude, BoundaryKind::Scalar);
+        confinementSlabAvx2(f.u, f.v, f.w, f.ox, f.oy, f.oz, f.mag, g.nx, g.ny, range.k0, range.k1, epsilonDt, sJ,
+                            sK);
+        setVelocityBoundary(s);
+        return true;
     }
+#endif
+    vorticitySlab(f, g.nx, g.ny, range.k0, range.k1, sJ, sK);
+    setBoundary(s.vorticityMagnitude, BoundaryKind::Scalar);
+    confinementSlab(f, g.nx, g.ny, range.k0, range.k1, epsilonDt, sJ, sK);
     setVelocityBoundary(s);
+    return true;
 }
 
 } // namespace smoke::serial
