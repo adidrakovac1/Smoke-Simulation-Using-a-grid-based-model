@@ -394,3 +394,17 @@ Nalazi:
 - **Razlika od M4-001 na PC-1:** tamo je ista ideja odbačena po starom pravilu šuma, a i AppleClang
   je kod već vektorizirao bez nje. Na g++ je `restrict` na parametrima ono što omogućava
   vektorizaciju gradijenta i uklanja provjeru preklapanja.
+
+### M4-008: T8 `#pragma omp simd` u jezgrima projekcije: NIJE PRIMIJENJENO (isti vektorski kod)
+
+- **Hipoteza:** `#pragma omp simd` (uz `-fopenmp-simd`, bez niti) na tri petlje po redu bi mogao
+  dati bolju vektorizaciju.
+- **Provjera bez mjerenja vremena:** `Projection.cpp` je preveden s pragmom i bez nje (`g++ -O3 -S`).
+  Obje verzije imaju **isti broj svake vektorske instrukcije** (14 `addps`, 20 `subps`, 8 `mulps`,
+  2 `divps`, 32 `movups`, 5 `movlps`, 3 `shufps`, 1 `movaps`), uz isti izvještaj vektorizacije
+  (16-bajtni vektori, unroll 4). Razlikuje se samo raspored registara u pripremi izvan petlje.
+- **Odluka:** ne primjenjivati. Poslije M4-007 kompajler već zna da smije vektorizirati, pa pragma
+  ne donosi ništa, a traži dodatnu opciju kompajlera. Vrijeme nije mjereno, jer isti kod petlje ne
+  može dati drugačije vrijeme.
+- **Zapažanje za kasnije:** Jacobi dijeli sa 6 (`divps`). Množenje sa `1/6` je brže, ali mijenja
+  zaokruživanje (rezultat više nije bit po bit isti). Kandidat je za M4b, uz `--verify` s pragom.
