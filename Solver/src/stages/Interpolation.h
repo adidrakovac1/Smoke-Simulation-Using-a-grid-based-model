@@ -5,16 +5,22 @@
 
 #include "smoke/Field3D.h"
 
+#include <algorithm>
+
 namespace smoke::serial {
 
 /// Clamp a back-traced coordinate to the box. Interior cell i covers [i - 0.5, i + 0.5], so the box
 /// spans [0.5, n + 0.5] along an axis with n interior cells. This is the clamp used by advect() in
 /// Stam 2003, and it matches clipping the path at the wall in Fedkiw et al. 2001, fig. 2
 /// (docs/plan/MATH.md, section 4).
+///
+/// Branchless (M4-011, lab technique T10): min/max compile to minss/maxss instead of jumps, so the loop has
+/// no control flow and can be vectorized. Same result as "x < lo ? lo : (x > hi ? hi : x)" for every input,
+/// NaN included (std::max(NaN, lo) and std::min(NaN, hi) both return the NaN).
 inline float clampToBox(float x, int n) {
     const float lo = 0.5f;
     const float hi = static_cast<float>(n) + 0.5f;
-    return x < lo ? lo : (x > hi ? hi : x);
+    return std::min(std::max(x, lo), hi);
 }
 
 /// Trilinear interpolation of `f` at the point (x, y, z), given in cell-index coordinates

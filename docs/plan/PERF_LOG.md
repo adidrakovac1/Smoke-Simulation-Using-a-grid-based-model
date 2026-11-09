@@ -478,3 +478,33 @@ Nalazi:
   se nije promijenio, pa cijeli korak nije ponovo mjeren.
 - Za poređenje, ukupno na Jacobi jezgru prema M3 kodu bez vektorizacije: **3.7x (32³), 3.9x (64³),
   2.9x (96³), 2.0x (128³)** (verzija 4 u `smoke_lab`).
+
+### Profil kompajlera za advekciju na PC-2 (T7)
+
+- Prije M4-011 unutrašnja petlja `advectScalar` nije vektorizirana: "unsupported control flow in
+  loop". Uzrok je `clampToBox`, čiji ternarni operatori postaju skokovi.
+- Poslije M4-011 grananja nema, ali ostaje prepreka "evolution of base is not affine", isto kao
+  ranije kod gradijenta (aliasing kroz `Field3D`). Sljedeći korak je zato T12.
+- Iza toga ostaje treća prepreka: trilinearna interpolacija čita sa adresa koje zavise od brzine
+  (gather, T14 u labu).
+
+### M4-011: T10 clamp bez grananja u advekciji: ZADRŽATI
+
+- **Izmjena:** `clampToBox` (`Solver/src/stages/Interpolation.h`) je sada
+  `std::min(std::max(x, lo), hi)` (`minss`/`maxss`), umjesto `x < lo ? lo : (x > hi ? hi : x)`.
+  Rezultat je isti za svaki ulaz, uključujući NaN.
+- **Tačnost:** 44/44 testa; `--verify` daje bit po bit isto.
+- **Mjerenje:** osnova je `31ad2f8`, 3 runde.
+
+| Mreža | Adv. brzine: osnova / nova (ms) | S | Adv. skalara: osnova / nova (ms) | S | Cijeli korak S | Presude (brzina / skalari / korak) |
+| :--- | :--- | ---: | :--- | ---: | ---: | :--- |
+| 32³ | 0.619 / 0.613 | 1.009x | 0.520 / 0.512 | 1.016x | 1.021x | brže / šum / brže |
+| 64³ | 5.270 / 5.087 | 1.036x | 3.779 / 3.675 | 1.028x | 1.015x | brže / brže / šum |
+| 96³ | 18.300 / 18.862 | 0.970x | 13.680 / 12.362 | 1.107x | 1.005x | sporije / šum / šum |
+| 128³ | 42.266 / 41.195 | 1.026x | 28.948 / 28.228 | 1.026x | 1.008x | brže / brže / šum |
+
+- **Tumačenje:** dobitak je mali (1 do 3.5%), jer petlja još nije vektorizirana; uklonjeno je samo
+  grananje. Granice su rijetko dostignute, pa je grananje i inače bilo dobro predvidivo. 96³ je i
+  ovdje nekonzistentna (vidi uvod odjeljka 6).
+- **Odluka:** zadržati. Ovo je preduslov za vektorizaciju, uz mali dobitak i bez promjene rezultata.
+  Oznake u CSV-u: `PC2-20261109-M4-011-*`.
