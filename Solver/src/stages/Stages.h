@@ -48,14 +48,29 @@ void advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Fiel
 /// 1. Inject smoke (and heat) inside the source sphere: += dt * rate (docs/plan/MATH.md, section 3).
 void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 
-/// 2. Buoyancy, optionally vorticity confinement (docs/plan/MATH.md, section 3). TODO(M2) / TODO(M3).
+/// v += dt * ( -alpha * rho + beta * (T - T_amb) )  (Fedkiw et al. 2001, eq. 8; +y is up), then setBoundary(v).
+void applyBuoyancy(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
+
+/// 2. Forces: buoyancy now, vorticity confinement in M3 (docs/plan/MATH.md, section 3).
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 
-/// 3. Semi-Lagrangian advection of the velocity field (docs/plan/MATH.md, section 4). TODO(M2).
+/// 3. Semi-Lagrangian advection of u, v, w by the old velocity (docs/plan/MATH.md, section 4).
 void advectVelocity(SmokeState& state, float dt, SlabRange range);
 
-/// 4. Pressure projection: divergence, Jacobi iterations, velocity correction
-///    (docs/plan/MATH.md, section 5). The most expensive phase. TODO(M2).
+/// div = ( u(i+1) - u(i-1) + v(j+1) - v(j-1) + w(k+1) - w(k-1) ) / 2   (h = 1; docs/plan/MATH.md, section 5).
+/// Writes interior cells of `div` only.
+void computeDivergence(const Field3D& u, const Field3D& v, const Field3D& w, Field3D& div, SlabRange range);
+
+/// One Jacobi iteration for  laplacian(p) = div:  pNew = ( sum of the 6 neighbours of pOld - div ) / 6.
+/// Reads only pOld, writes only pNew (interior), so the cells are independent of each other.
+void jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range);
+
+/// u -= ( p(i+1) - p(i-1) ) / 2, and the same for v (in j) and w (in k). Interior cells only.
+void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D& p, SlabRange range);
+
+/// 4. Pressure projection (docs/plan/MATH.md, section 5; Stam 2003, project): divergence, p = 0,
+///    params.jacobiIterations Jacobi iterations, subtract the gradient. The most expensive phase.
+///    Afterwards state.divergence still holds the divergence BEFORE the correction (used by Diagnostics).
 void project(SmokeState& state, const SmokeParams& params, SlabRange range);
 
 /// 5. Semi-Lagrangian advection of density and temperature by the (corrected) velocity.

@@ -262,9 +262,9 @@ prilično gladak stub (gljivast vrh, slabo kovitlanje). To je poznata posljedica
 | :--- | :--- | :--- |
 | Tolerancija T1 | **izmjereno 2026-11-09:** greška 0 poslije 1 koraka i 4.9e-10 ćelije poslije 40; masa 2.4e-8 relativno. Granica 1e-6 | M1, gotovo |
 | Tolerancija T6 | **izmjereno 2026-11-09:** relativna asimetrija 1.8e-6 (oko 15 ulp). Granica 1e-5; namjerna greška od pola ćelije daje 0.34 | M1, gotovo |
-| Prag T3 (omjer max\|div\|) | `TODO(measure)` | M2, na 32³ i 64³ |
-| `α`, `β`, `T_amb` | `TODO(paper: Fedkiw01, eq. 8)` + `TODO(measure)` | M2, eksperimentalno (rad ne daje brojeve) |
-| Izvor: pozicija, radius, `densityRate`, `temperatureRate` | `TODO(measure)` | M2, eksperimentalno |
+| Prag T3 (omjer max\|div\|) | **izmjereno 2026-11-09:** 0.710 (32³) i 0.736 (64³) za K = 80; granica 0.8. Glatko polje: 0.111, granica 0.15 (VERIFICATION.md) | M2, gotovo |
+| `α`, `β`, `T_amb` | **izabrano 2026-11-09:** 0.05, 2.0, 0 (MATH.md, odjeljak 3) | M2, gotovo (M3 može promijeniti) |
+| Izvor: pozicija, radius, `densityRate`, `temperatureRate` | **izabrano 2026-11-09:** (0.5, 0.1, 0.5), 0.08, 10, 10 | M2, gotovo (M3 može promijeniti) |
 | `ε` (vorticity) | `TODO(measure)` | M3 |
 | Prag T10 | `TODO(measure)` | M3 |
 

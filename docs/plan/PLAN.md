@@ -60,12 +60,16 @@ Svaki milestone ima **kriterij završetka**: bez ispunjenog kriterija se ne prel
 bez NaN. Rezultat se vidi kao slika.
 
 ### M2: brzina i pritisak (sedmica 2 do 4)
-- [ ] Uzgon (`applyBuoyancy`), polje temperature (po odluci D1).
-- [ ] Advekcija brzine.
-- [ ] Projekcija: divergencija, Jacobi (dvije kopije polja), korekcija brzine.
-- [ ] `step(dt)` slaže cijeli korak u redoslijedu iz ARCHITECTURE.md.
-- [ ] Testovi T3, T8, T9.
-- [ ] Prag za T3 izmjeren i upisan.
+- [x] Uzgon (`applyBuoyancy`), polje temperature (po odluci D1); parametri izabrani eksperimentalno (MATH.md, odjeljak 3).
+- [x] Advekcija brzine.
+- [x] Projekcija: divergencija, Jacobi (dvije kopije polja), korekcija brzine.
+- [x] `step(dt)` slaže cijeli korak u redoslijedu iz ARCHITECTURE.md.
+- [x] Testovi T3, T8, T9 (plus T5 za cijeli korak i dijagnostika na zahtjev, P3).
+- [x] Prag za T3 izmjeren i upisan (VERIFICATION.md, odjeljak 1).
+
+**Stanje kriterija (2026-11-09, 64³):** stub se diže i razlije ispod zatvorenog vrha, ali se **slabo uvija**
+(nalaz, očekivan u IMPLEMENTATION_PLAN.md, odjeljak 5.4; rješava se vorticity confinementom u M3).
+Divergencija poslije projekcije: 0.229, 0.154, 0.125 za K = 20, 40, 80 (100 koraka). 500 koraka bez NaN.
 
 **Kriterij:** dim se diže od izvora kao stub i pritom se uvija; divergencija poslije projekcije
 je izmjerljivo manja nego prije i opada s brojem iteracija; 500 koraka bez NaN.

@@ -1,5 +1,6 @@
 #include "smoke/SmokeSolver.h"
 
+#include "DiagnosticsCompute.h"
 #include "Profiler.h"
 #include "SmokeState.h"
 #include "stages/Stages.h"
@@ -12,8 +13,8 @@ struct SmokeSolver::Impl {
     SolverConfig config;
     SmokeState   state;
     StepTimings  timings;
-    Diagnostics  diagnostics;
-    long long    steps = 0;
+    float        lastDt = 0.0f;   // dt of the last step, for the CFL number in diagnostics()
+    long long    steps  = 0;
 
     explicit Impl(const SolverConfig& cfg) : config(cfg) { state.resize(config.grid); }
 };
@@ -37,23 +38,23 @@ void SmokeSolver::step(float dt) {
     { ScopedTimer t(s.timings[Stage::Project]);        project(s.state, s.config.params, all); }
     { ScopedTimer t(s.timings[Stage::AdvectScalars]);  advectScalars(s.state, dt, all); }
 
+    s.lastDt = dt;
     ++s.steps;
-    // TODO(M2): fill s.diagnostics (max |div| before/after, mass, max speed, CFL, NaN count).
 }
 
 void SmokeSolver::reset() {
     impl_->state.clear();
-    impl_->timings     = StepTimings{};
-    impl_->diagnostics = Diagnostics{};
-    impl_->steps       = 0;
+    impl_->timings = StepTimings{};
+    impl_->lastDt  = 0.0f;
+    impl_->steps   = 0;
 }
 
 void SmokeSolver::resize(const GridSize& newSize) {
     impl_->config.grid = newSize;
     impl_->state.resize(newSize);
-    impl_->timings     = StepTimings{};
-    impl_->diagnostics = Diagnostics{};
-    impl_->steps       = 0;
+    impl_->timings = StepTimings{};
+    impl_->lastDt  = 0.0f;
+    impl_->steps   = 0;
 }
 
 const GridSize&    SmokeSolver::gridSize() const { return impl_->config.grid; }
@@ -73,7 +74,7 @@ DensityView SmokeSolver::density() const {
     return v;
 }
 
-const Diagnostics& SmokeSolver::diagnostics() const { return impl_->diagnostics; }
+Diagnostics SmokeSolver::diagnostics() const { return computeDiagnostics(impl_->state, impl_->lastDt); }
 const StepTimings& SmokeSolver::lastTimings() const { return impl_->timings; }
 
 } // namespace smoke

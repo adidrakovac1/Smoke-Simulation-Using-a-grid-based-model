@@ -33,6 +33,7 @@ endfunction()
 add_library(smoke_solver STATIC
   src/SmokeSolver.cpp
   src/Field3D.cpp
+  src/DiagnosticsCompute.cpp
   src/stages/Sources.cpp
   src/stages/Forces.cpp
   src/stages/Advection.cpp
@@ -58,6 +59,9 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/test_advection.cpp
     tests/test_sources.cpp
     tests/test_symmetry_determinism.cpp
+    tests/test_forces.cpp
+    tests/test_projection.cpp
+    tests/test_stability.cpp
     tests/demo_advect.cpp                              # M1 demo, started by "smoke_cli --demo advect"
   )
   target_link_libraries(smoke_selftest PUBLIC smoke_solver)

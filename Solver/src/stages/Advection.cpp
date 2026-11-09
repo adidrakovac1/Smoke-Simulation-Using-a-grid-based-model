@@ -22,9 +22,17 @@ void advectScalar(Field3D& dst, const Field3D& src, const Field3D& u, const Fiel
     }
 }
 
-void advectVelocity(SmokeState& /*state*/, float /*dt*/, SlabRange /*range*/) {
-    // TODO(M2): semi-Lagrangian advection of u, v, w by the old velocity field (Stam 1999).
-    // Swap with the *0 fields, advect each component from *0 using (u0, v0, w0), then setVelocityBoundary.
+// Self-advection of the velocity (Stam 1999, section 2.2): each component is a field like any other and is
+// carried by the flow. All three components are traced back with the OLD velocity (u0, v0, w0), so the
+// result does not depend on the order in which components or cells are processed.
+void advectVelocity(SmokeState& s, float dt, SlabRange range) {
+    s.u.swap(s.u0);
+    s.v.swap(s.v0);
+    s.w.swap(s.w0);
+    advectScalar(s.u, s.u0, s.u0, s.v0, s.w0, dt, range);
+    advectScalar(s.v, s.v0, s.u0, s.v0, s.w0, dt, range);
+    advectScalar(s.w, s.w0, s.u0, s.v0, s.w0, dt, range);
+    setVelocityBoundary(s);
 }
 
 void advectScalars(SmokeState& s, float dt, SlabRange range) {

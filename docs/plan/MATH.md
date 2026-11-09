@@ -69,6 +69,22 @@ komponentu `v`: `v ← v + dt · ( -α·ρ + β·(T - T_amb) )`.
 `ρ += dt · densityRate`, `T += dt · temperatureRate`, u ćelijama unutar kugle izvora. Pozicija i poluprečnik
 su relativni (poluprečnik kao udio od `nx`), da ne zavise od veličine mreže.
 
+**Izabrane vrijednosti (M2, 2026-11-09, eksperimentalno na 64³, gledanjem presjeka):**
+
+| Parametar | Vrijednost | Zašto ova |
+| :--- | :--- | :--- |
+| izvor: pozicija | `(0.5, 0.1, 0.5)` | dno, sredina po x i z |
+| izvor: poluprečnik | `0.08·nx` (oko 5 ćelija) | sa `0.06` stub je bio preuzak |
+| `densityRate`, `temperatureRate` | `10`, `10` po sekundi | prvi pokušaj; dim je vidljiv i ne zasiti sliku |
+| `α` | `0.05` | mali; težina dima samo blago koči uspon |
+| `β` | `2.0` | sa `β = 1` stub je poslije 300 koraka (5 s) jedva prešao pola kutije; sa `2.0` udari u vrh oko koraka 300 |
+| `T_amb` | `0` | temperatura je mjerena od ambijenta |
+
+Rezultat (64³, 500 koraka, K = 40): stub se diže, udari u zatvoreni vrh (D3) i razlije se ispod njega;
+`max|u|` je oko 47 ćelija/s, a CFL oko 0.78. Stub je gladak i slabo se uvija, jer bez vorticity
+confinementa numerička difuzija guši sitne vrtloge. To očekujemo popraviti u M3. Vrijednosti se ne
+prenose automatski na druge veličine mreže (odluka D4).
+
 ### Vorticity confinement (opcionalno)
 Numerička difuzija izgladi sitne vrtloge i dim izgleda "mrtvo". [Fedkiw01] (jednadžbe 9 do 11)
 vraća ih silom:

@@ -38,12 +38,11 @@ bench/           mjerenje
 reference/       referentni rezultati (kasnije)
 ```
 
-## Stanje (M1)
+## Stanje (M2)
 
-Radi: polja (`Field3D`: ghost sloj, padding reda na 8 floatova, poravnanje na 64 B, `swap`), rubni uslovi
-(`setBoundary`), izvor dima, semi-Lagrangian advekcija gustoće i temperature, `SmokeSolver` (`step`, `reset`,
-`resize`, `density()`, `lastTimings()`), mjerenje vremena po fazi, konzolni program (`--dump-slices`,
-`--demo advect`), testovi T1, T2, T4, T5, T6, T7.
+Radi cijeli korak: izvor dima, uzgon (temperatura), advekcija brzine, projekcija (divergencija, Jacobi,
+korekcija), advekcija gustoće i temperature; rubni uslovi; dijagnostika na zahtjev (`diagnostics()`);
+mjerenje vremena po fazi; konzolni program (`--dt`, `--jacobi`, `--dump-slices`, `--demo advect`);
+testovi T1 do T9.
 
-**Ne radi još** (`TODO(M2)`, `TODO(M3)` u `src/stages/`): uzgon, advekcija brzine, projekcija, dijagnostika,
-vorticity confinement.
+**Ne radi još** (M3): vorticity confinement, `smoke_bench`, referentni rezultat, T10.
