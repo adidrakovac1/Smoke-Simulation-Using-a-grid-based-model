@@ -10,16 +10,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
-#include <cerrno>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <chrono>
-#include <sys/stat.h>
-#ifdef _WIN32
-#include <direct.h>
-#endif
+#include <filesystem>
+#include <system_error>
 
 #ifndef SMOKE_BUILD_TYPE
 #define SMOKE_BUILD_TYPE "unknown"
@@ -60,7 +57,7 @@ bool parseFloat(const char* text, float& out) {
 bool parseNonnegativeFloat(const char* text, float& out) {
     char* end = nullptr;
     const float v = std::strtof(text, &end);
-    if (end == text || *end != '\0' || !std::isfinite(v) || v < 0.0f || v > 10.0f) return false;
+    if (end == text || *end != '\0' || !std::isfinite(v) || v < 0.0f) return false;
     out = v;
     return true;
 }
@@ -114,31 +111,11 @@ double median(std::vector<double> v) {
     return (v.size() % 2) ? v[m] : 0.5 * (v[m - 1] + v[m]);
 }
 
+// Creates the folder and its parents. The error_code overload reports failure instead of throwing.
 bool createDirectories(const std::string& path) {
-    auto makeDirectory = [](const std::string& directory) {
-#ifdef _WIN32
-    if (_mkdir(directory.c_str()) == 0) return true;
-    struct _stat info;
-    return errno == EEXIST && _stat(directory.c_str(), &info) == 0 && (info.st_mode & _S_IFDIR);
-#else
-    if (mkdir(directory.c_str(), 0777) == 0) return true;
-    struct stat info;
-    return errno == EEXIST && stat(directory.c_str(), &info) == 0 && S_ISDIR(info.st_mode);
-#endif
-    };
-
-    std::string current;
-    for (char c : path) {
-    current += c;
-#ifdef _WIN32
-    const bool separator = c == '/' || c == '\\';
-#else
-    const bool separator = c == '/';
-#endif
-    if (separator && current.size() > 1 && !makeDirectory(current.substr(0, current.size() - 1)))
-        return false;
-    }
-    return !path.empty() && makeDirectory(path);
+    std::error_code error;
+    std::filesystem::create_directories(path, error);
+    return !error && std::filesystem::is_directory(path, error);
 }
 
 } // namespace
@@ -165,7 +142,7 @@ int main(int argc, char** argv) {
     std::cout << "=== Smoke Solver (serijska verzija) ===\n"
               << "Pocinjemo simulaciju dima.\n\n"
               << "Gradnja:  " << SMOKE_BUILD_TYPE << "\n"
-    << "Racunar:  otisak: smoke_bench --calibrate\n"
+              << "Racunar:  otisak: smoke_bench --calibrate\n"
               << "Konfig:   mreza " << cfg.grid.nx << "x" << cfg.grid.ny << "x" << cfg.grid.nz
               << ", koraka " << opt.steps << " (+ " << opt.warmup << " zagrijavanja)"
               << ", dt " << cfg.params.dt << ", Jacobi iteracija " << cfg.params.jacobiIterations << "\n"

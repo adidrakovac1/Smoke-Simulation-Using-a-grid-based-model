@@ -105,6 +105,8 @@ endif()
 if(SMOKE_BUILD_BENCH)
   add_executable(smoke_bench bench/bench_main.cpp)
   target_link_libraries(smoke_bench PRIVATE smoke_solver)
+  # The commit id is read when CMake CONFIGURES, not on every build. After a new commit, re-run
+  # cmake (or delete the build folder) before measuring, or smoke_bench reports a stale id.
   execute_process(
     COMMAND git rev-parse --short HEAD
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
@@ -116,7 +118,7 @@ if(SMOKE_BUILD_BENCH)
     set(SMOKE_COMMIT "unknown")
   endif()
   execute_process(
-    COMMAND git diff --quiet
+    COMMAND git diff HEAD --quiet   # HEAD: staged changes also count as dirty
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
     RESULT_VARIABLE SMOKE_WORKTREE_DIFF
     ERROR_QUIET

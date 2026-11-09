@@ -8,7 +8,7 @@ using smoke::SmokeState;
 using namespace smoke::serial;
 using namespace smoke_test;
 
-TEST_CASE("vorticity_confinement_pushes_velocity_toward_growing_vorticity") {
+TEST_CASE("vorticity_confinement_adds_eps_dt_N_cross_omega") {
     const GridSize g{10, 8, 8};
     SmokeState state;
     state.resize(g);

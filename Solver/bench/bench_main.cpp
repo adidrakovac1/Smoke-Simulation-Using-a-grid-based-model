@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -23,10 +24,6 @@
 #include <windows.h>
 #elif defined(__APPLE__)
 #include <sys/sysctl.h>
-#endif
-
-#if !defined(_WIN32)
-#include <sys/stat.h>
 #endif
 
 #ifndef SMOKE_BENCH_BUILD_TYPE
@@ -242,34 +239,15 @@ struct Calibration {
     double dependentNsPerOp = 0.0;
 };
 
+// Creates the parent folders of filePath. The error_code overload reports failure instead of throwing.
 bool createParentDirectories(const std::string& filePath) {
-    const std::size_t separator = filePath.find_last_of("/\\");
-    if (separator == std::string::npos) return true;
-    const std::string parent = filePath.substr(0, separator);
-
-    auto ensureDirectory = [](const std::string& path) {
-        if (path.empty()) return true;
-#if defined(_WIN32)
-        const DWORD attributes = GetFileAttributesA(path.c_str());
-        if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY)) return true;
-        return CreateDirectoryA(path.c_str(), nullptr) != 0 &&
-               (GetFileAttributesA(path.c_str()) & FILE_ATTRIBUTE_DIRECTORY) != 0;
-#else
-        struct stat info {};
-        if (stat(path.c_str(), &info) == 0) return S_ISDIR(info.st_mode);
-        return mkdir(path.c_str(), 0777) == 0;
-#endif
-    };
-
-    for (std::size_t end = 0; end <= parent.size(); ++end) {
-        if (end != parent.size() && parent[end] != '/' && parent[end] != '\\') continue;
-#if defined(_WIN32)
-        if (end == 2 && parent.size() > 2 && parent[1] == ':') continue;
-#endif
-        if (!ensureDirectory(parent.substr(0, end))) {
-            std::cerr << "Cannot create output directory " << parent.substr(0, end) << '\n';
-            return false;
-        }
+    const std::filesystem::path parent = std::filesystem::path(filePath).parent_path();
+    if (parent.empty()) return true;
+    std::error_code error;
+    std::filesystem::create_directories(parent, error);
+    if (error || !std::filesystem::is_directory(parent, error)) {
+        std::cerr << "Cannot create output directory " << parent.string() << '\n';
+        return false;
     }
     return true;
 }
