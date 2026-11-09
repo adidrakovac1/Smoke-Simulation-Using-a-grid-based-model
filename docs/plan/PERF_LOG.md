@@ -338,3 +338,23 @@ Nalazi:
 - **Odluka:** zadržati. Faza Sile je mjerljivo brža na 32³, 64³ i 128³. Na 96³ je presuda šum
   (vidi gore). Cijeli korak dobija 1.4% do 3.7%, a na 128³ to je unutar šuma.
 - Svi redovi su u `perf/results.csv` (oznake `PC2-20261109-BASE-*` i `PC2-20261109-M4-003-*`).
+
+### M4-006: T10 uklanjanje suvišnih odabira u M4-003: ZADRŽATI (jednostavnije, bez ubrzanja)
+
+- **Jezgro:** drugi prolaz `applyVorticityConfinement` (`Solver/src/stages/Forces.cpp`).
+- **Hipoteza:** kad je gradijent nula, onda su `nx = ny = nz = 0`, pa je sila tačno 0. Zato su
+  `hasGradient ? u + f : u` (tri puta) i tri dodatna čitanja brzine suvišni; dovoljan je `+=`.
+  Manje operacija bi moglo malo ubrzati petlju.
+- **Tačnost:** 43/43 testa; `--verify` prema PC-2 referenci daje bit po bit isto.
+- **Mjerenje:** osnova je M4-003 (`18df554`), 3 naizmjenične runde.
+
+| Mreža | Sile: osnova / nova (ms) | S / Δ | Cijeli korak S / Δ | Presuda (D10) |
+| :--- | :--- | :--- | :--- | :--- |
+| 32³ | 0.219 / 0.221 | 0.993x / −0.75% | 1.000x / −0.05% | šum |
+| 64³ | 1.890 / 1.894 | 0.998x / −0.23% | 0.997x / −0.35% | šum |
+| 96³ | 9.340 / 8.543 | 1.093x / 8.5% | 1.042x / 4.1% | šum (96³ bučna) |
+| 128³ | 17.807 / 17.446 | 1.021x / 2.0% | 0.998x / −0.18% | šum |
+
+- **Odluka:** ubrzanja nema. Kompajler je odabire vjerovatno već sveo na isto. Izmjena je ipak
+  zadržana, jer kod čini jednostavnijim (manje operacija i čitanja), a rezultat je isti.
+  Oznake u CSV-u: `PC2-20261109-M4-006-*`, presuda `keep_simpler`.
