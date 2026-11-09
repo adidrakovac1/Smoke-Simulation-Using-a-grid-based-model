@@ -28,9 +28,11 @@ inline const char* stageName(Stage s) {
     }
 }
 
-/// Time spent in each stage during the LAST step, in milliseconds.
+/// Time spent in each stage during the LAST step, in milliseconds. `jacobiIterationMs` is the
+/// mean time for one iteration, measured inside (and included in) the Project stage.
 struct StepTimings {
     std::array<double, kStageCount> ms{};
+    double jacobiIterationMs = 0.0;
 
     double total() const {
         double t = 0.0;

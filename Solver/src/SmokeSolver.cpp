@@ -35,7 +35,10 @@ void SmokeSolver::step(float dt) {
     { ScopedTimer t(s.timings[Stage::Sources]);        addSources(s.state, s.config.params, dt, all); }
     { ScopedTimer t(s.timings[Stage::Forces]);         applyForces(s.state, s.config.params, dt, all); }
     { ScopedTimer t(s.timings[Stage::AdvectVelocity]); advectVelocity(s.state, dt, all); }
-    { ScopedTimer t(s.timings[Stage::Project]);        project(s.state, s.config.params, all); }
+    {
+        ScopedTimer t(s.timings[Stage::Project]);
+        project(s.state, s.config.params, all, &s.timings.jacobiIterationMs);
+    }
     { ScopedTimer t(s.timings[Stage::AdvectScalars]);  advectScalars(s.state, dt, all); }
 
     s.lastDt = dt;

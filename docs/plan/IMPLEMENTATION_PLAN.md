@@ -220,15 +220,15 @@ manja nego prije i opada s brojem iteracija; 500 koraka bez NaN; prag za T3 izmj
 3. `computeDivergence` i test na analitičkom polju (`u = x` daje `div = 1` u unutrašnjosti). [C]
 4. `jacobiIteration`, `subtractPressureGradient`, `project` i **T3**: slučajno polje brzine (splitmix64,
    fiksno sjeme), projekcija s K = 10, 20, 40, 80. Provjera: omjer `max|div|` poslije / prije ispod praga i
-   strogo opada s K. **Prag je `TODO(measure)`:** prvo izmjerimo omjere na 32³ i 64³, pa prag upišemo s datumom
-   i veličinom mreže (VERIFICATION.md, "O pragovima"). [C]
+   strogo opada s K. **Izmjereno 2026-11-09:** za K = 80 omjeri su 0.710 (32³) i 0.736 (64³); prag je 0.8
+   (VERIFICATION.md, "O pragovima"). [C]
 5. `computeDiagnostics` i `diagnostics()`; test: masa i broj NaN tačni na ručno postavljenom polju. [B]
 6. Cijeli `step` i:
    - **T8**: 500 koraka bez NaN/Inf. U `smoke_tests` na 32³ (da testovi ostanu brzi), a na 64³ kroz
      `smoke_cli` kao dio kriterija;
    - **T9**: proširiti postojeći test: poslije `resize` su **sva** polja nulirana, a ne samo gustoća. [B]
-7. Izbor parametara za izgled: `α`, `β`, `T_amb`, izvor. **`TODO(measure)`:** biramo ih eksperimentalno
-   gledajući slike i upisujemo u MATH.md s datumom (MATH.md, odjeljak 3: "biramo eksperimentalno"). [A/B]
+7. Izbor parametara za izgled: `α`, `β`, `T_amb`, izvor. **Izabrano 2026-11-09** eksperimentalno gledajući
+   slike; vrijednosti su upisane u MATH.md, odjeljak 3. M3 je dodatno odabrao `ε=5` za vorticity confinement. [A/B]
 
 ### 5.4 Kako se provjerava da je M2 gotov
 
@@ -239,18 +239,19 @@ manja nego prije i opada s brojem iteracija; 500 koraka bez NaN; prag za T3 izmj
 | 500 koraka bez NaN (64³) | `smoke_cli --steps 500 --warmup 0` | `NaN/Inf celija: 0`, `Status: OK`, izlazni kod 0 |
 | Stub koji se diže i uvija | `smoke_cli --steps 300 --dump-slices out/m2 --every 20` | dim se diže od izvora, širi se pri vrhu, rubovi se kovitlaju |
 
-**Rizik za "uvija se":** bez vorticity confinementa (M3) i bez ikakvog šuma, simetričan izvor na 64³ može dati
-prilično gladak stub (gljivast vrh, slabo kovitlanje). To je poznata posljedica numeričke difuzije ([Stam03],
-"numerical dissipation"; [Fedkiw01], odjeljak 3). Ako se to desi, prijavljujem kao nalaz, a rješenje je u M3.
+**Nalaz M2 / rješenje M3:** bez vorticity confinementa simetričan izvor na 64³ daje gladak stub sa slabim
+kovitlanjem zbog numeričke difuzije ([Stam03], "numerical dissipation"; [Fedkiw01], odjeljak 3). M3 je
+dodao confinement; eksperimentalno izabrani `ε=5` i vizuelno poređenje su u MATH.md, odjeljak 3.
 
 ---
 
-## 6. M3 i M4 (skica)
+## 6. M3 i M4
 
-- **M3 [A/B]:** vorticity confinement ([Fedkiw01], jed. 9 do 11; `ε` je `TODO(measure)`), podešavanje
-  parametara, `smoke_bench` (CSV po fazi za 32³, 64³, 96³, 128³; mjerila kao `bench.hpp` iz laba),
-  `--calibrate`, `--csv`, `--verify`, referentni rezultat `Solver/reference/serial_64_100steps.bin`, osnove
-  B0/B1, T10 (prag `TODO(measure)`), vrijeme po Jacobi iteraciji.
+- **M3 [A/B], gotovo 2026-11-09:** vorticity confinement s opcionalnim `ε` (zadano 5.0; 0 isključuje),
+  parametri i vizuelno poređenje u MATH.md; `smoke_bench` CSV po fazi na 32³, 64³, 96³, 128³
+  (10 zagrijavanja + 100 koraka), `--calibrate`, referentni rezultat
+  `Solver/reference/serial_64_100steps.bin`, B0/B1 osnove i vrijeme po Jacobi iteraciji. T10 je izmjeren
+  na 24³: drift mase 7.29746%, prag 10%. Rezultati su u VERIFICATION.md, PERF_LOG.md i `perf/results.csv`.
 - **M4 (sekvencijalno, D8):** M4a tehnike iz laba po jezgrima, redom po profilu iz M3; M4b dodatne sekvencijalne
   tehnike (uključujući topli start pritiska, N13); M4c zatvaranje. Sve po OPTIMIZATION.md i PERF_LOG.md.
 
@@ -263,10 +264,10 @@ prilično gladak stub (gljivast vrh, slabo kovitlanje). To je poznata posljedica
 | Tolerancija T1 | **izmjereno 2026-11-09:** greška 0 poslije 1 koraka i 4.9e-10 ćelije poslije 40; masa 2.4e-8 relativno. Granica 1e-6 | M1, gotovo |
 | Tolerancija T6 | **izmjereno 2026-11-09:** relativna asimetrija 1.8e-6 (oko 15 ulp). Granica 1e-5; namjerna greška od pola ćelije daje 0.34 | M1, gotovo |
 | Prag T3 (omjer max\|div\|) | **izmjereno 2026-11-09:** 0.710 (32³) i 0.736 (64³) za K = 80; granica 0.8. Glatko polje: 0.111, granica 0.15 (VERIFICATION.md) | M2, gotovo |
-| `α`, `β`, `T_amb` | **izabrano 2026-11-09:** 0.05, 2.0, 0 (MATH.md, odjeljak 3) | M2, gotovo (M3 može promijeniti) |
-| Izvor: pozicija, radius, `densityRate`, `temperatureRate` | **izabrano 2026-11-09:** (0.5, 0.1, 0.5), 0.08, 10, 10 | M2, gotovo (M3 može promijeniti) |
-| `ε` (vorticity) | `TODO(measure)` | M3 |
-| Prag T10 | `TODO(measure)` | M3 |
+| `α`, `β`, `T_amb` | **izabrano 2026-11-09:** 0.05, 2.0, 0 (MATH.md, odjeljak 3) | M2, gotovo (M3 zadržao vrijednosti) |
+| Izvor: pozicija, radius, `densityRate`, `temperatureRate` | **izabrano 2026-11-09:** (0.5, 0.1, 0.5), 0.08, 10, 10 | M2, gotovo (M3 zadržao vrijednosti) |
+| `ε` (vorticity) | **izabrano 2026-11-09:** zadano 5.0 na 64³; 0 isključuje | M3, gotovo |
+| Prag T10 | **izmjereno 2026-11-09:** drift 7.29746% / prag 10% (24³, 100 koraka) | M3, gotovo |
 
 `dt = 1/60` i `jacobiIterations` u rasponu 20 do 80 dolaze iz našeg planskog dokumenta, pa nisu izmišljeni.
 

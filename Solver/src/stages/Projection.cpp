@@ -1,5 +1,7 @@
 #include "stages/Stages.h"
 
+#include "Profiler.h"
+
 namespace smoke::serial {
 
 // Pressure projection (Stam 1999, appendix B; Stam 2003, project(); docs/plan/MATH.md, section 5).
@@ -50,7 +52,7 @@ void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D&
     }
 }
 
-void project(SmokeState& s, const SmokeParams& params, SlabRange range) {
+void project(SmokeState& s, const SmokeParams& params, SlabRange range, double* jacobiIterationMs) {
     // 1. Divergence of the current velocity (its ghost layer is up to date, see Stages.h invariant).
     computeDivergence(s.u, s.v, s.w, s.divergence, range);
     setBoundary(s.divergence, BoundaryKind::Scalar);  // as set_bnd(div) in Stam 2003
@@ -60,10 +62,23 @@ void project(SmokeState& s, const SmokeParams& params, SlabRange range) {
     //    one (pressure). The Neumann condition dp/dn = 0 at the walls (Fedkiw et al. 2001, eq. 4) is the
     //    Scalar boundary rule: the ghost cell copies its interior neighbour.
     s.pressure.fill(0.0f);
-    for (int it = 0; it < params.jacobiIterations; ++it) {
-        s.pressure.swap(s.pressure0);
-        jacobiIteration(s.pressure, s.pressure0, s.divergence, range);
-        setBoundary(s.pressure, BoundaryKind::Scalar);
+    auto iterate = [&] {
+        for (int it = 0; it < params.jacobiIterations; ++it) {
+            s.pressure.swap(s.pressure0);
+            jacobiIteration(s.pressure, s.pressure0, s.divergence, range);
+            setBoundary(s.pressure, BoundaryKind::Scalar);
+        }
+    };
+    if (jacobiIterationMs && params.jacobiIterations > 0) {
+        double totalMs = 0.0;
+        {
+            ScopedTimer timer(totalMs);
+            iterate();
+        }
+        *jacobiIterationMs = totalMs / params.jacobiIterations;
+    } else {
+        if (jacobiIterationMs) *jacobiIterationMs = 0.0;
+        iterate();
     }
 
     // 3. Make the velocity (nearly) divergence free: u -= grad p.

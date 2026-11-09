@@ -6,8 +6,8 @@ namespace smoke {
 /// do not change when the grid size changes: x, y, z in [0,1] along each axis, radius as a fraction of nx.
 /// Every step each cell inside the sphere gets  density += dt * densityRate  and
 /// temperature += dt * temperatureRate  (like add_source in Stam 2003; docs/plan/MATH.md, section 3).
-/// Default values: chosen experimentally on 64^3 by looking at the slices (2026-11-09, M2), recorded in
-/// docs/plan/MATH.md, section 3. They are not from a paper and may be re-tuned in M3.
+/// Source/buoyancy defaults were chosen experimentally on 64^3 in M2; the vorticity epsilon was
+/// tuned visually in M3. Values and observations are recorded in docs/plan/MATH.md, section 3.
 struct SmokeSource {
     float x = 0.5f, y = 0.1f, z = 0.5f;  // bottom centre of the box
     float radius          = 0.08f;       // about 5 cells on 64^3
@@ -25,7 +25,7 @@ struct SmokeParams {
     float buoyancyAlpha    = 0.05f;
     float buoyancyBeta     = 2.0f;
     float ambientTemp      = 0.0f;
-    float vorticityEps     = 0.0f;          // 0 = vorticity confinement off
+    float vorticityEps     = 5.0f;          // M3 visual tuning for 64^3; 0 = off
     float viscosity        = 0.0f;          // 0 = skip velocity diffusion (small for smoke)
     float diffusion        = 0.0f;          // 0 = skip density diffusion
     SmokeSource source;

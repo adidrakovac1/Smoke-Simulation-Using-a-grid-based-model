@@ -20,10 +20,12 @@ struct SmokeState {
     Field3D w, w0;
     Field3D pressure,    pressure0;
     Field3D divergence;
+    Field3D vorticityX, vorticityY, vorticityZ, vorticityMagnitude;
 
-    std::array<Field3D*, 13> fields() {
+    std::array<Field3D*, 17> fields() {
         return {&density, &density0, &temperature, &temperature0, &u, &u0, &v, &v0,
-                &w, &w0, &pressure, &pressure0, &divergence};
+                &w, &w0, &pressure, &pressure0, &divergence, &vorticityX, &vorticityY,
+                &vorticityZ, &vorticityMagnitude};
     }
 
     void resize(const GridSize& s) {

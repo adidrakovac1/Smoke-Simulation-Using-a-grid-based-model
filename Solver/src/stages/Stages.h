@@ -51,8 +51,10 @@ void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRang
 /// v += dt * ( -alpha * rho + beta * (T - T_amb) )  (Fedkiw et al. 2001, eq. 8; +y is up), then setBoundary(v).
 void applyBuoyancy(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 
-/// 2. Forces: buoyancy now, vorticity confinement in M3 (docs/plan/MATH.md, section 3).
+/// 2. Forces: buoyancy and optional vorticity confinement (docs/plan/MATH.md, section 3).
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
+/// Add Fedkiw et al. vorticity confinement to the velocity field. A non-positive epsilon disables it.
+void applyVorticityConfinement(SmokeState& state, float epsilon, float dt, SlabRange range);
 
 /// 3. Semi-Lagrangian advection of u, v, w by the old velocity (docs/plan/MATH.md, section 4).
 void advectVelocity(SmokeState& state, float dt, SlabRange range);
@@ -71,7 +73,9 @@ void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D&
 /// 4. Pressure projection (docs/plan/MATH.md, section 5; Stam 2003, project): divergence, p = 0,
 ///    params.jacobiIterations Jacobi iterations, subtract the gradient. The most expensive phase.
 ///    Afterwards state.divergence still holds the divergence BEFORE the correction (used by Diagnostics).
-void project(SmokeState& state, const SmokeParams& params, SlabRange range);
+///    When provided, jacobiIterationMs receives the mean time per Jacobi iteration.
+void project(SmokeState& state, const SmokeParams& params, SlabRange range,
+             double* jacobiIterationMs = nullptr);
 
 /// 5. Semi-Lagrangian advection of density and temperature by the (corrected) velocity.
 ///    Swaps each field with its *0 partner, advects from *0 into the main field, then setBoundary.

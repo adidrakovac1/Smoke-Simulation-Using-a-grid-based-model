@@ -1,0 +1,21 @@
+format: raw IEEE-754 float32, little-endian, interior cells in z/y/x order
+grid: 64x64x64
+steps: 100
+build_type: Release
+compiler: AppleClang 21.0.0.21000101
+variant: B1
+flags: -O3 -DNDEBUG
+commit: 58d0e18-dirty
+dt: 0.0166667
+jacobi_iterations: 40
+buoyancy_alpha: 0.05
+buoyancy_beta: 2
+ambient_temperature: 0
+vorticity_epsilon: 5
+source: (0.5, 0.1, 0.5), radius=0.08, density_rate=10, temperature_rate=10
+fnv1a64: 165cde9630821391
+min: 0
+max: 12.9589844
+mean: 0.032197039
+max_div_after: 1.94061565
+non_finite_cells: 0
