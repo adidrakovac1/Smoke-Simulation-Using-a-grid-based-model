@@ -218,6 +218,13 @@ if(SMOKE_BUILD_LAB)
     SMOKE_DEMO_FLAGS="${CMAKE_CXX_FLAGS_RELEASE}"
     SMOKE_DEMO_COMMIT="${SMOKE_COMMIT}")
   smoke_set_warnings(smoke_demo)
+
+  # MinGW: link the C++ runtime statically into the demonstration programs, so the .exe also starts on a
+  # computer without MSYS2 (no libstdc++-6.dll, libgcc_s_seh-1.dll, libwinpthread-1.dll needed).
+  if(MINGW)
+    target_link_options(smoke_demo PRIVATE -static)
+    target_link_options(smoke_lab PRIVATE -static)
+  endif()
 endif()
 
 if(SMOKE_BUILD_TESTS)
