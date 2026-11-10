@@ -31,6 +31,24 @@ Solver\build\smoke_tests.exe
 Solver\build\smoke_cli.exe --grid 64
 ```
 
+## Pokretanje demonstracije (macOS)
+
+U macOS Terminalu koristi Unix generator, `Release` konfiguraciju i putanje sa `/`. Mac programi
+nemaju ekstenziju `.exe`:
+
+```
+cmake -S Solver -B Solver/build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build Solver/build --parallel
+rm -f Solver/build/smoke_demo_results.txt
+./Solver/build/smoke_demo > Solver/build/smoke_demo_results.txt && open -a TextEdit Solver/build/smoke_demo_results.txt
+```
+
+`smoke_demo` poredi serijsku simulaciju prije i poslije optimizacije i ispisuje vremena,
+ubrzanje i provjeru rezultata. Komanda sačuva izvještaj u `Solver/build/smoke_demo_results.txt`
+i otvori ga u TextEdit prozoru. Zadani brzi mod koristi mrežu 64³; `--puno` pokreće veće mreže
+i traje nekoliko minuta. Za testove tačnosti pokreni i `./Solver/build/smoke_tests`.
+
 ## Status
 
-Skelet postoji i gradi se. Faze simulacije još nisu implementirane (vidi [`docs/plan/PLAN.md`](docs/plan/PLAN.md)).
+Serijski Solver je implementiran i može se pokretati iz komandne linije. Vizuelni prikaz kroz
+Renderer još zahtijeva Integration milestone (vidi [`docs/plan/PLAN.md`](docs/plan/PLAN.md)).
