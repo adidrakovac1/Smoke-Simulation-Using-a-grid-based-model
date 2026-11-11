@@ -5,8 +5,8 @@ Ovaj dokument objašnjava kako dim "vidi" predmete u kutiji: kako se mesh pretva
 Odluka o dizajnu: D16 (PLAN.md). Kod: `Solver/include/smoke/Obstacles.h`, `ObjLoader.h`,
 `Solver/src/Voxelizer.cpp`, `Solver/src/stages/Obstacles.cpp`, testovi u `Solver/tests/test_obstacles.cpp`.
 
-Stanje (2026-11-11): solver dio je urađen i testiran. Spajanje s rendererom (učitavanje `.obj` iz menija, crtanje
-mesha, zaklanjanje dima) je sljedeći korak.
+Stanje (2026-11-11): solver dio je urađen i testiran, a spojen je i s rendererom (odjeljak 7).
+Slike: `img/mobs_sphere_330.png`, `img/mobs_sphere_700.png`, `img/mobs_cube_700.png`, `img/mobs_blanket_700.png`.
 
 ---
 
@@ -200,6 +200,26 @@ Uz to, bez prepreka referenca mora ostati ista do bita:
 Solver\build\smoke_tests.exe
 Solver\build\smoke_bench.exe --verify Solver\reference\serial_64_100steps_pc2.bin --grid 64 --steps 100
 ```
+
+## 7. U rendereru
+
+![Kugla, 330 koraka](img/mobs_sphere_330.png)
+
+- **Jedan predmet, jedna transformacija.** `ObstacleObject` (`Integration/`) učita `.obj` našim parserom, svede ga
+  na jediničnu veličinu oko središta i primijeni poziciju, veličinu i rotaciju iz panela. Iz istih vrhova nastaju
+  trouglovi u koordinatama kutije (za voxelizaciju) i trouglovi u svjetskim koordinatama (za crtanje), pa se ono
+  što se vidi i ono o što dim udara ne mogu razići. Zato se mesh ne crta kroz Rendererov Assimp učitavač, kako je
+  pisalo u planu: Assimp bi isti fajl mogao učitati s drugačijim osama ili razmjerom.
+- **Čvrst predmet** je običan neproziran objekat Renderera, pa upisuje dubinu.
+- **Zaklanjanje (D13).** Shader dima za svaki piksel pročita dubinu scene, pretvori je u tačku u prostoru i tu
+  prekine zraku. Tako predmet sakrije dim iza sebe, a dim ispred predmeta ostaje vidljiv.
+- **Deka (porozno)** se ne crta u neprozirnom prolazu, jer bi sakrila dim koji kroz nju prolazi. Crta se poslije
+  dima, poluprozirna, uz provjeru dubine, ali bez upisa.
+- **Panel "Prepreka (.obj)":** dugmad Kugla, Kocka i Deka učitaju test mesheve iz `Integration/assets/`
+  (pravi ih `tools/make_test_meshes.py`); može se upisati i putanja do drugog fajla. Voxelizacija se radi samo
+  na dugme "Primijeni prepreku", ne dok se klizač pomjera. Promjena veličine mreže sama ponovi voxelizaciju.
+- Poznato: predmet se crta s obje strane svakog trougla (svaki trougao je dodan u oba redoslijeda vrhova), da bude
+  vidljiv bez obzira na to kako fajl reda vrhove.
 
 Stanje 2026-11-11: gradnja bez AVX2 prolazi 58/58 i `--verify` je bit po bit isto; s AVX2 jezgrima `--verify` je
 bit po bit isto, a hash gustine s preprekama je isti u obje gradnje. Trošak prepreka po protokolu D10 **nije

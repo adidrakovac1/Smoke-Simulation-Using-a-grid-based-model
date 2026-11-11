@@ -87,8 +87,8 @@ broj koraka, sjenu, boju i jitter (jitter pomjera prvi uzorak po pikselu, da se 
 
 ## Ograničenja ove verzije
 
-- **Objekti ne zaklanjaju dim.** Rendererov depth bafer se ne može čitati u shaderu, pa se dim crta preko svega.
-  Rješava se u M-OBS (odluka D13: depth u teksturu).
+- **Zaklanjanje** radi od M-OBS: dubina scene je u teksturi (odluka D13), a shader dima prekida zraku na njoj.
+  Prepreke iz `.obj` fajlova su opisane u `docs/plan/OBSTACLES.md`, odjeljak 7.
 - **Kutija je poravnata s osama**, bez rotacije. "Gore" je +Y i u Rendereru i u solveru (uzgon).
 - **128³ nije interaktivan** (oko 11 FPS na PC-2, RTX 4060 Ti; ograničava korak simulacije, ne crtanje). Za demo 64³.
 - **Shaderi se čitaju iz izvornog foldera** (`Integration/shaders`, apsolutna putanja upisana pri gradnji), pa

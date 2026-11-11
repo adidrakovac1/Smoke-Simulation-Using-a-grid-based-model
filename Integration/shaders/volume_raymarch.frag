@@ -29,6 +29,8 @@ uniform vec3  u_SmokeColor;
 uniform vec3  u_ToLight;       // unit vector towards the light
 uniform vec3  u_LightColor;
 uniform float u_Jitter;        // 1 = shift the first sample per pixel
+uniform sampler2D u_SceneDepth;   // depth of the opaque scene (decision D13)
+uniform bool  u_UseSceneDepth;
 
 const int MAX_STEPS = 512;
 const int MAX_LIGHT_STEPS = 32;
@@ -77,6 +79,17 @@ void main()
 
     float t0, t1;
     if (!intersectBox(ro, rd, t0, t1)) discard;
+
+    // Opaque objects hide the smoke behind them: read the depth the Renderer wrote for this pixel, turn it back
+    // into a world position and cut the ray there. Depth 1.0 means "nothing was drawn here".
+    if (u_UseSceneDepth) {
+        float depth = texture(u_SceneDepth, gl_FragCoord.xy / vec2(textureSize(u_SceneDepth, 0))).r;
+        if (depth < 1.0) {
+            vec4 scenePoint = u_InvViewProj * vec4(v_Ndc, depth * 2.0 - 1.0, 1.0);
+            t1 = min(t1, dot(scenePoint.xyz / scenePoint.w - ro, rd));
+            if (t1 <= t0) discard;   // the object is in front of the box
+        }
+    }
 
     float ds = (t1 - t0) / float(u_Steps);
     // A different sub-step offset for neighbouring pixels turns visible "rings" into fine noise.

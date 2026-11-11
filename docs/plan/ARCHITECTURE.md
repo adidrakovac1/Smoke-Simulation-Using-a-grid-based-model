@@ -100,9 +100,11 @@ Smoke-Simulation-Using-a-grid-based-model/
     │   ├── Texture3D.*            GL 3D tekstura (Renderer je nema)
     │   ├── VolumeRaymarchPass.*   crtanje dima
     │   ├── BoxOutline.*           ivice kutije kao linije
+    │   ├── ObstacleObject.*       .obj predmet: isti trouglovi za crtanje i za voxelizaciju (M-OBS)
     │   ├── SmokeUI.*              ImGui kontrole
     │   └── Screenshot.*           snimanje prozora u PNG
-    └── shaders/               volume_raymarch.{vert,frag}, box_outline.{vert,frag}
+    ├── assets/                test meshevi: cube.obj, sphere.obj, blanket.obj (pravi ih tools/make_test_meshes.py)
+    └── shaders/               volume_raymarch, box_outline, obstacle_mesh (.vert i .frag)
 ```
 
 ---
@@ -310,6 +312,14 @@ Renderer već ima ono što nam treba za crtanje dima:
 
 3. (D13, M-OBS) `Renderer/src/opengl/core/HdrFramebuffer.cpp` i pripadni header: depth iz renderbuffera u teksturu koja se
    može uzorkovati, da volumni prolaz ograniči zraku na dubinu scene. Prije i poslije provjeriti barem dvije postojeće scene.
+   **Urađeno 2026-11-11.** Format je ostao `GL_DEPTH24_STENCIL8`, promijenjen je samo nosač (tekstura umjesto
+   renderbuffera) i dodan `GetDepthTexture()`. Volumni prolaz teksturu ne traži od Renderera, nego pita OpenGL koja
+   je vezana na trenutni framebuffer, pa se Rendererov interfejs ne mijenja. Provjera: scene Terrain, Capture:
+   Baseline i Capture: Material Sweep snimljene prije i poslije (1280×720); razlikuje se samo 16 piksela brojača
+   FPS-a u gornjoj traci.
+3a. (M-OBS) `Renderer/test-app/src/main.cpp`: režim za provjeru bez ruku. Uz `SMOKE_SCENE_SHOT_INDEX=n` i
+   `SMOKE_SCENE_SHOT_FILE=slika.png` program prikaže scenu `n` 90 frejmova, snimi prozor i izađe. Služi za
+   poređenje postojećih scena prije i poslije izmjene u Rendereru.
 4. Dalje izmjene u `Renderer/` samo uz upis u ovaj popis (šta i zašto).
 
 Sve ostalo ostaje netaknuto. Ako se pojavi potreba za većom izmjenom, prvo se dogovara u timu

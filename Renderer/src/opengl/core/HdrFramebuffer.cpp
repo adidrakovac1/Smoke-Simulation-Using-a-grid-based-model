@@ -17,13 +17,13 @@ HdrFramebuffer::~HdrFramebuffer()
 HdrFramebuffer::HdrFramebuffer(HdrFramebuffer&& other) noexcept
     : m_fbo(other.m_fbo)
     , m_colorTexture(other.m_colorTexture)
-    , m_depthRbo(other.m_depthRbo)
+    , m_depthTexture(other.m_depthTexture)
     , m_width(other.m_width)
     , m_height(other.m_height)
 {
     other.m_fbo          = 0;
     other.m_colorTexture = 0;
-    other.m_depthRbo     = 0;
+    other.m_depthTexture     = 0;
     other.m_width        = 0;
     other.m_height       = 0;
 }
@@ -35,12 +35,12 @@ HdrFramebuffer& HdrFramebuffer::operator=(HdrFramebuffer&& other) noexcept
         Destroy();
         m_fbo          = other.m_fbo;
         m_colorTexture = other.m_colorTexture;
-        m_depthRbo     = other.m_depthRbo;
+        m_depthTexture     = other.m_depthTexture;
         m_width        = other.m_width;
         m_height       = other.m_height;
         other.m_fbo          = 0;
         other.m_colorTexture = 0;
-        other.m_depthRbo     = 0;
+        other.m_depthTexture     = 0;
         other.m_width        = 0;
         other.m_height       = 0;
     }
@@ -92,21 +92,29 @@ void HdrFramebuffer::Create(uint32_t width, uint32_t height)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // --- Depth + stencil renderbuffer ---
-    // A renderbuffer is sufficient because we never need to sample depth in the
-    // post-process pass; only the color attachment needs to be a texture.
-    glGenRenderbuffers(1, &m_depthRbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, m_depthRbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-                          static_cast<GLsizei>(m_width),
-                          static_cast<GLsizei>(m_height));
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    // --- Depth + stencil texture ---
+    // Same format as before (GL_DEPTH24_STENCIL8), but a texture instead of a renderbuffer, so a later pass
+    // can sample the scene depth (smoke project, decision D13: the volume pass stops its rays at the depth of
+    // the opaque scene). Sampling a depth-stencil texture returns the depth component by default. Nearest
+    // filtering and no compare mode: the value is read as a plain number.
+    glGenTextures(1, &m_depthTexture);
+    glBindTexture(GL_TEXTURE_2D, m_depthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8,
+                 static_cast<GLsizei>(m_width),
+                 static_cast<GLsizei>(m_height),
+                 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     // --- Assemble the FBO ---
     glGenFramebuffers(1, &m_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_colorTexture, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_depthTexture, 0);
 
     const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -134,10 +142,10 @@ void HdrFramebuffer::Destroy()
         glDeleteTextures(1, &m_colorTexture);
         m_colorTexture = 0;
     }
-    if (m_depthRbo != 0)
+    if (m_depthTexture != 0)
     {
-        glDeleteRenderbuffers(1, &m_depthRbo);
-        m_depthRbo = 0;
+        glDeleteTextures(1, &m_depthTexture);
+        m_depthTexture = 0;
     }
     if (m_width > 0 && m_height > 0)
     {

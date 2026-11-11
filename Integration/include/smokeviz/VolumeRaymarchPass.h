@@ -23,6 +23,7 @@ struct VolumeSettings {
     float     lightIntensity = 0.75f;  ///< kept below 1 so lit smoke is not clipped to white by tone mapping
     glm::vec3 smokeColor{0.85f, 0.85f, 0.88f};
     bool      jitter = true;           ///< shift the first sample per pixel to hide banding
+    bool      occlusion = true;        ///< opaque objects hide the smoke behind them (needs the scene depth texture)
 };
 
 /// Draws the density texture as a semi-transparent volume by ray marching (Crane et al., GPU Gems 3, ch. 30).

@@ -1,6 +1,6 @@
 #include "smokeviz/SmokeScene.h"
 
-#include "Screenshot.h"
+#include "smokeviz/Screenshot.h"
 
 #include "assets/AssetImporter.h"
 #include "core/IInputProvider.h"
@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <cstring>
 
 namespace smokeviz {
 
@@ -29,6 +30,7 @@ constexpr float kBoxLongestSide = 4.0f;
 constexpr float kFloorHalfSize  = 14.0f;
 
 const char* ShaderDir() { return SMOKE_SHADER_DIR; }
+const char* AssetDir() { return SMOKE_ASSET_DIR; }
 
 } // namespace
 
@@ -55,6 +57,19 @@ bool SmokeScene::Setup() {
     }
 
     BuildFloor();
+
+    // Transparent pass for porous obstacles; a missing shader only means the blanket is not drawn.
+    m_obstacleShader = std::make_unique<ShaderProgram>(std::string(ShaderDir()) + "/obstacle_mesh.vert",
+                                                       std::string(ShaderDir()) + "/obstacle_mesh.frag");
+    if (m_floorBaseMaterial) {
+        m_obstacleMaterial = std::make_unique<MaterialInstance>(m_floorBaseMaterial);
+        m_obstacleMaterial->SetName("mat_smoke_obstacle");
+        m_obstacleMaterial->SetVec3("u_AlbedoColor", {0.62f, 0.30f, 0.16f});
+        m_obstacleMaterial->SetFloat("u_MetallicValue", 0.0f);
+        m_obstacleMaterial->SetFloat("u_RoughnessValue", 0.6f);
+        m_obstacleMaterial->SetVec3("u_EmissiveColor", {0.0f, 0.0f, 0.0f});
+        m_obstacleMaterial->SetFloat("u_EmissiveStrength", 1.0f);
+    }
 
     // One directional light, the same one the smoke shader uses for its shading. No shadow map: smoke is not
     // in the Renderer's shadow pass, so a shadow of the (empty) box would only confuse.
@@ -155,8 +170,102 @@ void SmokeScene::ReadAutoShotSettings() {
                 PlaceBox(m_solver->gridSize());
             }
         }
+        // SMOKE_AUTOSHOT_OBSTACLE=sphere | cube | blanket: put one of the test meshes into the box first.
+        if (const char* obstacle = std::getenv("SMOKE_AUTOSHOT_OBSTACLE")) {
+            const bool blanket = std::strcmp(obstacle, "blanket") == 0;
+            std::snprintf(m_obstacleSettings.path, sizeof(m_obstacleSettings.path), "%s/%s.obj", AssetDir(), obstacle);
+            m_obstacleSettings.mode     = blanket ? 2 : 0;
+            m_obstacleSettings.position = {0.5f, blanket ? 0.45f : 0.5f, 0.5f};
+            m_obstacleSettings.size     = blanket ? 0.7f : 0.3f;
+            ApplyObstacle();
+        }
         spdlog::info("[SmokeScene] automatic screenshot after {} steps -> {}", m_autoShotSteps, m_autoShotFile);
     }
+}
+
+void SmokeScene::ApplyObstacle() {
+    std::string error;
+    if (!m_obstacle.Load(m_obstacleSettings.path, &error)) {
+        m_state.obstacleMessage = "Greska: " + error;
+        spdlog::warn("[SmokeScene] obstacle: {}", error);
+        return;
+    }
+    // One transform for both sides: world-space triangles for drawing, box-space triangles for the solver.
+    m_obstacle.Place(m_obstacleSettings, m_boxMin, m_boxSize);
+
+    smoke::ObstacleGrid    grid(m_solver->gridSize());
+    smoke::VoxelizeOptions options;
+    options.mode = m_obstacleSettings.mode == 2   ? smoke::ObstacleMode::Porous
+                   : m_obstacleSettings.mode == 1 ? smoke::ObstacleMode::Shell
+                                                  : smoke::ObstacleMode::Solid;
+    // A solid shell must be at least two cells thick, or pressure leaks through it (OBSTACLES.md, section 5).
+    if (options.mode == smoke::ObstacleMode::Shell) options.shellHalfThickness = 1.0f;
+    const smoke::VoxelizeStats stats = smoke::voxelize(m_obstacle.BoxMesh(), options, grid);
+    grid.porousDrag          = m_obstacleSettings.porousDrag;
+    grid.porousDensityFilter = m_obstacleSettings.porousFilter;
+    m_solver->setObstacles(grid);
+
+    m_obstaclePorous       = options.mode == smoke::ObstacleMode::Porous;
+    m_state.obstacleActive = true;
+    m_state.obstacleMessage =
+        std::to_string(m_obstacle.TriangleCount()) + " trouglova; celija: cvrstih " +
+        std::to_string(grid.count(smoke::CellType::Solid)) + ", poroznih " + std::to_string(grid.count(smoke::CellType::Porous)) +
+        " (povrsina " + std::to_string(stats.surfaceCells) + ", unutra " + std::to_string(stats.interiorCells) + ")" +
+        (options.mode == smoke::ObstacleMode::Solid && !stats.closed ? "; mesh nije zatvoren, ostala je samo ljuska" : "");
+    spdlog::info("[SmokeScene] obstacle '{}': {}", m_obstacleSettings.path, m_state.obstacleMessage);
+
+    // The opaque object the Renderer draws (and whose depth hides the smoke). Porous objects are not in the
+    // opaque pass: smoke must stay visible through them.
+    if (m_obstacle.RenderMesh() && m_obstacleMaterial) {
+        if (m_obstacleItem < 0) {
+            RenderItem item;
+            item.meshMulti        = m_obstacle.RenderMesh();
+            item.material         = m_obstacleMaterial.get();
+            item.flags.castShadow = false;
+            m_obstacleItem        = static_cast<long long>(AddObject(item));
+        }
+        RenderItem& item   = GetObject(static_cast<size_t>(m_obstacleItem));
+        item.meshMulti     = m_obstacle.RenderMesh();
+        item.flags.visible = !m_obstaclePorous;
+    }
+}
+
+void SmokeScene::RemoveObstacle() {
+    m_solver->clearObstacles();
+    m_state.obstacleActive  = false;
+    m_state.obstacleMessage = "Bez prepreke.";
+    if (m_obstacleItem >= 0) GetObject(static_cast<size_t>(m_obstacleItem)).flags.visible = false;
+}
+
+// The blanket: drawn after the smoke, blended, tested against the scene depth but not writing it.
+void SmokeScene::DrawPorousObstacle() {
+    if (!m_state.obstacleActive || !m_obstaclePorous || !m_obstacle.RenderMesh()) return;
+    if (!m_obstacleShader || !m_obstacleShader->IsValid()) return;
+
+    const GLboolean hadCull = glIsEnabled(GL_CULL_FACE);
+    GLint           cullMode = GL_BACK;
+    glGetIntegerv(GL_CULL_FACE_MODE, &cullMode);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    // The mesh holds every triangle in both windings; culling back faces leaves the copy that faces the camera.
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    m_obstacleShader->Bind();
+    m_obstacleShader->SetUniform("u_ViewProj", GetCamera().GetViewProjection());
+    m_obstacleShader->SetUniform("u_ToLight", glm::normalize(-m_lightDirection));
+    m_obstacleShader->SetUniform("u_Color", glm::vec3(0.75f, 0.55f, 0.25f));
+    m_obstacleShader->SetUniform("u_Alpha", 0.45f);
+    m_obstacle.RenderMesh()->DrawAll();
+    ShaderProgram::Unbind();
+
+    glCullFace(static_cast<GLenum>(cullMode));
+    if (!hadCull) glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_TRUE);
 }
 
 void SmokeScene::OnUpdate(float deltaTime, IInputProvider& input) {
@@ -204,17 +313,25 @@ void SmokeScene::OnPostRender() {
     const Camera& camera = GetCamera();
     if (m_state.showOutline) m_outline.Draw(camera, m_boxMin, m_boxSize, {0.55f, 0.62f, 0.70f});
     m_volumePass.Draw(camera, m_densityTexture, m_boxMin, m_boxSize, m_view, -m_lightDirection, m_lightColor);
+    DrawPorousObstacle();
 }
 
 void SmokeScene::OnImGuiRender() {
-    const SmokeUiActions actions = m_ui.Draw(*m_solver, m_view, m_state);
+    const SmokeUiActions actions = m_ui.Draw(*m_solver, m_view, m_state, m_obstacleSettings);
 
     if (actions.applyGrid) {
         // resize() reallocates all fields and restarts the simulation; the texture follows on the next upload.
         m_solver->resize(smoke::GridSize{actions.newGrid, actions.newGrid, actions.newGrid});
         PlaceBox(m_solver->gridSize());
         m_densityDirty = true;
+        // resize() dropped the obstacles with the old grid: voxelize the same object for the new one.
+        if (m_state.obstacleActive) ApplyObstacle();
     }
+    if (actions.applyObstacle) {
+        ApplyObstacle();
+        m_densityDirty = true;
+    }
+    if (actions.removeObstacle) RemoveObstacle();
     if (actions.reset) {
         m_solver->reset();
         m_densityDirty = true;

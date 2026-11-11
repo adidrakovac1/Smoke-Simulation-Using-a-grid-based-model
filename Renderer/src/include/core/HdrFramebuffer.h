@@ -5,7 +5,7 @@
 /// RAII owner of an HDR-capable offscreen framebuffer.
 ///
 /// Holds a GL_RGBA16F floating-point color attachment and a depth+stencil
-/// renderbuffer.  The renderer renders the full scene into this FBO instead
+/// texture (a texture rather than a renderbuffer so the scene depth can be sampled; smoke project, D13).  The renderer renders the full scene into this FBO instead
 /// of the default framebuffer, allowing HDR color values > 1.0 to survive
 /// until tone mapping is applied in a post-process pass.
 ///
@@ -19,7 +19,7 @@ class HdrFramebuffer
 {
 public:
     /// Creates the FBO, a GL_RGBA16F color texture, and a depth+stencil
-    /// renderbuffer at the given resolution.
+    /// texture at the given resolution.
     HdrFramebuffer(uint32_t width, uint32_t height);
     ~HdrFramebuffer();
 
@@ -42,6 +42,9 @@ public:
     /// Returns the GL_RGBA16F color texture for the post-process pass.
     [[nodiscard]] uint32_t GetColorTexture() const { return m_colorTexture; }
 
+    /// Returns the GL_DEPTH24_STENCIL8 texture holding the scene depth (smoke project, D13).
+    [[nodiscard]] uint32_t GetDepthTexture() const { return m_depthTexture; }
+
     [[nodiscard]] uint32_t GetWidth()  const { return m_width;  }
     [[nodiscard]] uint32_t GetHeight() const { return m_height; }
 
@@ -50,7 +53,7 @@ public:
 private:
     uint32_t m_fbo          = 0;
     uint32_t m_colorTexture = 0;
-    uint32_t m_depthRbo     = 0;
+    uint32_t m_depthTexture = 0;
     uint32_t m_width        = 0;
     uint32_t m_height       = 0;
 

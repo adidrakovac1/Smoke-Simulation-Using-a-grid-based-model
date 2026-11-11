@@ -178,13 +178,23 @@ okvirom, podom i izvorom pri dnu (D17).
 
 ### M-OBS: prepreke i mesh (poslije M-VIZ; odluke D13 i D16)
 Razrada: EXECUTION_PLAN.md, faza P4; objašnjenja u `docs/plan/OBSTACLES.md`.
-- [ ] Parser `.obj`, voxelizacija (ljuska + poplava), `ObstacleGrid` (Fluid/Solid/Porous), `setObstacles()` u Solveru.
-- [ ] Fizika kroz rijetke liste graničnih ćelija (pritisak, brzina, gustina), porozni objekti (deka) s otporom.
+- [x] Parser `.obj`, voxelizacija (ljuska + poplava), `ObstacleGrid` (Fluid/Solid/Porous), `setObstacles()` u Solveru.
+- [x] Fizika kroz rijetke liste graničnih ćelija (pritisak, brzina, gustina), porozni objekti (deka) s otporom.
+      **Odstupanje od EXECUTION_PLAN P4.2, potvrditi na G3:** brzina u graničnim čvrstim ćelijama se odbija (kao na
+      zidu kutije), ne postavlja na nulu; s nulom dim nije obilazio kuglu (OBSTACLES.md, odjeljak 4).
 - [ ] Testovi; mjerenje troška; bez prepreka `--verify` ostaje bit po bit isti kao PC-2 referenca.
-- [ ] Integration: učitavanje `.obj` iz menija, crtanje mesha, test meshevi (kocka, kugla, deka).
-- [ ] Renderer (D13): depth u teksturu, zaklanjanje dima; prozirni prolaz za deku.
+      (2026-11-11: 10 novih testova, ukupno 58. Bez AVX2: 58/58 i `--verify` bit po bit. S AVX2: `--verify` bit po
+      bit i isti hash gustine s preprekama; zadnje puno pokretanje testova u AVX2 gradnji blokirao je Windows
+      Smart App Control. **Trošak po protokolu D10 nije izmjeren** iz istog razloga: programi u `Solver/build` su blokirani.)
+- [x] Integration: učitavanje `.obj` iz menija, crtanje mesha, test meshevi (kocka, kugla, deka).
+      (Mesh se crta iz istih trouglova koje čita naš parser, ne kroz Assimp, da crtanje i voxelizacija dijele transformaciju.)
+- [x] Renderer (D13): depth u teksturu, zaklanjanje dima; prozirni prolaz za deku.
 
 **Kriterij:** dim se odbija od objekta, prolazi kroz poroznu deku usporen, objekt zaklanja dim iza sebe.
+
+**Stanje 2026-11-11 (čeka tačku G3):** kriterij je ispunjen na 64³; slike su `docs/plan/img/mobs_*.png`
+(kugla na 330 i 700 koraka, kocka i deka na 700). Dugmad panela nisu kliknuta rukom; scenariji su pokrenuti
+automatski (`SMOKE_AUTOSHOT_OBSTACLE`).
 
 ---
 

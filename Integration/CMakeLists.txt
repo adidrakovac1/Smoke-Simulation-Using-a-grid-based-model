@@ -13,6 +13,7 @@ add_library(SmokeIntegration STATIC
   src/Texture3D.cpp
   src/VolumeRaymarchPass.cpp
   src/BoxOutline.cpp
+  src/ObstacleObject.cpp
   src/SmokeUI.cpp
   src/Screenshot.cpp
 )
@@ -26,4 +27,5 @@ target_link_libraries(SmokeIntegration PUBLIC RendererLib smoke_solver)
 # files into Renderer/assets because Renderer/ is not our code.)
 target_compile_definitions(SmokeIntegration PRIVATE
   SMOKE_SHADER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+  SMOKE_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
 )

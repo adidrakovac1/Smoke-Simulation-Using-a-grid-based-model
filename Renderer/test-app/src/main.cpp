@@ -1,11 +1,13 @@
 #include "app/Application.h"
 #include <spdlog/spdlog.h>
 #include <cstddef>
+#include <cstdlib>
 #include <vector>
 
 #include "BistroScene.h"
 #include "CapturePresetScene.h"
 #include "TerrainScene.h"
+#include "smokeviz/Screenshot.h"
 #include "smokeviz/SmokeScene.h"
 
 int main()
@@ -68,6 +70,23 @@ int main()
 
     for (std::size_t i = 0; i < scenes.size(); ++i)
         spdlog::info("[TestApp] Press {} for {}", i + 1, scenes[i]->GetName());
+
+    // Unattended check of any scene, used to compare the existing scenes before and after a Renderer change
+    // (docs/plan/ARCHITECTURE.md, section 6):
+    //   SMOKE_SCENE_SHOT_INDEX=1 SMOKE_SCENE_SHOT_FILE=out.png  ->  draw that scene for 90 frames, save a
+    //   picture of the window, exit.
+    const char* shotIndex = std::getenv("SMOKE_SCENE_SHOT_INDEX");
+    const char* shotFile  = std::getenv("SMOKE_SCENE_SHOT_FILE");
+    if (shotIndex != nullptr && shotFile != nullptr && !scenes.empty())
+    {
+        const std::size_t index = static_cast<std::size_t>(std::atoi(shotIndex)) % scenes.size();
+        spdlog::info("[TestApp] Scene shot: {} -> {}", scenes[index]->GetName(), shotFile);
+        for (int frame = 0; frame < 90; ++frame)
+            app.Update(*scenes[index]);
+        if (!smokeviz::SaveWindowPng(shotFile))
+            spdlog::error("[TestApp] Could not save {}", shotFile);
+        return 0;
+    }
 
     if (!scenes.empty())
         app.Run(scenes, initialScene);

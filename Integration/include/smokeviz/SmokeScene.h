@@ -1,6 +1,7 @@
 #pragma once
 
 #include "smokeviz/BoxOutline.h"
+#include "smokeviz/ObstacleObject.h"
 #include "smokeviz/SmokeUI.h"
 #include "smokeviz/Texture3D.h"
 #include "smokeviz/VolumeRaymarchPass.h"
@@ -50,6 +51,9 @@ private:
     void PlaceBox(const smoke::GridSize& grid);
     void BuildFloor();
     void ReadAutoShotSettings();
+    void ApplyObstacle();
+    void RemoveObstacle();
+    void DrawPorousObstacle();
 
     std::unique_ptr<smoke::SmokeSolver> m_solver;
     Texture3D                           m_densityTexture;
@@ -73,6 +77,16 @@ private:
     std::shared_ptr<Mesh>             m_floorMesh;
     std::shared_ptr<Material>         m_floorBaseMaterial;
     std::unique_ptr<MaterialInstance> m_floorMaterial;
+
+    // Obstacle (docs/plan/OBSTACLES.md): one .obj mesh, voxelized for the solver and drawn with the same
+    // transform. A solid one is an ordinary opaque Renderer object (so it writes depth and hides smoke);
+    // a porous one is drawn by us, transparent, after the smoke.
+    ObstacleObject                    m_obstacle;
+    ObstacleSettings                  m_obstacleSettings;
+    bool                              m_obstaclePorous = false;
+    std::unique_ptr<MaterialInstance> m_obstacleMaterial;
+    std::unique_ptr<ShaderProgram>    m_obstacleShader;
+    long long                         m_obstacleItem = -1;  // index of its RenderItem, -1 = not added yet
 
     // Screenshots: F12 or the panel button; also an automatic one for unattended checks
     // (environment variables SMOKE_AUTOSHOT_STEPS and SMOKE_AUTOSHOT_FILE).
