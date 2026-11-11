@@ -20,6 +20,24 @@ option(SMOKE_BUILD_TESTS "Build the tests (smoke_tests)"       ON)
 option(SMOKE_BUILD_BENCH "Build the benchmark (smoke_bench)"   ON)
 option(SMOKE_BUILD_LAB   "Build smoke_lab (side-by-side kernel versions)" ON)
 option(SMOKE_DISABLE_VECTORIZATION "Build the B0 scalar baseline" OFF)
+option(SMOKE_BUILD_PROF  "Build smoke_prof (steady workload for a sampling profiler)" ON)
+option(SMOKE_PROFILE_BUILD "Add debug symbols and frame pointers for profiling (use a separate build folder)" OFF)
+
+# Profile build (docs/plan/EXECUTION_PLAN.md, P1): the Release options plus
+#   -g                       debug symbols, so the profiler can show function names and source lines;
+#   -fno-omit-frame-pointer  keeps RBP as the frame pointer, so the profiler can walk the call stack.
+# -g alone does not change the generated code; keeping the frame pointer takes one register away, so this
+# build is only for FINDING hot spots. Speedups (S, delta) are always measured on the normal Release build.
+#   cmake -S Solver -B Solver/build-prof -G "MinGW Makefiles" -DSMOKE_PROFILE_BUILD=ON
+if(SMOKE_PROFILE_BUILD)
+  if(MSVC)
+    add_compile_options(/Zi /Oy-)
+    add_link_options(/DEBUG)
+  else()
+    add_compile_options(-g -fno-omit-frame-pointer)
+  endif()
+  message(STATUS "smoke_solver: PROFILE build (-g -fno-omit-frame-pointer); do not use for S/delta measurements")
+endif()
 
 # Reference build rules (docs/plan/ARCHITECTURE.md, section 5):
 #   - no -ffast-math  (changes results)
@@ -155,6 +173,19 @@ if(SMOKE_BUILD_CLI)
   target_include_directories(smoke_cli PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/apps/common)
   target_compile_definitions(smoke_cli PRIVATE SMOKE_BUILD_TYPE="$<CONFIG>")
   smoke_set_warnings(smoke_cli)
+endif()
+
+# smoke_prof: repeats one stage (or whole steps) for a fixed time, for AMD uProf (EXECUTION_PLAN.md, P1).
+# It calls the internal stage functions, so it needs the private src folder, like the tests and smoke_lab.
+if(SMOKE_BUILD_PROF)
+  add_executable(smoke_prof apps/smoke_prof/main.cpp)
+  target_link_libraries(smoke_prof PRIVATE smoke_solver)
+  target_include_directories(smoke_prof PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  smoke_set_warnings(smoke_prof)
+  if(MINGW)
+    # Static C++ runtime: the profiler may start the program from a shell without MSYS2 on PATH.
+    target_link_options(smoke_prof PRIVATE -static)
+  endif()
 endif()
 
 # The commit id (for smoke_bench and smoke_lab output) is read when CMake CONFIGURES, not on every build.

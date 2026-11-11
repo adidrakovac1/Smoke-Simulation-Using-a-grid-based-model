@@ -118,8 +118,45 @@ dokaz za hipotezu H1 (odjeljak 4); brojači iz uProf-a je trebaju potvrditi ili 
 
 ## 3. Kako je profilirano (P1)
 
-Popunjava se u P1: verzija AMD uProf-a, profilna gradnja (`Solver/build-prof`), program `smoke_prof`,
-konfiguracije skupljanja (tbp, assess, IBS) i gdje su sirovi podaci (`perf/uprof/`).
+### 3.1 Profilna gradnja (urađeno 2026-11-11)
+
+```
+cmake -S Solver -B Solver/build-prof -G "MinGW Makefiles" -DSMOKE_PROFILE_BUILD=ON
+cmake --build Solver/build-prof --parallel
+```
+
+To su iste Release opcije (`-O3 -DNDEBUG` i opcije po fajlu) plus:
+
+- `-g`: simboli za debug (DWARF). Po njima profiler iz adrese instrukcije nalazi ime funkcije i liniju koda.
+  Sam `-g` ne mijenja generisane instrukcije.
+- `-fno-omit-frame-pointer`: registar RBP ostaje pokazivač okvira funkcije, pa profiler može pratiti ko je koga
+  pozvao. Cijena je jedan registar manje za kompajler, pa kod **nije** potpuno isti kao u običnoj gradnji.
+
+Zato ova gradnja služi samo za **nalaženje mjesta**; S i Δ se uvijek mjere na običnom Releaseu (`Solver/build`).
+Provjera: 48/48 testova i `smoke_bench --verify` bit po bit isto i u profilnoj gradnji.
+
+### 3.2 Radno opterećenje: `smoke_prof` (urađeno 2026-11-11)
+
+Profiler koji uzorkuje prekida program mnogo puta u sekundi i bilježi koja se instrukcija izvršavala. Da u
+vrućim jezgrima bude dovoljno uzoraka, `smoke_prof` (`Solver/apps/smoke_prof/main.cpp`) prvo razvije stvarno
+strujanje (100 cijelih koraka, kao referentni scenarij), a zatim zadani broj sekundi ponavlja jednu vrstu
+posla, bez ispisa u toku rada. Poziva iste funkcije faza kao `SmokeSolver::step` (`Solver/src/stages/Stages.h`).
+
+| `--stage` | Šta se ponavlja | Jedno "ponavljanje" |
+| :--- | :--- | :--- |
+| `all` | cijeli korak, istim redom kao `SmokeSolver::step`; svakih 300 koraka kreće od prazne kutije (`--reset-every`), da strujanje ostane kao u podešenom scenariju | jedan korak |
+| `jacobi` | rješavanje pritiska kao u `project()`: `p = 0`, pa K iteracija, svaka sa `setBoundary`; divergencija je izračunata jednom | jedna Jacobi iteracija |
+| `advect` | obje advekcije jednog koraka (u, v, w, pa gustina i temperatura), uvijek iz istih razvijenih polja u rezervna polja | pet advektiranih polja |
+| `forces` | uzgon i vorticity confinement; prije svakog poziva brzina se vraća na razvijenu (`memcpy`), inače bi rasla bez granice | jedan poziv `applyForces` |
+
+Primjer: `Solver\build-prof\smoke_prof.exe --grid 128 --seconds 20 --stage jacobi`. Na kraju ispisuje trajanje,
+broj ponavljanja i ms po ponavljanju. Kratka proba na 64³ (2 s, obična gradnja): cijeli korak 8.3 ms, Jacobi
+iteracija 0.080 ms, advekcija 3.5 ms, sile 0.88 ms (uključuje `memcpy`); to su probe da program radi, ne mjerenja.
+
+### 3.3 AMD uProf (čeka instalaciju)
+
+Popunjava se poslije instalacije: verzija AMD uProf-a, konfiguracije skupljanja (tbp, assess, IBS) i gdje su
+sirovi podaci (`perf/uprof/`).
 
 ## 4. Hipoteze H1 do H5 i odgovori (P1)
 
