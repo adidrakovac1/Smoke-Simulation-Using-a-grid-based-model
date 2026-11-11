@@ -141,6 +141,7 @@ Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 do P2. Još uvijek s
 - [ ] P1: AMD uProf instaliran, `Solver/build-prof` (`-g -fno-omit-frame-pointer`), `smoke_prof`, tbp/assess/IBS na 64³ i 128³,
       `tools/uprof_report.py` pravi samostalan HTML, `docs/plan/PROFILE.md` s hardverom i odgovorima na hipoteze H1 do H5.
 - [ ] P2: tabela ostatak/divergencija naspram K (32³, 64³, 128³) u MATH.md; odluka D15 o rješavaču.
+      (2026-11-11: tabela je izmjerena, `smoke_bench --convergence`, MATH.md odjeljak 5. Odluka D15 čeka tačku G1.)
 
 **Kriterij:** postoji HTML izvještaj s hardverskim brojačima i PROFILE.md; Jacobi je potvrđen ili je red-black
 eksperiment odobren.

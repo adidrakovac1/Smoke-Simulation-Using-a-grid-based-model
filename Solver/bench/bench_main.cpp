@@ -1,5 +1,9 @@
 #include "smoke/SmokeSolver.h"
 
+// Internal headers, used only by --convergence (it needs the pressure and divergence fields).
+#include "SmokeState.h"
+#include "stages/Stages.h"
+
 #include <algorithm>
 #include <array>
 #include <charconv>
@@ -82,6 +86,8 @@ constexpr double kVerifyRelativeTolerance = 1.0e-4;
 struct Options {
     bool calibrate = false;
     bool hwinfo = false;
+    bool convergence = false;
+    bool convergenceAllSteps = false;
     bool gridExplicit = false;
     bool stepsExplicit = false;
     bool warmupExplicit = false;
@@ -114,6 +120,7 @@ void printUsage(std::ostream& out) {
     out << "Usage: smoke_bench [--grid N] [--steps N] [--warmup N] [--output FILE]\n"
            "       smoke_bench --calibrate\n"
            "       smoke_bench --hwinfo\n"
+           "       smoke_bench --convergence [--k-all-steps] [--grid N] [--steps N]\n"
            "       smoke_bench --reference FILE [--grid N] [--steps N]\n"
            "       smoke_bench --verify FILE [--grid N] [--steps N]\n";
 }
@@ -128,6 +135,12 @@ bool parseArgs(int argc, char** argv, Options& options) {
         } else if (arg == "--hwinfo") {
             if (options.hwinfo) return false;
             options.hwinfo = true;
+        } else if (arg == "--convergence") {
+            if (options.convergence) return false;
+            options.convergence = true;
+        } else if (arg == "--k-all-steps") {
+            if (options.convergenceAllSteps) return false;
+            options.convergenceAllSteps = true;
         } else if (arg == "--grid" || arg == "--steps" || arg == "--warmup" ||
                    arg == "--output" || arg == "--reference" || arg == "--verify") {
             if (i + 1 >= argc) return false;
@@ -170,6 +183,10 @@ bool parseArgs(int argc, char** argv, Options& options) {
             return false;
         }
     }
+    if (options.convergenceAllSteps && !options.convergence) return false;
+    if (options.convergence)
+        return !options.calibrate && !options.hwinfo && options.referencePath.empty() &&
+               options.verifyPath.empty() && options.outputPath.empty() && !options.warmupExplicit;
     if (options.calibrate && options.hwinfo) return false;
     if (options.calibrate || options.hwinfo)
         return options.referencePath.empty() && options.verifyPath.empty() && options.outputPath.empty() &&
@@ -723,6 +740,115 @@ bool runVerify(const Options& options) {
     return passed;
 }
 
+// ---- --convergence: how far does K Jacobi iterations get? (docs/plan/EXECUTION_PLAN.md, P2) -----------
+//
+// This mode needs the pressure and divergence fields, which the public SmokeSolver interface does not
+// expose, so it drives the internal stage functions directly (as the tests, smoke_lab and smoke_prof do).
+
+// One whole step: the same calls in the same order as SmokeSolver::step (Solver/src/SmokeSolver.cpp).
+void convergenceStep(smoke::SmokeState& state, const smoke::SmokeParams& params, smoke::serial::SlabRange all) {
+    using namespace smoke::serial;
+    addSources(state, params, params.dt, all);
+    applyForces(state, params, params.dt, all);
+    advectVelocity(state, params.dt, all);
+    project(state, params, all);
+    advectScalars(state, params.dt, all);
+}
+
+struct ConvergenceRow {
+    double maxDivBefore = 0.0;   // max |div u| before the projection of the last step
+    double maxDivAfter = 0.0;    // max |div u| after it
+    double rmsDivAfter = 0.0;    // root mean square of div u after it
+    double poissonResidual = 0.0;  // max | laplacian(p) - div |: how well the Poisson equation is solved
+};
+
+// Must be called right after a whole step: state.divergence then still holds the divergence BEFORE the
+// correction (see project() in Stages.h), state.pressure the final pressure with an up-to-date ghost layer,
+// and u, v, w the corrected velocity (advectScalars does not change them).
+ConvergenceRow measureConvergence(const smoke::SmokeState& s) {
+    ConvergenceRow row;
+    const smoke::GridSize g = s.density.size();
+    double sumSquares = 0.0;
+    for (int k = 1; k <= g.nz; ++k)
+        for (int j = 1; j <= g.ny; ++j)
+            for (int i = 1; i <= g.nx; ++i) {
+                const double divBefore = s.divergence.at(i, j, k);
+                // Same formula as computeDivergence (stages/Projection.cpp), in double.
+                const double divAfter = 0.5 * (double(s.u.at(i + 1, j, k)) - s.u.at(i - 1, j, k) +
+                                               double(s.v.at(i, j + 1, k)) - s.v.at(i, j - 1, k) +
+                                               double(s.w.at(i, j, k + 1)) - s.w.at(i, j, k - 1));
+                // Seven-point Laplacian with h = 1, the operator the Jacobi iteration solves
+                // (docs/plan/MATH.md, section 5): sum of the 6 neighbours - 6 p.
+                const double laplacian = double(s.pressure.at(i - 1, j, k)) + s.pressure.at(i + 1, j, k) +
+                                         double(s.pressure.at(i, j - 1, k)) + s.pressure.at(i, j + 1, k) +
+                                         double(s.pressure.at(i, j, k - 1)) + s.pressure.at(i, j, k + 1) -
+                                         6.0 * double(s.pressure.at(i, j, k));
+                row.maxDivBefore = std::max(row.maxDivBefore, std::fabs(divBefore));
+                row.maxDivAfter = std::max(row.maxDivAfter, std::fabs(divAfter));
+                row.poissonResidual = std::max(row.poissonResidual, std::fabs(laplacian - divBefore));
+                sumSquares += divAfter * divAfter;
+            }
+    row.rmsDivAfter = std::sqrt(sumSquares / (static_cast<double>(g.nx) * g.ny * g.nz));
+    return row;
+}
+
+// Two ways of using K (column "mode"):
+//   last_step  steps-1 steps with the default K, then ONE step with K. Every K gets exactly the same input
+//              (same divergence before), so the rows of one grid are directly comparable. Default.
+//   all_steps  every step uses K (--k-all-steps): what a whole simulation run with that K looks like.
+bool runConvergence(const Options& options) {
+    const std::vector<int> grids = options.gridExplicit ? options.gridSizes : std::vector<int>{32, 64, 128};
+    constexpr std::array<int, 6> iterationCounts{10, 20, 40, 80, 160, 1000};
+    constexpr std::array<float, 2> epsilons{5.0f, 0.0f};
+    std::cout << "grid,vorticity_eps,mode,steps,jacobi_iters,max_div_before,max_div_after,ratio_after_before,"
+                 "rms_div_after,poisson_residual_max\n";
+    for (const int n : grids) {
+        for (const float epsilon : epsilons) {
+            smoke::SolverConfig config;
+            config.grid = {n, n, n};
+            config.params.vorticityEps = epsilon;
+            const smoke::serial::SlabRange all = smoke::serial::wholeInterior(config.grid);
+
+            // last_step mode: develop the flow once, remember all fields, and replay the last step for each K.
+            smoke::SmokeState state;
+            state.resize(config.grid);
+            std::vector<std::vector<float>> saved;
+            if (!options.convergenceAllSteps) {
+                for (int step = 0; step + 1 < options.steps; ++step) convergenceStep(state, config.params, all);
+                for (smoke::Field3D* field : state.fields())
+                    saved.emplace_back(field->data(), field->data() + field->totalFloats());
+            }
+
+            for (const int iterations : iterationCounts) {
+                smoke::SmokeParams params = config.params;
+                params.jacobiIterations = iterations;
+                if (options.convergenceAllSteps) {
+                    state.clear();
+                    for (int step = 0; step < options.steps; ++step) convergenceStep(state, params, all);
+                } else {
+                    std::size_t index = 0;
+                    for (smoke::Field3D* field : state.fields()) {
+                        std::memcpy(field->data(), saved[index].data(), saved[index].size() * sizeof(float));
+                        ++index;
+                    }
+                    convergenceStep(state, params, all);
+                }
+                const ConvergenceRow row = measureConvergence(state);
+                if (!std::isfinite(row.maxDivAfter) || !std::isfinite(row.poissonResidual)) {
+                    std::cerr << "Non-finite state at grid " << n << "^3, K = " << iterations << '\n';
+                    return false;
+                }
+                std::cout << n << "^3," << epsilon << ','
+                          << (options.convergenceAllSteps ? "all_steps" : "last_step") << ',' << options.steps << ','
+                          << iterations << ',' << std::setprecision(6) << row.maxDivBefore << ',' << row.maxDivAfter
+                          << ',' << (row.maxDivBefore > 0.0 ? row.maxDivAfter / row.maxDivBefore : 0.0) << ','
+                          << row.rmsDivAfter << ',' << row.poissonResidual << std::endl;
+            }
+        }
+    }
+    return true;
+}
+
 bool runBenchmarks(const Options& options, std::ostream& csv) {
     csv << "grid,stage,median_ms,min_ms,max_ms,steps\n";
     for (const int n : options.gridSizes) {
@@ -776,6 +902,7 @@ int main(int argc, char** argv) {
         printHardwareInfo();
         return 0;
     }
+    if (options.convergence) return runConvergence(options) ? 0 : 1;
     if (!options.referencePath.empty()) return runReference(options) ? 0 : 1;
     if (!options.verifyPath.empty()) return runVerify(options) ? 0 : 1;
 

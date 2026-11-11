@@ -38,6 +38,8 @@ odluka D10), je u `../docs/plan/PERF_LOG.md`.
 Primjeri: `smoke_cli --grid 128 --steps 200`, `smoke_cli --nx 64 --ny 128 --nz 64 --quiet`.
 Benchmark: `Solver/build/smoke_bench --steps 100 --warmup 10 --output perf.csv`;
 kalibracija: `Solver/build/smoke_bench --calibrate`; hardver i opcije gradnje: `Solver/build/smoke_bench --hwinfo`;
+konvergencija Jacobija (divergencija i ostatak za K = 10 do 1000): `Solver/build/smoke_bench --convergence`
+(`../docs/plan/MATH.md`, odjeljak 5);
 referenca: `Solver/build/smoke_bench --reference Solver/reference/serial_64_100steps_<racunar>.bin`;
 poređenje s referencom: `Solver/build/smoke_bench --verify Solver/reference/serial_64_100steps_pc2.bin`
 (referenca zavisi od računara i kompajlera, vidi `../docs/plan/VERIFICATION.md`, odjeljak 3).
