@@ -170,6 +170,11 @@ M4c iz PLAN.md (pregled koda, nacrt izvještaja: algoritam, tačnost, tabela S/�
 vrijednosti upisane u dokumente; označeni milestone-ovi. Paralelizacija ostaje izvan plana (D8) dok Ermin i
 asistent predmeta ne kažu drugačije.
 
+**Zadnja stavka plana (dodao Ermin 2026-11-11), radi se tek poslije svega iznad, kao zadnji korak prije
+paralelizacije:** prepraviti HTML izvještaj profila (`tools/uprof_report.py`, `perf/uprof/report.html`) da ima
+ljepši i jednostavniji grafički prikaz, po uzoru na Intel VTune. Šta tačno znači "kao VTune" (koji prikazi)
+dogovara se s Erminom kad dođe na red; do tada se izvještaj ne dotjeruje.
+
 ---
 
 ## 4. Radni redoslijed i grane

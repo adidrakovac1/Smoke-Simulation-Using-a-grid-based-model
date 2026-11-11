@@ -311,7 +311,11 @@ Red K = 40 je isti kao u prvom načinu (isti račun), što je i provjera da oba 
 **Posljedica za odluku D15** (odlučuje se na tački G1): za zadani scenarij (ε = 5) brži rješavač bi malo
 popravio kvalitet, jer K = 40 već stoji blizu poda (na 128³ do 13% po max i 6 do 7% po rms; na 64³ oko 4% i 6%).
 Bez confinementa (ε = 0) na 128³ K = 40 ne dostiže pod, pa bi tu rješavač koji brže konvergira (red-black
-Gauss-Seidel) dao mjerljivo manju divergenciju za isti broj iteracija. Odluka nije upisana dok je tim ne donese.
+Gauss-Seidel) dao mjerljivo manju divergenciju za isti broj iteracija.
+
+**Odluka D15 (2026-11-11, Ermin, tačka G1): Jacobi ostaje.** Red-black Gauss-Seidel eksperiment se ne radi.
+Razlog: zadani scenarij koristi ε = 5 (odluka D9), a tu je K = 40 već blizu poda. Ako slučaj ε = 0 kasnije
+postane važan, tabela iznad je polazna tačka za ponovnu odluku.
 
 ---
 

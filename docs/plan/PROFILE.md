@@ -358,8 +358,11 @@ Konfiguracija `inst_access`, sesije jedne faze, 64³ / 128³:
 
 ## 5. Kandidati za optimizaciju, poredani po dokazu
 
-Ništa od ovoga **nije implementirano**. Odluka je na tački G0, a svaka izmjena ide po protokolu iz
-OPTIMIZATION.md (hipoteza, tačnost, mjerenje po D10, unos u PERF_LOG.md).
+Ništa od ovoga **nije implementirano**. Svaka izmjena ide po protokolu iz OPTIMIZATION.md (hipoteza, tačnost,
+mjerenje po D10, unos u PERF_LOG.md).
+
+**Tačka G0 (2026-11-11, Ermin): zasad se ništa od ovoga ne radi.** Rad se nastavlja na M-VIZ (vizualizacija).
+Tabela ostaje kao spisak kandidata za kasnije.
 
 | # | Kandidat | Dokaz | Očekivani domet | Mijenja rezultat? |
 | ---: | :--- | :--- | :--- | :--- |

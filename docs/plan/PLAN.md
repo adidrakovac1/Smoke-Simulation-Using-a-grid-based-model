@@ -138,11 +138,16 @@ Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 do P2. Još uvijek s
 - [x] P0: popraviti kalibraciju memorije (triad), `smoke_bench --hwinfo`, ažurirati README i ovaj plan.
       (2026-11-11: triad je bio 6 puta prevelik; sada 17.9 GB/s uz teorijskih 38.4 GB/s; E za Jacobi na 128³ je
       oko 0.94. PROFILE.md, odjeljci 1 i 2; PERF_LOG.md, odjeljak 8.)
-- [ ] P1 (2026-11-11: urađeno s vremenskim uzorkovanjem, HTML u `perf/uprof/2026-11-11_tbp/report.html`; brojači i IBS
-      nisu dostupni dok je uključen WSL2 / Hyper-V, PROFILE.md odjeljak 3.3; čeka tačku G0): AMD uProf instaliran, `Solver/build-prof` (`-g -fno-omit-frame-pointer`), `smoke_prof`, tbp/assess/IBS na 64³ i 128³,
+- [x] P1: AMD uProf instaliran, `Solver/build-prof` (`-g -fno-omit-frame-pointer`), `smoke_prof`, tbp i brojači na 64³ i 128³,
       `tools/uprof_report.py` pravi samostalan HTML, `docs/plan/PROFILE.md` s hardverom i odgovorima na hipoteze H1 do H5.
-- [ ] P2: tabela ostatak/divergencija naspram K (32³, 64³, 128³) u MATH.md; odluka D15 o rješavaču.
-      (2026-11-11: tabela je izmjerena, `smoke_bench --convergence`, MATH.md odjeljak 5. Odluka D15 čeka tačku G1.)
+      (2026-11-11: vremensko uzorkovanje i hardverski brojači (`assess_ext`, `inst_access`); HTML je
+      `perf/uprof/report.html`. IBS nije dostupan jer VBS drži hipervizor, PROFILE.md odjeljak 3.3. H2 je ostala otvorena.
+      **Tačka G0 (Ermin): zasad se ništa ne optimizira**, ide se na M-VIZ; kandidati ostaju u PROFILE.md, odjeljak 5.)
+- [x] P2: tabela ostatak/divergencija naspram K (32³, 64³, 128³) u MATH.md; odluka D15 o rješavaču.
+      (2026-11-11: tabela je izmjerena, `smoke_bench --convergence`, MATH.md odjeljak 5. G1: Jacobi ostaje.)
+- [ ] **Zadnja stavka, tek kad je sve ostalo gotovo (zadnji korak prije paralelizacije; Ermin, 2026-11-11):**
+      prepraviti HTML izvještaj profila (`tools/uprof_report.py`) da ima ljepši i jednostavniji grafički prikaz,
+      po uzoru na Intel VTune. Do tada se izvještaj ne dotjeruje.
 
 **Kriterij:** postoji HTML izvještaj s hardverskim brojačima i PROFILE.md; Jacobi je potvrđen ili je red-black
 eksperiment odobren.
@@ -199,7 +204,7 @@ izabran način bez preuzimanja s interneta. D8 je dodana istog dana.
 | D12 | `-fno-math-errno` po fajlu (2026-11-09) | Dozvoljen samo za `Forces.cpp` i `Forces_avx2.cpp` (M4-018), da se `std::sqrt` u petlji vektorizira. Ne mijenja nijedan rezultat (sqrt nenegativnog broja je tačan po IEEE 754; izostaje samo `errno` za negativan ulaz) i nije dio opcija `-ffast-math` koje mijenjaju vrijednosti. `-ffast-math`, `-fno-trapping-math` i FMA i dalje nisu dozvoljeni u referentnoj gradnji |
 | D13 | `Renderer/` se smije mijenjati (2026-11-11, Ermin) | Prva potreba: depth u teksturu za zaklanjanje dima. Svaka izmjena se upisuje u ARCHITECTURE.md, odjeljak 6 |
 | D14 | Redoslijed rada (2026-11-11) | M4d (profiling) pa M-VIZ pa M-OBS |
-| D15 | Rješavač pritiska (2026-11-11) | Jacobi ostaje dok mjerenje (P2) ne pokaže da K = 40 na 128³ ne dostiže granicu tačnosti; tada red-black GS kao eksperiment, poređen po vremenu do iste divergencije. Multigrid se ne radi |
+| D15 | Rješavač pritiska (2026-11-11) | Jacobi ostaje dok mjerenje (P2) ne pokaže da K = 40 na 128³ ne dostiže granicu tačnosti; tada red-black GS kao eksperiment, poređen po vremenu do iste divergencije. Multigrid se ne radi. **Zaključeno na G1 (2026-11-11, Ermin): Jacobi ostaje, red-black eksperiment se ne radi** (MATH.md, odjeljak 5) |
 | D16 | Dizajn prepreka (2026-11-11) | Rijetke liste graničnih ćelija; vektorizirana jezgra netaknuta; vlastiti OBJ parser u Solveru; bez prepreka rezultat bit po bit isti kao referenca |
 | D17 | Petlja simulacije i prva scena (2026-11-11) | Jedan korak po frejmu u glavnoj niti (D8); prva scena je jednostavna kutija s dimom |
 
