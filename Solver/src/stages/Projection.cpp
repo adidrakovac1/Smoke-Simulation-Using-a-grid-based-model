@@ -3,6 +3,7 @@
 #include "CpuFeatures.h"
 #include "Profiler.h"
 #include "Restrict.h"
+#include "stages/ObstacleLists.h"
 
 #include <cassert>
 #include <cstddef>
@@ -93,7 +94,8 @@ void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D&
         }
 }
 
-void project(SmokeState& s, const SmokeParams& params, SlabRange range, double* jacobiIterationMs) {
+void project(SmokeState& s, const SmokeParams& params, SlabRange range, double* jacobiIterationMs,
+             const ObstacleLists* obstacles) {
     // 1. Divergence of the current velocity (its ghost layer is up to date, see Stages.h invariant).
     computeDivergence(s.u, s.v, s.w, s.divergence, range);
     setBoundary(s.divergence, BoundaryKind::Scalar);  // as set_bnd(div) in Stam 2003
@@ -107,6 +109,8 @@ void project(SmokeState& s, const SmokeParams& params, SlabRange range, double* 
         for (int it = 0; it < params.jacobiIterations; ++it) {
             s.pressure.swap(s.pressure0);
             jacobiIteration(s.pressure, s.pressure0, s.divergence, range);
+            // Obstacle surface: dp/dn = 0 there too. Before setBoundary, so the ghost layer sees the result.
+            if (obstacles) extendIntoSolids(s.pressure, *obstacles);
             setBoundary(s.pressure, BoundaryKind::Scalar);
         }
     };
@@ -124,6 +128,7 @@ void project(SmokeState& s, const SmokeParams& params, SlabRange range, double* 
 
     // 3. Make the velocity (nearly) divergence free: u -= grad p.
     subtractPressureGradient(s.u, s.v, s.w, s.pressure, range);
+    if (obstacles) reflectVelocityIntoSolids(s.u, s.v, s.w, *obstacles);
     setVelocityBoundary(s);
 }
 

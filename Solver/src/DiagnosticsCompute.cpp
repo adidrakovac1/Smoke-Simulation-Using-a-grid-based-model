@@ -1,5 +1,7 @@
 #include "DiagnosticsCompute.h"
 
+#include "stages/ObstacleLists.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -16,7 +18,7 @@ long long countNonFinite(const Field3D& f) {
 
 } // namespace
 
-Diagnostics computeDiagnostics(const SmokeState& s, float dt) {
+Diagnostics computeDiagnostics(const SmokeState& s, float dt, const ObstacleLists* obstacles) {
     Diagnostics d;
     const GridSize g = s.density.size();
     if (!g.valid() || s.density.data() == nullptr) return d;
@@ -25,6 +27,7 @@ Diagnostics computeDiagnostics(const SmokeState& s, float dt) {
     for (int k = 1; k <= g.nz; ++k) {
         for (int j = 1; j <= g.ny; ++j) {
             for (int i = 1; i <= g.nx; ++i) {
+                if (obstacles && obstacles->isSolid[s.density.index(i, j, k)]) continue;
                 maxDivBefore = std::max(maxDivBefore, double(std::fabs(s.divergence.at(i, j, k))));
 
                 // Same formula as computeDivergence (stages/Projection.cpp).

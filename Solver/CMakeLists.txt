@@ -59,6 +59,9 @@ add_library(smoke_solver STATIC
   src/stages/Advection.cpp
   src/stages/Projection.cpp
   src/stages/Boundary.cpp
+  src/stages/Obstacles.cpp
+  src/Voxelizer.cpp
+  src/ObjLoader.cpp
   src/CpuFeatures.cpp
 )
 
@@ -154,6 +157,7 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/test_vorticity.cpp
     tests/test_projection.cpp
     tests/test_stability.cpp
+    tests/test_obstacles.cpp
     tests/demo_advect.cpp                              # M1 demo, started by "smoke_cli --demo advect"
   )
   target_link_libraries(smoke_selftest PUBLIC smoke_solver)

@@ -14,6 +14,10 @@
 #include "smoke/Field3D.h"
 #include "smoke/SmokeParams.h"
 
+namespace smoke {
+struct ObstacleLists;
+}
+
 namespace smoke::serial {
 
 /// Range of interior z-planes [k0, k1) a call is responsible for. The serial code always passes the
@@ -93,11 +97,35 @@ void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D&
 ///    params.jacobiIterations Jacobi iterations, subtract the gradient. The most expensive phase.
 ///    Afterwards state.divergence still holds the divergence BEFORE the correction (used by Diagnostics).
 ///    When provided, jacobiIterationMs receives the mean time per Jacobi iteration.
+///    With obstacles (not null): after every Jacobi iteration the pressure is copied into the solid cells
+///    next to the fluid (extendIntoSolids), and after the correction the velocity in solid cells is set again
+///    (reflectVelocityIntoSolids).
 void project(SmokeState& state, const SmokeParams& params, SlabRange range,
-             double* jacobiIterationMs = nullptr);
+             double* jacobiIterationMs = nullptr, const ObstacleLists* obstacles = nullptr);
 
 /// 5. Semi-Lagrangian advection of density and temperature by the (corrected) velocity.
 ///    Swaps each field with its *0 partner, advects from *0 into the main field, then setBoundary.
 void advectScalars(SmokeState& state, float dt, SlabRange range);
+
+// -- Obstacles (docs/plan/OBSTACLES.md, decision D16): short loops over the sparse lists in ObstacleLists.h.
+//    Called by SmokeSolver::step() between the phases, only when obstacles are set. --
+
+/// Every solid cell next to the fluid gets the mean of its non-solid neighbours (zero difference across the
+/// obstacle surface, like the Scalar rule of setBoundary at the box walls).
+void extendIntoSolids(Field3D& field, const ObstacleLists& obstacles);
+/// field = value in every solid cell.
+void setInSolids(Field3D& field, float value, const ObstacleLists& obstacles);
+/// Velocity in solid cells: 0 inside the obstacle; in the solid cells next to the fluid the normal component is
+/// the negative of the fluid neighbour's and the others are copied, so the normal velocity ON the surface is 0
+/// (the VelocityX/Y/Z rule of setBoundary, applied to the obstacle surface).
+void reflectVelocityIntoSolids(Field3D& u, Field3D& v, Field3D& w, const ObstacleLists& obstacles);
+/// reflectVelocityIntoSolids for the state, plus the ghost layer when an obstacle touches a wall.
+void enforceSolidVelocity(SmokeState& state, const ObstacleLists& obstacles);
+/// density = 0 and temperature = ambient in every solid cell.
+void clearSolidScalars(SmokeState& state, float ambientTemperature, const ObstacleLists& obstacles);
+/// Velocity in porous cells *= 1 / (1 + dt * sigma).
+void applyPorousDrag(SmokeState& state, float dt, const ObstacleLists& obstacles);
+/// Density in porous cells *= 1 / (1 + dt * phi).
+void applyPorousFilter(SmokeState& state, float dt, const ObstacleLists& obstacles);
 
 } // namespace smoke::serial
