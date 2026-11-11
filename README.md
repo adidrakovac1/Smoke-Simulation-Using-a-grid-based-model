@@ -33,4 +33,7 @@ Solver\build\smoke_cli.exe --grid 64
 
 ## Status
 
-Skelet postoji i gradi se. Faze simulacije još nisu implementirane (vidi [`docs/plan/PLAN.md`](docs/plan/PLAN.md)).
+Solver je implementiran i serijski optimiziran (M0 do M4; PC-2: cijeli korak 2.3x do 3.2x brži od neoptimizirane
+osnove, bit po bit isti rezultat). Slijedi (vidi [`docs/plan/EXECUTION_PLAN.md`](docs/plan/EXECUTION_PLAN.md)):
+M4d profiliranje (AMD uProf), M-VIZ vizualizacija u rendereru, M-OBS prepreke i mesh (`.obj`).
+Paralelizacija (OpenMP, GPU) nije u planu dok se ne odluči (odluka D8).

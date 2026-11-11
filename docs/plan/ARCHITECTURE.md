@@ -280,12 +280,16 @@ Renderer već ima ono što nam treba za crtanje dima:
 - **Čitljiv depth buffer.** `HdrFramebuffer` ima depth kao renderbuffer, koji se ne može
   uzorkovati u shaderu. Posljedica: dim ne može biti zaklonjen objektima scene. Za demo u
   praznoj sceni to ne smeta. Ako zatreba, dvije su opcije (promjena depth-a u teksturu ili
-  kopiranje depth-a nakon crtanja), i obje diraju Renderer. Zasad **ne radimo**.
+  kopiranje depth-a nakon crtanja), i obje diraju Renderer. Odluka D13 (2026-11-11): radi se u M-OBS, promjenom depth-a u teksturu.
 
 **Dozvoljene izmjene u `Renderer/` (cijeli popis):**
 1. `Renderer/test-app/CMakeLists.txt`: dodati `add_subdirectory(../../Solver ...)`,
    `add_subdirectory(../../Integration ...)` i povezati `SmokeIntegration` s `TestApp`.
 2. `Renderer/test-app/src/main.cpp`: napraviti `SmokeScene` i dodati je u listu scena.
+
+3. (D13, M-OBS) `Renderer/src/opengl/core/HdrFramebuffer.cpp` i pripadni header: depth iz renderbuffera u teksturu koja se
+   može uzorkovati, da volumni prolaz ograniči zraku na dubinu scene. Prije i poslije provjeriti barem dvije postojeće scene.
+4. Dalje izmjene u `Renderer/` samo uz upis u ovaj popis (šta i zašto).
 
 Sve ostalo ostaje netaknuto. Ako se pojavi potreba za većom izmjenom, prvo se dogovara u timu
 i upisuje u ovaj odjeljak.

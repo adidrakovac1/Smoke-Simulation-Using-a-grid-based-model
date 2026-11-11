@@ -127,11 +127,21 @@ PERF_LOG.md, odjeljak 7. Ostale stavke ispod su namjerno ostavljene (D11).
 su izmjerene i upisane (zadržane ili odbačene); optimizirana verzija prolazi sve testove i poređenje
 s referentnim rezultatom; postoji tabela ubrzanja serijske verzije u odnosu na B0 i B1.
 
+### M4d: profiliranje serijske verzije (AMD uProf; odluka D14)
+Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 do P2. Još uvijek sekvencijalno, bez niti (D8).
+- [ ] P0: popraviti kalibraciju memorije (triad), `smoke_bench --hwinfo`, ažurirati README i ovaj plan.
+- [ ] P1: AMD uProf instaliran, `Solver/build-prof` (`-g -fno-omit-frame-pointer`), `smoke_prof`, tbp/assess/IBS na 64³ i 128³,
+      `tools/uprof_report.py` pravi samostalan HTML, `docs/plan/PROFILE.md` s hardverom i odgovorima na hipoteze H1 do H5.
+- [ ] P2: tabela ostatak/divergencija naspram K (32³, 64³, 128³) u MATH.md; odluka D15 o rješavaču.
+
+**Kriterij:** postoji HTML izvještaj s hardverskim brojačima i PROFILE.md; Jacobi je potvrđen ili je red-black
+eksperiment odobren.
+
 ### Paralelizacija: nije milestone (odluka D8)
 OpenMP niti, GPU i ostale paralelne tehnike (OPTIMIZATION.md, odjeljak 3.2) se **ne planiraju** u ovoj
 fazi. Kad tim odluči da počinje, za to se pišu posebni milestone-ovi. Do tada se paralelni kod ne piše.
 
-### M-VIZ: vizualizacija u rendereru (ZADNJI milestone ove faze)
+### M-VIZ: vizualizacija u rendereru (poslije M4d; odluke D14 i D17)
 Radi se tek kad je solver gotov, sekvencijalno optimiziran i izmjeren. Do tada se dim provjerava konzolnim programom
 i slikama presjeka (`.pgm`, vidi [CLI_OUTPUT.md](CLI_OUTPUT.md)), bez renderera.
 Razlog što može čekati: Solver je odvojen i renderer čita samo `density()` (ARCHITECTURE.md).
@@ -142,6 +152,19 @@ Razlog što može čekati: Solver je odvojen i renderer čita samo `density()` (
 - [ ] ImGui panel: izbor veličine mreže (32/64/96/128 + Apply), parametri, pauza, jedan korak, reset.
 
 **Kriterij:** dim se vidi u realnom vremenu u rendereru, a veličina mreže se mijenja iz menija.
+
+Razrada: EXECUTION_PLAN.md, faza P3. Prva verzija scene je jednostavna: dim u zatvorenoj kutiji s vidljivim
+okvirom, podom i izvorom pri dnu (D17).
+
+### M-OBS: prepreke i mesh (poslije M-VIZ; odluke D13 i D16)
+Razrada: EXECUTION_PLAN.md, faza P4; objašnjenja u `docs/plan/OBSTACLES.md`.
+- [ ] Parser `.obj`, voxelizacija (ljuska + poplava), `ObstacleGrid` (Fluid/Solid/Porous), `setObstacles()` u Solveru.
+- [ ] Fizika kroz rijetke liste graničnih ćelija (pritisak, brzina, gustina), porozni objekti (deka) s otporom.
+- [ ] Testovi; mjerenje troška; bez prepreka `--verify` ostaje bit po bit isti kao PC-2 referenca.
+- [ ] Integration: učitavanje `.obj` iz menija, crtanje mesha, test meshevi (kocka, kugla, deka).
+- [ ] Renderer (D13): depth u teksturu, zaklanjanje dima; prozirni prolaz za deku.
+
+**Kriterij:** dim se odbija od objekta, prolazi kroz poroznu deku usporen, objekt zaklanja dim iza sebe.
 
 ---
 
@@ -164,6 +187,11 @@ izabran način bez preuzimanja s interneta. D8 je dodana istog dana.
 | D10 | Kada je izmjena brža od šuma (2026-11-09) | Najmanje 3 naizmjenične runde; šum = raspon medijana rundi osnove; izmjena prolazi ako je razlika veća od šuma i ako je brža u svakoj rundi (OPTIMIZATION.md, odjeljak 4, tačka 5). Zamjenjuje pravilo "veće od max − min svih koraka" |
 | D11 | Skraćeni opseg M4 (2026-11-09, Ermin) | Preostali mali koraci nivoa 1 (ručni gather za advekciju, AVX2 za divergenciju i gradijent, poravnanje T11) se **ne rade**: očekivani dobitak je mali i vezan za jedan procesor. Od nivoa 2 uzima se samo fuzija jezgara u advekciji (M4-015 do M4-017): ne zavisi od procesora i daje bit po bit isti rezultat. Tehnike koje mijenjaju rezultat (red-black GS, multigrid, FMA, 1/6 umjesto dijeljenja) ili su teške (vremensko blokiranje) ostaju za kasnije. Zbir M4 je u PERF_LOG.md, odjeljak 7 |
 | D12 | `-fno-math-errno` po fajlu (2026-11-09) | Dozvoljen samo za `Forces.cpp` i `Forces_avx2.cpp` (M4-018), da se `std::sqrt` u petlji vektorizira. Ne mijenja nijedan rezultat (sqrt nenegativnog broja je tačan po IEEE 754; izostaje samo `errno` za negativan ulaz) i nije dio opcija `-ffast-math` koje mijenjaju vrijednosti. `-ffast-math`, `-fno-trapping-math` i FMA i dalje nisu dozvoljeni u referentnoj gradnji |
+| D13 | `Renderer/` se smije mijenjati (2026-11-11, Ermin) | Prva potreba: depth u teksturu za zaklanjanje dima. Svaka izmjena se upisuje u ARCHITECTURE.md, odjeljak 6 |
+| D14 | Redoslijed rada (2026-11-11) | M4d (profiling) pa M-VIZ pa M-OBS |
+| D15 | Rješavač pritiska (2026-11-11) | Jacobi ostaje dok mjerenje (P2) ne pokaže da K = 40 na 128³ ne dostiže granicu tačnosti; tada red-black GS kao eksperiment, poređen po vremenu do iste divergencije. Multigrid se ne radi |
+| D16 | Dizajn prepreka (2026-11-11) | Rijetke liste graničnih ćelija; vektorizirana jezgra netaknuta; vlastiti OBJ parser u Solveru; bez prepreka rezultat bit po bit isti kao referenca |
+| D17 | Petlja simulacije i prva scena (2026-11-11) | Jedan korak po frejmu u glavnoj niti (D8); prva scena je jednostavna kutija s dimom |
 
 ---
 
@@ -171,9 +199,9 @@ izabran način bez preuzimanja s interneta. D8 je dodana istog dana.
 
 - OpenMP niti, GPU i bilo kakav višenitni kod (odluka D8). Nisu milestone.
 - Optimizacija prije M4. U M1 do M3 pišemo jasan, ispravan kod; brzina dolazi tek u M4, poslije mjerenja.
-- Izmjene u `Renderer/` osim dvije dozvoljene (ARCHITECTURE.md, odjeljak 6).
-- Vizualizacija u rendereru (to je zadnji milestone, M-VIZ).
-- Zaklanjanje dima objektima scene (zahtijeva izmjenu depth buffera u Rendereru).
+- Izmjene u `Renderer/` mimo popisa u ARCHITECTURE.md, odjeljak 6 (odluka D13).
+- Vizualizacija prije M4d (profiling dolazi prvi, D14).
+- Zaklanjanje dima objektima scene prije M-OBS (tada se mijenja depth u Rendereru, D13).
 - Optimizacije "na slijepo". Prvo mjerenje, pa tek onda izmjena.
 
 ---
