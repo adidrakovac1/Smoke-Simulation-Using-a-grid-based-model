@@ -76,6 +76,26 @@ message(STATUS "smoke_solver: ${SMOKE_AVX2_STATE}")
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set_property(SOURCE src/stages/Forces.cpp src/stages/Forces_avx2.cpp APPEND PROPERTY COMPILE_OPTIONS "-fno-math-errno")
 endif()
+
+# Text for "smoke_bench --hwinfo": the per-file options above, read back from the source properties so the
+# printed text cannot drift from what is really used.
+set(SMOKE_PER_FILE_FLAGS "")
+foreach(SMOKE_FLAGGED_SOURCE src/stages/Projection_avx2.cpp src/stages/Advection_avx2.cpp
+                             src/stages/Forces_avx2.cpp src/stages/Forces.cpp)
+  get_source_file_property(SMOKE_SOURCE_FLAGS ${SMOKE_FLAGGED_SOURCE} COMPILE_OPTIONS)
+  list(FIND SMOKE_AVX2_SOURCES ${SMOKE_FLAGGED_SOURCE} SMOKE_SOURCE_IS_AVX2)
+  if(SMOKE_SOURCE_FLAGS AND (SMOKE_SOURCE_IS_AVX2 GREATER -1 OR SMOKE_FLAGGED_SOURCE STREQUAL "src/stages/Forces.cpp"))
+    get_filename_component(SMOKE_SOURCE_NAME ${SMOKE_FLAGGED_SOURCE} NAME)
+    string(REPLACE ";" " " SMOKE_SOURCE_FLAGS "${SMOKE_SOURCE_FLAGS}")
+    if(SMOKE_PER_FILE_FLAGS)
+      string(APPEND SMOKE_PER_FILE_FLAGS ", ")   # not ";": that is the CMake list separator
+    endif()
+    string(APPEND SMOKE_PER_FILE_FLAGS "${SMOKE_SOURCE_NAME}: ${SMOKE_SOURCE_FLAGS}")
+  endif()
+endforeach()
+if(NOT SMOKE_PER_FILE_FLAGS)
+  set(SMOKE_PER_FILE_FLAGS "none")
+endif()
 target_include_directories(smoke_solver
   PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -171,6 +191,8 @@ if(SMOKE_BUILD_BENCH)
     SMOKE_BENCH_VARIANT="${SMOKE_BENCH_VARIANT}"
     SMOKE_BENCH_FLAGS="${CMAKE_CXX_FLAGS_RELEASE} ${SMOKE_BASELINE_FLAGS}"
     SMOKE_BENCH_COMMIT="${SMOKE_COMMIT}"
+    SMOKE_BENCH_AVX2_KERNELS="${SMOKE_AVX2_STATE}"
+    SMOKE_BENCH_PER_FILE_FLAGS="${SMOKE_PER_FILE_FLAGS}"
   )
   smoke_set_warnings(smoke_bench)
 endif()

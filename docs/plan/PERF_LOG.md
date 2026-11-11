@@ -31,7 +31,7 @@ plan napajanja).
 | Oznaka | Vlasnik | Procesor | Jezgara/niti | L2 / L3 | RAM | AVX2 | Kompajler | Napomena |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | PC-1 | Adi | Apple M4 | 10/10 | L2 4 MiB / L3 nije prijavljen | 16 GiB | AVX2 ne, ARM NEON da | AppleClang 21.0.0.21000101 | macOS 25.6.0 |
-| PC-2 | Ermin | AMD Ryzen 5 5500 (Zen 3) | 6/12 | L2 6×512 KiB / L3 16 MiB | 32 GiB | AVX2 da, FMA da, AVX-512 ne | g++ 16.2.0 (MSYS2 UCRT64) | Windows 11 Pro 10.0.26300, plan napajanja High performance |
+| PC-2 | Ermin | AMD Ryzen 5 5500 (Zen 3) | 6/12 | L2 6×512 KiB / L3 16 MiB | 32 GiB (2×16 DDR4, dvokanalno, 2400 MT/s) | AVX2 da, FMA da, AVX-512 ne | g++ 16.2.0 (MSYS2 UCRT64) | Windows 11 Pro 10.0.26300, plan napajanja High performance; puna tabela u PROFILE.md |
 | PC-3 | | | | | | | | |
 
 Komanda za procesor (PowerShell):
@@ -298,7 +298,9 @@ Zajedničko za sve unose u ovom odjeljku:
   `serial_64_100steps_pc2.bin`, bit po bit isto (razlika 0).
 - **Kalibracija:** `--calibrate` daje triad oko 107 GB/s, a teorijski maksimum dvokanalnog DDR4
   je oko 51 GB/s. Mjerenje kalibracije je vjerovatno pogrešno (nije provjereno), pa se **E ne
-  računa** dok se ne provjeri.
+  računa** dok se ne provjeri. **Ispravljeno 2026-11-11 (odjeljak 8):** stari triad je bio 6 puta
+  prevelik; ispravljena vrijednost je oko 17.9 GB/s, a teorijski maksimum ovog računara 38.4 GB/s
+  (RAM radi na 2400 MT/s, ne na 3200).
 
 ### P2-001 / P2-002: osnove B0 i B1 na PC-2 (commit `73ceb9e`)
 
@@ -775,5 +777,42 @@ M4-017) bio je 1.99 do 2.68x prema B0 i 1.60 do 2.02x prema B1; njegovi redovi u
 - Brojevi vrijede za PC-2. Na računaru bez AVX2 otpadaju doprinosi M4-009, M4-014, M4-017 i M4-020; ostalo
   ostaje. Na PC-1 (Mac, ARM) M4 nije ponovo mjeren.
 - E (efikasnost memorije) nije izračunat: kalibracija na PC-2 daje nevjerovatnih ~107 GB/s (odjeljak 6), pa
-  zaključci stoje samo na S i Δ.
+  zaključci stoje samo na S i Δ. (Kalibracija je ispravljena 2026-11-11 i E je izračunat za Jacobi, odjeljak 8.)
 - Oznake u CSV-u: `PC2-20261109-M4-SUM2-B0-*` i `PC2-20261109-M4-SUM2-B1-*`.
+
+---
+
+## 8. Kalibracija memorije i E na PC-2 (2026-11-11, M4d / P0)
+
+Ovo **nije izmjena brzine solvera** (kod solvera je isti kao `c9dca43`), nego ispravka mjernog alata. Puno
+objašnjenje, tabela hardvera i postupak su u [PROFILE.md](PROFILE.md), odjeljci 1 i 2.
+
+- **Greška:** `measureMemoryTriad` je 6 puta izvršavao `a = b + s·c` s nepromijenjenim `b` i `c`. Kompajler je
+  ostavio jedan prolaz (potvrđeno u asembleru), a program je računao bajte za 6, pa je rezultat bio 6 puta
+  prevelik (88 do 107 GB/s).
+- **Ispravka:** nizovi rotiraju uloge (svaki prolaz čita ono što je prethodni upisao), jezgro je u funkciji
+  `triadPass` koja se ne ugrađuje. `objdump -d` pokazuje petlju sa 6 poziva.
+- **RAM:** 2 × 16 GiB DDR4 dvokanalno na **2400 MT/s** (XMP nije uključen). Teorijski maksimum je
+  2 × 8 B × 2400·10⁶ = **38.4 GB/s**, a ne 51 GB/s kako je ranije pretpostavljeno.
+- **Triad poslije ispravke:** 17.13, 18.49, 17.89, 18.07, 16.96 GB/s u 5 pokretanja; medijan **17.9 GB/s**
+  (2 čitanja + 1 upis). S "write allocate" (3 čitanja + 1 upis, model) 23.8 GB/s. Oba ispod 38.4 GB/s.
+- **Tačnost:** 48/48 testova; `--verify` prema `serial_64_100steps_pc2.bin` bit po bit isto.
+
+**E za Jacobi iteraciju** (jedno pokretanje `smoke_bench`, 100 + 10 koraka, K = 40, triad u istoj sesiji
+18.29 GB/s; računar nije bio umiren, nije protokol D10):
+
+| Mreža | Jacobi iter. medijan / min (ms) | GB/s uz 12 B po ćeliji | E | GB/s uz 32 B po ćeliji (stari model) |
+| :--- | :--- | ---: | ---: | ---: |
+| 32³ | 0.00966 / 0.00947 | 40.7 | 2.23 | 108.5 |
+| 64³ | 0.0738 / 0.0711 | 42.6 | 2.33 | 113.7 |
+| 96³ | 0.287 / 0.240 | 37.0 | 2.02 | 98.7 |
+| 128³ | 1.465 / 1.262 | 17.2 | 0.94 | 45.8 |
+
+- 12 B po ćeliji: čitanje starog pritiska, čitanje divergencije, upis novog pritiska (isti dogovor kao triad).
+  Model od 32 B (VERIFICATION.md, odjeljak 4.4) broji i šest susjeda koji su već u kešu.
+- **Zaključak:** na 128³ je E ≈ 0.94 (po minimumu 1.09), dakle Jacobi radi na granici propusnosti memorije ovog
+  računara. Na 32³ do 96³ je E oko 2, jer su polja u kešu. Ovo je u skladu s nalazom da SIMD na 128³ daje malo
+  (M4-009: 1.11x).
+- Vremena u ovoj tabeli su viša nego u odjeljku 7 (npr. 128³: 1.47 prema 1.11 ms), jer je računar bio u
+  upotrebi; ne koristiti ih kao osnovu za S.
+- Oznake u CSV-u: `PC2-20261111-CAL-*`, presuda `info`.

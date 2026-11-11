@@ -107,14 +107,20 @@ PERF_LOG.md, odjeljak 7. Ostale stavke ispod su namjerno ostavljene (D11).
       koraci 2 do 10 iz OPTIMIZATION.md, odjeljak 2.3: redoslijed petlji, `restrict`, izvještaj
       auto-vektorizacije, `omp simd` (`-fopenmp-simd`, bez niti), poravnanje, maske bez grananja,
       blokiranje, AVX2 s rezervnom putanjom, više akumulatora.
-- [ ] Svaki korak: testovi i poređenje s referentnim rezultatom, mjerenje prema osnovi (S, Δ),
-      unos u evidenciju, i kad nije pomoglo.
+      **Djelimično (stanje 2026-11-11):** urađeno za Jacobi, advekciju i vorticity confinement; divergencija i
+      gradijent imaju `restrict` (M4-007), bez AVX2. Namjerno nije urađeno (D11): ručni gather, AVX2 za
+      divergenciju i gradijent, poređenje poravnato/neporavnato (T11), više akumulatora za redukcije.
+- [x] Svaki korak: testovi i poređenje s referentnim rezultatom, mjerenje prema osnovi (S, Δ),
+      unos u evidenciju, i kad nije pomoglo. (M4-001 do M4-020 u PERF_LOG.md, uključujući odbačene.)
 
 **M4b: dodatne sekvencijalne optimizacije** (izvan laba; OPTIMIZATION.md, odjeljak 3.1)
-- [ ] Počinje tek kad je M4a iscrpljen (kriterij iz OPTIMIZATION.md, odjeljak 2.3) i uz odobrenje tima.
+- [x] Počinje tek kad je M4a iscrpljen (kriterij iz OPTIMIZATION.md, odjeljak 2.3) i uz odobrenje tima.
+      (Odobreno odlukom D11 uz skraćeni opseg M4a.)
 - [ ] Kandidati: fuzija jezgara, vremensko blokiranje Jacobija, red-black Gauss-Seidel,
       multigrid / konjugirani gradijent, FMA, manji tip podataka, AVX-512 (ako ga hardver ima),
       prefetch. Bira se po profilu; nije obaveza uraditi sve.
+      **Stanje 2026-11-11:** urađena fuzija jezgara u advekciji (M4-015 do M4-017). AVX-512 otpada (PC-2 ga nema).
+      Red-black GS zavisi od P2 (D15), multigrid se ne radi (D15); ostalo čeka profil iz M4d (tačka G0).
 
 **M4c: zatvaranje faze**
 - [ ] Pregled koda među članovima, očišćeni TODO-ovi.
@@ -129,7 +135,9 @@ s referentnim rezultatom; postoji tabela ubrzanja serijske verzije u odnosu na B
 
 ### M4d: profiliranje serijske verzije (AMD uProf; odluka D14)
 Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 do P2. Još uvijek sekvencijalno, bez niti (D8).
-- [ ] P0: popraviti kalibraciju memorije (triad), `smoke_bench --hwinfo`, ažurirati README i ovaj plan.
+- [x] P0: popraviti kalibraciju memorije (triad), `smoke_bench --hwinfo`, ažurirati README i ovaj plan.
+      (2026-11-11: triad je bio 6 puta prevelik; sada 17.9 GB/s uz teorijskih 38.4 GB/s; E za Jacobi na 128³ je
+      oko 0.94. PROFILE.md, odjeljci 1 i 2; PERF_LOG.md, odjeljak 8.)
 - [ ] P1: AMD uProf instaliran, `Solver/build-prof` (`-g -fno-omit-frame-pointer`), `smoke_prof`, tbp/assess/IBS na 64³ i 128³,
       `tools/uprof_report.py` pravi samostalan HTML, `docs/plan/PROFILE.md` s hardverom i odgovorima na hipoteze H1 do H5.
 - [ ] P2: tabela ostatak/divergencija naspram K (32³, 64³, 128³) u MATH.md; odluka D15 o rješavaču.

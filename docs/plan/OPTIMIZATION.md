@@ -218,6 +218,9 @@ vrijednosti (propusnost memorije, ns po zavisnoj operaciji). Kalibracija se pokr
 i mjerenje i upisuje u unos. `smoke_bench --calibrate` ispisuje CPU, OS, broj hardverskih niti,
 RAM, dostupne podatke o cacheu, vektorsku ISA, kompajler, Release oznake, varijantu i commit; zatim
 mjeri triad memorije i zavisni lanac. Mjerenje triadom je približno i zavisi od računara/opterećenja.
+Triad je ispravljen 2026-11-11 (ranije je bio 6 puta prevelik; PROFILE.md, odjeljak 2). Od tada postoji i
+`smoke_bench --hwinfo`: procesor, keševi i skupovi instrukcija pročitani instrukcijom CPUID, te kompajler i
+opcije gradnje (uključujući opcije po fajlu), bez mjerenja.
 
 Osnovne gradnje M3:
 

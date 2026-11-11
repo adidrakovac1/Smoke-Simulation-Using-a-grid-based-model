@@ -11,6 +11,8 @@
 | [CLI_OUTPUT.md](CLI_OUTPUT.md) | Šta ispisuje konzolni program `smoke_cli` (raspored ispisa, parametri) |
 | [OPTIMIZATION.md](OPTIMIZATION.md) | Ljestvica optimizacija (nivo 1 iz laba, nivo 2 napredno), protokol poređenja, normalizacija po računaru (S, Δ, E) |
 | [PERF_LOG.md](PERF_LOG.md) | Evidencija: otisci računara, šablon unosa, šema `perf/results.csv` |
+| [EXECUTION_PLAN.md](EXECUTION_PLAN.md) | Radni plan od 2026-11-11: M4d (profiling), M-VIZ (vizualizacija), M-OBS (prepreke); tačke zaustavljanja G0 do G3 |
+| [PROFILE.md](PROFILE.md) | Tabela hardvera (PC-2), propusnost memorije i E, profil iz AMD uProf-a i hipoteze H1 do H5 |
 | [CLAUDE_PROMPT.md](CLAUDE_PROMPT.md) | Promptovi za Claude CLI |
 | `../reference/PRS_Vektorizacija/` | Laboratorijski primjer vektorizacije (izvor tehnika nivoa 1) |
 | `../Windows_Setup_Uputstvo.pdf` | Instalacija alata i pokretanje renderera na Windowsu |

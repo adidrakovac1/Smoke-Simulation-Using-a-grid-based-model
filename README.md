@@ -16,6 +16,10 @@ OpenMP, eventualno GPU) uz mjerenje šta je koja tehnika donijela, i na kraju pr
 | `docs/` | Literatura (PDF), uputstvo za Windows i planovi u `docs/plan/`. |
 | `perf/` | Evidencija mjerenja (`results.csv`). |
 
+Programi u `Solver/build`: `smoke_cli` (simulacija u konzoli), `smoke_tests` (48 testova), `smoke_bench`
+(mjerenje, `--verify`, `--calibrate`, `--hwinfo`), `smoke_lab` i `smoke_demo` (poređenje verzija); opis je u
+[`Solver/README.md`](Solver/README.md).
+
 Početi čitanjem: [`docs/plan/README.md`](docs/plan/README.md).
 
 ## Brzi početak (Windows, MinGW)
@@ -33,7 +37,9 @@ Solver\build\smoke_cli.exe --grid 64
 
 ## Status
 
-Solver je implementiran i serijski optimiziran (M0 do M4; PC-2: cijeli korak 2.3x do 3.2x brži od neoptimizirane
-osnove, bit po bit isti rezultat). Slijedi (vidi [`docs/plan/EXECUTION_PLAN.md`](docs/plan/EXECUTION_PLAN.md)):
+Solver je implementiran i serijski optimiziran (M0 do M4; PC-2: cijeli korak 2.2x do 3.2x brži od osnove bez
+vektorizacije B0, bit po bit isti rezultat; [`docs/plan/PERF_LOG.md`](docs/plan/PERF_LOG.md), odjeljak 7).
+U toku je M4d: kalibracija memorije je ispravljena i postoji tabela hardvera
+([`docs/plan/PROFILE.md`](docs/plan/PROFILE.md)). Slijedi (vidi [`docs/plan/EXECUTION_PLAN.md`](docs/plan/EXECUTION_PLAN.md)):
 M4d profiliranje (AMD uProf), M-VIZ vizualizacija u rendereru, M-OBS prepreke i mesh (`.obj`).
 Paralelizacija (OpenMP, GPU) nije u planu dok se ne odluči (odluka D8).
