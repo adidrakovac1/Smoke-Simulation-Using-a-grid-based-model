@@ -12,9 +12,9 @@ Output: one HTML file with all CSS, JavaScript and data inside (no network acces
     python tools/uprof_report.py perf/uprof/2026-11-11_tbp [more folders ...] -o perf/uprof/report.html
     python tools/uprof_report.py perf/uprof/2026-11-11_tbp --summary      (text summary, no HTML)
 
-The parser is written against the uProf 6.0 CSV layout seen on PC-2 with the "tbp" config. Metric columns are
-read by name, so reports from event-based configs (more columns) go through the same code; their layout has
-not been seen yet (hardware counters were not available), so check the result when that changes.
+The parser is written against the uProf 6.0 CSV layout seen on PC-2 with the "tbp", "assess_ext" and
+"inst_access" configs. Metric columns are read by name, so time-based and event-based reports go through the
+same code; event-based reports add a DERIVED METRICS section (formulas) and per-instruction counter columns.
 Only the Python standard library is used.
 """
 
@@ -113,17 +113,32 @@ def read_rows(path):
 def parse_report(path):
     """Header fields, monitored events and the function table of report.csv."""
     rows = read_rows(path)
-    info, events, functions, metrics = {}, [], [], []
+    info, events, functions, metrics, derived = {}, [], [], [], {}
     index = 0
     while index < len(rows):
         row = rows[index]
         if len(row) >= 2 and row[0].endswith(":") and row[1] and not row[0].endswith("Events:"):
             info[row[0].rstrip(":")] = row[1]
         elif row and row[0].endswith("Events:"):
+            # "TBP Events:,Name,Interval,Description" or
+            # "PMC Events:,Name,Interval,Unitmask,Countmask,Invert Countmask,User,OS,Description": find columns by name.
+            columns = [cell.strip() for cell in row]
+            interval_at = columns.index("Interval") if "Interval" in columns else 2
+            description_at = columns.index("Description") if "Description" in columns else 3
             index += 1
             while index < len(rows) and rows[index] and rows[index][0] == "":
-                events.append({"name": rows[index][1], "interval": rows[index][2],
-                               "description": rows[index][3] if len(rows[index]) > 3 else ""})
+                cells = rows[index]
+                events.append({"name": cells[1], "interval": cells[interval_at] if len(cells) > interval_at else "",
+                               "description": " ".join(cells[description_at].split()) if len(cells) > description_at else ""})
+                index += 1
+            continue
+        elif row and row[0].strip() == "DERIVED METRICS":
+            # Event-based configs only: "Metric Name,Expression,Description", one row per derived column.
+            index += 2
+            while index < len(rows) and rows[index]:
+                cells = rows[index]
+                if len(cells) >= 2:
+                    derived[re.sub(r"\s+", " ", cells[0]).strip()] = " ".join(cells[1].split())
                 index += 1
             continue
         elif row and "HOTTEST FUNCTIONS" in row[0] and not functions:
@@ -139,14 +154,14 @@ def parse_report(path):
                 index += 1
             continue
         index += 1
-    return info, events, metrics, functions
+    return info, events, metrics, functions, derived
 
 
 def parse_detail(path):
     """Per-instruction sample shares from detail.csv: {full function name: [instruction, ...]}."""
-    result = {}
+    result, extra = {}, []
     if not path.exists():
-        return result
+        return result, extra
     rows = read_rows(path)
     current = None
     in_detail = False
@@ -154,6 +169,8 @@ def parse_detail(path):
         if row and row[0] == "Function" and len(row) >= 5 and row[1] == "Address":
             in_detail = True
             current = None
+            # Event-based configs: more metric columns follow the first one (same header for every function).
+            extra = [re.sub(r"\s+", " ", name).strip() for name in row[5:]]
             continue
         if not in_detail:
             continue
@@ -166,8 +183,9 @@ def parse_detail(path):
         elif current is not None and len(row) >= 5:
             share = number(row[4])
             if share is not None:
-                current.append({"address": row[1], "text": row[2], "share": share, "cls": classify(row[2])})
-    return result
+                current.append({"address": row[1], "text": row[2], "share": share, "cls": classify(row[2]),
+                                "values": [number(cell) for cell in row[5:5 + len(extra)]]})
+    return result, extra
 
 
 def parse_workload(path):
@@ -181,8 +199,8 @@ def parse_workload(path):
 
 
 def load_session(folder, group):
-    info, events, metrics, functions = parse_report(folder / "report.csv")
-    detail = parse_detail(folder / "detail.csv")
+    info, events, metrics, functions, derived = parse_report(folder / "report.csv")
+    detail, detail_metrics = parse_detail(folder / "detail.csv")
     match = re.match(r"g(\d+)_(\w+)$", folder.name)
     grid, stage = (int(match.group(1)), match.group(2)) if match else (0, folder.name)
     total = sum(f["values"][0] or 0.0 for f in functions) if metrics else 0.0
@@ -197,6 +215,7 @@ def load_session(folder, group):
         del function["full"]
     return {"id": f"{group}/{folder.name}", "group": group, "grid": grid, "stage": stage,
             "label": f"{grid}^3 {stage} ({group})", "info": info, "events": events, "metrics": metrics,
+            "derived": derived, "detailMetrics": detail_metrics,
             "total": total, "functions": functions, "workload": parse_workload(folder / "workload.txt")}
 
 
@@ -231,6 +250,9 @@ def print_summary(sessions):
             if function["share"] < 1.0:
                 continue
             print(f"  {function['share']:5.1f}%  {function['name']}  [{function['phase']}]")
+            if len(session["metrics"]) > 1:
+                print("          " + ", ".join(f"{name}={value:g}" for name, value in
+                                               zip(session["metrics"], function["values"]) if value is not None))
             print("          klase: " + ", ".join(f"{name} {value:.1f}" for name, value in function["classes"][:6]))
             for item in function["instructions"][:6]:
                 print(f"          {item['share']:6.2f}%  {item['text']}")
@@ -363,6 +385,38 @@ const METRIC_HELP = {
   "CPI": "Ciklusa po instrukciji (1 / IPC). Manje je bolje.",
   "PTI": "\"pti\" = na 1000 izvršenih instrukcija (per thousand instructions). Npr. 12 promašaja pti = 12 promašaja na svakih 1000 instrukcija."
 };
+// Columns of the event-based configs (assess_ext), by exact name. "Demand" fills are the ones a load or store
+// itself had to wait for; lines brought in ahead of time by the hardware prefetcher are not counted there.
+const METRIC_EXACT = {
+  "CYCLES_NOT_IN_HALT": "Ciklusi procesora dok nit radi, kao broj uzoraka tog događaja. U sesijama s brojačima se \"udio %\" računa iz ove kolone, pa znači udio ciklusa.",
+  "RETIRED_INST": "Izvršene (\"retired\") instrukcije, kao broj uzoraka tog događaja.",
+  "RETIRED_BR_INST (PTI)": "Grananja na 1000 izvršenih instrukcija.",
+  "%RETIRED_BR_INST_MISP": "Postotak grananja koja je procesor pogrešno predvidio. Svako takvo grananje baca već započeti rad.",
+  "L1_DC_ACCESSES (PTI)": "Čitanja i upisa u memoriju na 1000 instrukcija.",
+  "%L1_DC_MISSES": "Postotak pristupa memoriji koji nisu nađeni u L1 kešu, pa su tražili L2. Uključuje i zahtjeve prefetchera.",
+  "L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)": "Punjenja L1 iz L2 na 1000 instrukcija: podatak je bio u L2 istog jezgra.",
+  "L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)": "Punjenja L1 iz L3 (ili iz L2 drugog jezgra) na 1000 instrukcija.",
+  "L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)": "Punjenja L1 iz RAM-a na 1000 instrukcija: podatak nije bio ni u jednom kešu. Broji samo punjenja na koja je instrukcija čekala (\"demand\"), ne i linije koje je prefetcher donio unaprijed.",
+  "L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)": "Punjenja L1 iz keša druge grupe jezgara (CCX) na 1000 instrukcija.",
+  "MISALIGNED_LOADS (PTI)": "Čitanja koja prelaze granicu linije keša (64 B) ili stranice, na 1000 instrukcija.",
+  "STLI_OTHER (PTI)": "Čitanja koja su morala čekati raniji upis na adresu koja se s njima djelimično preklapa, na 1000 instrukcija.",
+  "WCB_WRITE (PTI)": "Upisi kroz \"write combining\" bafer na 1000 instrukcija (koristi se kod non-temporal upisa).",
+  "%WCB_NOT_FULLLINE64B_TO_CLOSE": "Postotak zatvaranja write combining bafera prije nego što je upisana cijela linija od 64 B.",
+  "%WCB_CLOSE_TO_WRITE": "Odnos zatvaranja i upisa write combining bafera, u postocima.",
+  "SSE_AVX_STALLS (PTC)": "Zastoji zbog miješanja SSE i AVX koda, na 1000 ciklusa (PTC = per thousand cycles).",
+  "INEFFECTIVE_SW_PF (PTI)": "Softverski prefetch koji nije ništa donio (podatak je već bio u kešu ili na putu), na 1000 instrukcija.",
+  // inst_access: the frontend (fetching and decoding instructions).
+  "OP_CACHE_64B_FETCH_MISS_RATIO": "Udio pristupa kešu dekodiranih mikro operacija (op cache) koji su promašili (0.02 = 2%). Promašaj znači da procesor instrukcije mora ponovo dekodirati.",
+  "IC_MISS_RATIO": "Udio pristupa L1 kešu instrukcija koji su promašili. Vruća petlja uglavnom ide iz op cachea, pa je pristupa ovom kešu malo.",
+  "IC_MISSES (PTI)": "Promašaji L1 keša instrukcija na 1000 instrukcija.",
+  "L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)": "Zahtjevi prema L2 zbog promašaja keša instrukcija, na 1000 instrukcija.",
+  "L2_CACHE_MISSES_FROM_IC_MISSES (PTI)": "Po opisu uProf-a: promašaji L2 zbog promašaja keša instrukcija. U našim sesijama se ne slaže s kolonom IC_MISSES (docs/plan/PROFILE.md, 4.7), pa je ne koristimo.",
+  "L1_ITLB_REQUESTS (PTI)": "Zahtjevi prema ITLB-u (kešu prevođenja adresa stranica s kodom), na 1000 instrukcija.",
+  "L1_ITLB_MISSES (PTI)": "Promašaji prvog nivoa ITLB-a na 1000 instrukcija.",
+  "L2_ITLB_MISSES (PTI)": "Promašaji drugog nivoa ITLB-a (slijedi šetnja po tabeli stranica), na 1000 instrukcija.",
+  "L1_ITLB_MISS_RATE": "Promašaji prvog nivoa ITLB-a po izvršenoj instrukciji.",
+  "L2_ITLB_MISS_RATE": "Promašaji drugog nivoa ITLB-a po izvršenoj instrukciji."
+};
 const el = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmt = (v, d = 2) => (v === null || v === undefined || Number.isNaN(v)) ? "–" : Number(v).toFixed(d);
@@ -378,9 +432,12 @@ function renderHelp() {
   const names = new Set();
   for (const s of sessions) for (const m of s.metrics) names.add(m);
   let htmlText = "<p><b>Mjerne jedinice u ovom izvještaju.</b></p><ul class='small'>";
+  const formulas = {};
+  for (const s of sessions) Object.assign(formulas, s.derived || {});
   for (const m of names) {
     const key = Object.keys(METRIC_HELP).find((k) => m.toUpperCase().includes(k));
-    htmlText += `<li><code>${esc(m)}</code>: ${key ? METRIC_HELP[key] : "kolona iz uProf izvještaja; značenje je u opisu događaja ispod (ako ga uProf navodi)."}</li>`;
+    const text = METRIC_EXACT[m] || (key ? METRIC_HELP[key] : "kolona iz uProf izvještaja; značenje je u opisu događaja ispod (ako ga uProf navodi).");
+    htmlText += `<li><code>${esc(m)}</code>: ${text}${formulas[m] ? ` <span class="muted">Formula: <code>${esc(formulas[m])}</code></span>` : ""}</li>`;
   }
   htmlText += `<li><b>udio %</b>: dio svih uzoraka sesije koji pripada toj funkciji ili instrukciji.</li>`;
   htmlText += `<li>${METRIC_HELP.PTI} (Pojavljuje se samo u sesijama s hardverskim brojačima.)</li></ul>`;
@@ -468,10 +525,15 @@ function renderInstructions() {
   el("classBars").innerHTML = "<h3>Po vrsti instrukcije</h3>" + f.classes.map(([name, v]) => `<div class="barrow"><div class="name">${esc(name)}</div>`
     + `<div><div class="bar" style="width:${100 * v / max}%;background:var(--bar2)"></div></div><div class="val">${fmt(v, 2)}%</div></div>`).join("");
   const top = f.instructions[0].share || 1;
-  let rows = "<tr><th class='num'>udio %</th><th style='width:30%'></th><th>Adresa</th><th>Instrukcija (AT&amp;T: odredište je zadnje)</th><th>Vrsta</th></tr>";
+  const extra = s.detailMetrics || [];
+  let rows = "<tr><th class='num'>udio %</th><th style='min-width:120px'></th><th>Adresa</th><th>Instrukcija (AT&amp;T: odredište je zadnje)</th><th>Vrsta</th>"
+    + extra.map((m) => `<th class="num">${esc(m)}</th>`).join("") + "</tr>";
   for (const i of f.instructions) rows += `<tr><td class="num">${fmt(i.share, 2)}</td><td><div class="bar" style="width:${100 * i.share / top}%"></div></td>`
-    + `<td><code>${esc(i.address)}</code></td><td><code>${esc(i.text)}</code></td><td class="small">${esc(i.cls)}</td></tr>`;
-  el("instructionTable").innerHTML = "<h3>Najvrelije instrukcije (do 40)</h3>" + rows;
+    + `<td><code>${esc(i.address)}</code></td><td><code>${esc(i.text)}</code></td><td class="small">${esc(i.cls)}</td>`
+    + extra.map((m, k) => `<td class="num">${fmt((i.values || [])[k], 2)}</td>`).join("") + "</tr>";
+  el("instructionTable").innerHTML = "<h3>Najvrelije instrukcije (do 40)</h3>"
+    + (extra.length ? "<p class='small muted'>Kolone desno su brojači za tu jednu instrukciju. Na instrukcijama s malo uzoraka su nepouzdane (mali brojevi u omjeru); gledaj ih samo na vrelim redovima.</p>" : "")
+    + rows;
 }
 
 function delta(v) { const c = v > 0.05 ? "pos" : v < -0.05 ? "neg" : "muted"; return `<td class="num ${c}">${v > 0 ? "+" : ""}${fmt(v, 2)}</td>`; }

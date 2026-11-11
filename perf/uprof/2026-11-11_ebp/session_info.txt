@@ -1,0 +1,37 @@
+Processor (CPUID)
+  vendor: AuthenticAMD
+  brand: AMD Ryzen 5 5500
+  family: 25 (0x19), model: 80 (0x50), stepping: 0
+  hardware_threads: 12
+  SSE4.2: yes
+  AVX: yes
+  AVX2: yes
+  FMA: yes
+  AVX-512F: no
+Caches (CPUID)
+  L1 data: 32 KiB, 8-way, line 64 B, shared by 2 hardware thread(s)
+  L1 instruction: 32 KiB, 8-way, line 64 B, shared by 2 hardware thread(s)
+  L2 unified: 512 KiB, 8-way, line 64 B, shared by 2 hardware thread(s)
+  L3 unified: 16384 KiB, 16-way, line 64 B, shared by 12 hardware thread(s)
+Memory
+  RAM_bytes: 34247491584 (31.9 GiB)
+  type and speed: not visible to a program; on Windows use
+    Get-CimInstance Win32_PhysicalMemory | Select Speed,ConfiguredClockSpeed
+Build
+  OS: Windows
+  compiler: GNU 16.2.0
+  build_type: Release
+  variant: B1
+  flags: -O3 -DNDEBUG 
+  per_file_flags: Projection_avx2.cpp: -mavx2, Advection_avx2.cpp: -mavx2 -fvect-cost-model=unlimited, Forces_avx2.cpp: -mavx2 -fno-math-errno, Forces.cpp: -fno-math-errno
+  avx2_kernels: AVX2 kernels built (run-time check)
+  OpenMP: not enabled (serial-only build)
+  commit: 358e2ac-dirty
+RAM modules (Win32_PhysicalMemory)
+  P0 CHANNEL A: 16 GiB, 2400 MT/s, KF3200C16D4/16GX
+  P0 CHANNEL B: 16 GiB, 2400 MT/s, KF3200C16D4/16GX
+Profiler
+  AMDuProfCLI.exe Version 6.0.1520.0 
+  collect_config: assess_ext
+  seconds_per_workload: 20
+  date: 2026-11-11 21:23

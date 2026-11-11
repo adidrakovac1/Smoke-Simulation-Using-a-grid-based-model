@@ -1,0 +1,625 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 64 --seconds 12 --stage jacobi "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config inst_access --start-delay 2 -o perf\uprof\2026-11-11_inst\g64_jacobi C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 64 --seconds 12 --stage jacobi"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-11_inst\g64_jacobi --detail --disasm-only --disasm-style att --show-percentage --cutoff 0 --report-output perf\uprof\2026-11-11_inst\g64_jacobi\detail.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Investigate Instruction Access"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Wed Nov 11 21:31:41 2026"
+Profile End Time:,"Wed Nov 11 21:31:55 2026"
+Profile Duration:,"14.097 seconds"
+Start Delay:,"2 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-11_inst\g64_jacobi"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Instruction Cache"
+
+MONITORED EVENTS
+PMC Events:,Name,Interval,Unitmask,Countmask,Invert Countmask,User,OS,Description
+,"CYCLES_NOT_IN_HALT (PMCx076)",250000,0x00,0x00,False,True,False,"The number of cpu cycles when the thread is not in halt state."
+,"L1_ITLB_MISSES_L2_HITS (PMCx084)",25000,0x00,0x00,False,True,False,"The instruction fetches that Misses in the L1 Instruction Translation Lookaside Buffer (ITLB) but hit in the L2-ITLB."
+,"RETIRED_INST (PMCx0C0)",250000,0x00,0x00,False,True,False,"The number of instructions retired from execution. This count includes exceptions and interrupts. Each exception or interrupt is counted as one instruction."
+,"L2_CACHE_MISS_FROM_L1_IC_MISS (PMCx064)",25000,0x01,0x00,False,True,False,"Count all the Instruction cache fill requests that misses in L2 cache."
+,"OP_CACHE_MISS (PMCx28F)",25000,0x04,0x00,False,True,False,"Op Cache Miss"
+,"L2_ITLB_MISSES (PMCx085)",25000,0x07,0x00,False,True,False,"The ITLB reloads originating from page table walker. The table walk requests are made for L1-ITLB Miss and L2-ITLB Misses."
+,"BpL1TlbFetchHit.IF1G.IF2M.IF4K (PMCx094)",25000,0x07,0x00,False,True,False,"The number of instruction fetches that hit in the L1 ITLB. "
+,"OP_CACHE_ALL_ACCESS (PMCx28F)",25000,0x07,0x00,False,True,False,"All OP Cache Accesses"
+,"L2_CACHE_ACCESS_FROM_L1_IC_MISS (PMCx060)",25000,0x10,0x00,False,True,False,"The L2 cache access requests due to L1 instruction cache misses."
+,"IC_TAG_IC_MISS (PMCx18E)",25000,0x18,0x00,False,True,False,"IC Tag Instruction Cache Miss"
+,"IC_TAG_ALL_IC_ACCESS (PMCx18E)",25000,0x1F,0x00,False,True,False,"IC Tag All Instruction Cache Access"
+
+
+DERIVED METRICS
+Metric Name,Expression,Description
+"CPI","CYCLES_NOT_IN_HALT / RETIRED_INST","The average number of CPU cycles consumed to retire an instruction. This metric is computed as the ratio of CYCLES_NOT_IN_HALT to RETIRED_INST event. The higher values means the application consumes more CPU cycles to retire an instruction due to high cache misses, branch mispredictions, pipeline stalls, I/O or any other bottlenecks. If the CPI values exceeds a threshold value, it will be highlighted in pink."
+"OP_CACHE_64B_FETCH_MISS_RATIO","OP_CACHE_MISS / OP_CACHE_ALL_ACCESS","Op Cache micro-tag miss ratio"
+"IC_MISS_RATIO","IC_TAG_IC_MISS / IC_TAG_ALL_IC_ACCESS","IC Miss Ratio"
+"IC_MISSES (PTI)","(IC_TAG_IC_MISS * 1000) / RETIRED_INST","The number of L1 instruction cache misses, per thousand retired instructions."
+"L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","( L2_CACHE_ACCESS_FROM_L1_IC_MISS * 1000 ) / RETIRED_INST","The number of L2 cache access requests due to L1 instruction cache misses, per thousand retired instructions. This L2 cache access requests also includes the prefetches."
+"L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","( L2_CACHE_MISS_FROM_L1_IC_MISS * 1000 ) / RETIRED_INST","The number of L2 cache misses from L1 Instruction cache misses, per thousand retired instructions."
+"L1_ITLB_REQUESTS (PTI)","((L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES + BpL1TlbFetchHit.IF1G.IF2M.IF4K) * 1000) / RETIRED_INST","The number of L1 ITLB Requests, per thousand retired instructions."
+"L1_ITLB_MISSES (PTI)","((L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES) * 1000) / RETIRED_INST","The number of L1 ITLB Misses, per thousand retired instructions."
+"L2_ITLB_MISSES (PTI)","(L2_ITLB_MISSES * 1000) / RETIRED_INST","The number of L2 ITLB Misses, per thousand retired instructions."
+"L1_ITLB_MISS_RATE","(L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES) / RETIRED_INST","The ITLB L1 Miss rate is the number of ITLB L1_Miss_L2_Hits and L1_Miss_L2_Miss divided by the total number of retired instructions."
+"L2_ITLB_MISS_RATE","L2_ITLB_MISSES / RETIRED_INST","The ITLB L2 Miss rate is the number of ITLB L2 Miss divided by the total number of retired instructions."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CYCLES_NOT_IN_HALT)"
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE",Module
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",88.77%,87.95%,0.5273,0.0128,0.2364,0.4195,0.2671,6.2316,142.4274,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",10.39%,11.12%,0.4882,0.0191,0.3254,1.1623,0.7938,12.5301,144.1106,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::Field3D::fill(float)",0.64%,0.82%,0.4093,0.0179,0.0526,0.1931,0.5792,3.0888,272.5869,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"main",0.07%,0.04%,0.8462,0.0000,0.0000,0.0000,3.8462,11.5385,246.1538,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::serial::SlabRange, smoke::serial::KernelIsa)",0.06%,0.04%,0.9130,0.0000,0.0000,4.3478,0.0000,13.0435,282.6087,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1446",0.02%,0.01%,1.1667,0.0769,0.0000,0.0000,0.0000,0.0000,133.3333,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c50",0.02%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"kernel32.dll!0x1800326b0",0.01%,0.00%,1.5000,1.0000,0.0000,0.0000,0.0000,50.0000,50.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\kernel32.dll"
+"smoke_prof.exe!0x1400e143c",0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::avx2Supported()",0.01%,0.01%,0.5000,0.0000,0.0000,0.0000,25.0000,0.0000,125.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c3904",0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1432",0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c58",0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400e1b0d",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c3900",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c390b",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x140026364",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400264b5",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1430",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x140026330",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x180047396",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400e1436",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x14002646d",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1440",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee2f8",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ntdll.dll!0x1800a4e82",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18006ed2d",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18006ed18",0.00%,0.00%,0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400e1b12",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1b19",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x180022705",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400264b3",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c390e",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1438",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400264aa",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1b14",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1448",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+
+"HOTTEST PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10460)",100.00%,100.00%,0.5224,0.0137,0.2510,0.5014,0.3343,6.9156,143.7813,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST MODULES (Sort Event - CYCLES_NOT_IN_HALT)"
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",99.97%,100.00%,0.5223,0.0136,0.2516,0.5014,0.3327,6.9128,143.7771,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\ntdll.dll",0.02%,0.00%,6.0000,0.2500,0.0000,0.0000,100.0000,0.0000,600.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\kernel32.dll",0.01%,0.00%,1.5000,1.0000,0.0000,0.0000,0.0000,50.0000,50.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\ucrtbase.dll",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST THREADS (Sort Event - CYCLES_NOT_IN_HALT)"
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE",THREAD ID
+"Thread-16536 (PID:10460)",100.00%,100.00%,0.5224,0.0137,0.2510,0.5014,0.3343,6.9156,143.7813,0.0000,0.0000,0.0000,0.0000,"16536"
+
+"ALL PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10460)",100.00%,100.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+
+
+PROFILE REPORT FOR PROCESS - c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10460)
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10460)",100.00%,100.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+
+THREAD SUMMARY
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE",THREAD ID
+"Thread-16536 (PID:10460)",100.00%,100.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,"16536"
+
+
+MODULE SUMMARY
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe,99.97%,100.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+c:\windows\system32\ntdll.dll,0.02%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+c:\windows\system32\kernel32.dll,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+c:\windows\system32\ucrtbase.dll,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+
+
+FUNCTION SUMMARY
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE",MODULE
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",88.77%,87.95%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",10.39%,11.12%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::Field3D::fill(float)",0.64%,0.82%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"main",0.07%,0.04%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::serial::SlabRange, smoke::serial::KernelIsa)",0.06%,0.04%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1446",0.02%,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x1800e0c50",0.02%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"kernel32.dll!0x1800326b0",0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\kernel32.dll
+"smoke::avx2Supported()",0.01%,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e143c",0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1432",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x1800e0c58",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"smoke_prof.exe!0x1400c3904",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1b0d",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400c390e",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1440",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ucrtbase.dll!0x1800ee2f8",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ucrtbase.dll
+"ntdll.dll!0x1800a4e82",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"smoke_prof.exe!0x1400e1b12",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1438",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400264aa",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1b14",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1448",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x14002646d",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1436",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400264b5",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400c3900",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x140026330",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x180047396",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"smoke_prof.exe!0x1400e1430",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x18006ed2d",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"ntdll.dll!0x18006ed18",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"smoke_prof.exe!0x1400e1b19",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x180022705",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"smoke_prof.exe!0x1400264b3",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400c390b",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x140026364",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+
+Function Detail Data
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)" (Showing only disassembly),,,,88.77%,87.95%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140007a41,"push %r15",41 57 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a45,"push %r13",41 55 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a4a,"push %rsi",56 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a6b,"mov 0xA0(%rbp), %r14",4C 8B B5 A0 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a8e,"jnl 0x0000000140007E94",0F 8D 00 04 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a94,"test %edx, %edx",85 D2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ac1,"imul %r14, %rax",49 0F AF C6 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,233.3333,0.0000,0.0000,0.0000,0.0000
+,0x140007ac9,"lea (%r13,%r15,8), %rbx",4B 8D 5C FD 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ada,"vmovups 0x00000001400E7470, %xmm4",C5 F8 10 25 8E F9 0D 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007aea,"mov %rax, %r8",49 89 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007aed,"lea 0x04(%r13,%rax,4), %r9",4D 8D 4C 85 04 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007af5,"sub $0x01, %eax",83 E8 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b18,"add 0x70(%rbp), %rdi",48 03 7D 70 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b1c,"lea -0x04(%rax), %rsi",48 8D 70 FC ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b40,"lea (%r15,%r8,1), %rax",4B 8D 04 07 ,0.01%,0.00%,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,700.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b44,"mov -0x60(%rbp), %rdi",48 8B 7D A0 ,0.05%,0.04%,0.6667,0.0606,2.0000,7.4074,0.0000,0.0000,207.4074,0.0000,0.0000,0.0000,0.0000
+,0x140007b48,"mov %r9, -0x50(%rbp)",4C 89 4D B0 ,0.02%,0.01%,0.8333,0.0000,0.0000,0.0000,0.0000,16.6667,116.6667,0.0000,0.0000,0.0000,0.0000
+,0x140007b4f,"mov %rax, -0x10(%rbp)",48 89 45 F0 ,0.01%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b53,"mov -0x70(%rbp), %rax",48 8B 45 90 ,0.00%,0.00%,0.3333,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b57,"lea (,%r8,4), %r12",4E 8D 24 85 00 00 00 00 ,0.01%,0.01%,0.2500,0.0000,0.0000,0.0000,0.0000,0.0000,75.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b5f,"add $0x04, %rdi",48 83 C7 04 ,0.00%,0.01%,0.2500,0.0000,0.0000,0.0000,0.0000,0.0000,75.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b63,"movl $0x01, -0x04(%rbp)",C7 45 FC 01 00 00 00 ,0.02%,0.01%,0.8333,0.0000,0.0000,0.0000,0.0000,16.6667,116.6667,0.0000,0.0000,0.0000,0.0000
+,0x140007b6a,"lea (%rax,%r9,1), %rdx",4A 8D 14 08 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b6e,"mov 0x78(%rbp), %eax",8B 45 78 ,0.01%,0.00%,1.5000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b71,"mov %r8, -0x58(%rbp)",4C 89 45 A8 ,0.01%,0.00%,1.5000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b75,"mov %r10d, 0x88(%rbp)",44 89 95 88 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b7f,"mov %rdi, -0x30(%rbp)",48 89 7D D0 ,0.01%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b83,"mov %eax, -0x28(%rbp)",89 45 D8 ,0.01%,0.01%,0.3333,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000
+,0x140007b86,"mov %eax, %edi",89 C7 ,0.02%,0.01%,0.6250,0.0000,0.0000,0.0000,0.0000,12.5000,62.5000,0.0000,0.0000,0.0000,0.0000
+,0x140007b88,"shl $0x05, %rdi",48 C1 E7 05 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b8c,"nop %eax, (%rax)",0F 1F 40 00 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007b94,"jbe 0x0000000140007EAD",0F 86 13 03 00 00 ,0.07%,0.10%,0.3810,0.0167,1.0000,1.5873,1.5873,9.5238,149.2063,0.0000,0.0000,0.0000,0.0000
+,0x140007b9a,"mov -0x30(%rbp), %rax",48 8B 45 D0 ,1.02%,1.04%,0.5121,0.0145,0.1875,0.4545,0.3030,6.9697,132.2727,0.0000,0.0000,0.0000,0.0000
+,0x140007b9e,"lea 0x08(%rdx), %rsi",48 8D 72 08 ,0.09%,0.08%,0.5686,0.0000,0.0000,0.0000,0.0000,5.8824,150.9804,0.0000,0.0000,0.0000,0.0000
+,0x140007ba2,"lea (%rax,%r12,1), %rbx",4A 8D 1C 20 ,0.07%,0.06%,0.5897,0.0278,1.0000,2.5641,0.0000,10.2564,125.6410,0.0000,0.0000,0.0000,0.0000
+,0x140007ba6,"mov -0x18(%rbp), %rax",48 8B 45 E8 ,0.02%,0.01%,0.5556,0.0000,0.0000,0.0000,0.0000,0.0000,111.1111,0.0000,0.0000,0.0000,0.0000
+,0x140007baa,"lea (%rcx,%rax,1), %r11",4C 8D 1C 01 ,0.03%,0.02%,0.6429,0.0000,0.0000,0.0000,0.0000,7.1429,142.8571,0.0000,0.0000,0.0000,0.0000
+,0x140007bae,"mov -0x38(%rbp), %rax",48 8B 45 C8 ,0.18%,0.18%,0.5130,0.0174,0.0000,0.0000,0.0000,6.0870,130.4348,0.0000,0.0000,0.0000,0.0000
+,0x140007bb2,"lea (%rcx,%rax,1), %r10",4C 8D 14 01 ,0.01%,0.01%,0.6667,0.0000,0.0000,0.0000,0.0000,0.0000,350.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007bb6,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.04%,0.06%,0.3514,0.0000,0.0000,0.0000,0.0000,2.7027,127.0270,0.0000,0.0000,0.0000,0.0000
+,0x140007bba,"lea 0x04(%r12,%rax,1), %r9",4D 8D 4C 04 04 ,1.00%,0.93%,0.5574,0.0210,0.2500,0.5068,0.6757,5.7432,142.7365,0.0000,0.0000,0.0000,0.0000
+,0x140007bbf,"mov -0x48(%rbp), %rax",48 8B 45 B8 ,0.11%,0.08%,0.7500,0.0161,0.0000,0.0000,0.0000,4.1667,193.7500,0.0000,0.0000,0.0000,0.0000
+,0x140007bc3,"lea 0x04(%r12,%rax,1), %r8",4D 8D 44 04 04 ,0.03%,0.04%,0.3333,0.0000,0.0000,0.0000,0.0000,14.8148,140.7407,0.0000,0.0000,0.0000,0.0000
+,0x140007bc8,"xor %eax, %eax",31 C0 ,0.21%,0.20%,0.5462,0.0161,0.2500,0.7692,0.7692,2.3077,143.0769,0.0000,0.0000,0.0000,0.0000
+,0x140007bca,"nop %ax, (%rax,%rax,1)",66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.01%,0.1429,0.0000,0.0000,0.0000,0.0000,14.2857,157.1429,0.0000,0.0000,0.0000,0.0000
+,0x140007bd4,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.03%,0.04%,0.3704,0.0312,0.0000,0.0000,3.7037,3.7037,155.5556,0.0000,0.0000,0.0000,0.0000
+,0x140007bdf,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,1.10%,1.00%,0.5764,0.0091,0.0000,0.0000,0.3150,5.5118,132.2835,0.0000,0.0000,0.0000,0.0000
+,0x140007bea,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.13%,0.10%,0.6769,0.0000,0.0000,0.0000,0.0000,6.1538,152.3077,0.0000,0.0000,0.0000,0.0000
+,0x140007bf5,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000
+,0x140007c00,"vmovups (%rdx,%rax,1), %ymm0",C5 FC 10 04 02 ,0.02%,0.02%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000
+,0x140007c05,"vaddps (%rsi,%rax,1), %ymm0, %ymm0",C5 FC 58 04 06 ,1.68%,1.90%,0.4627,0.0081,0.2500,0.2488,0.2488,5.3897,129.5191,0.0000,0.0000,0.0000,0.0000
+,0x140007c0a,"vaddps (%rcx,%rax,1), %ymm0, %ymm0",C5 FC 58 04 01 ,1.88%,1.99%,0.4944,0.0082,0.4286,0.7143,0.1587,5.7937,135.7937,0.0000,0.0000,0.0000,0.0000
+,0x140007c0f,"vaddps (%rbx,%rax,1), %ymm0, %ymm0",C5 FC 58 04 03 ,0.89%,0.97%,0.4797,0.0162,0.1765,0.4878,0.4878,4.8780,125.8537,0.0000,0.0000,0.0000,0.0000
+,0x140007c14,"vaddps (%r11,%rax,1), %ymm0, %ymm0",C4 C1 7C 58 04 03 ,1.48%,1.49%,0.5196,0.0188,0.2222,0.4242,0.1060,4.7720,130.1167,0.0000,0.0000,0.0000,0.0000
+,0x140007c1a,"vaddps (%r10,%rax,1), %ymm0, %ymm0",C4 C1 7C 58 04 02 ,9.64%,9.31%,0.5409,0.0107,0.2000,0.3727,0.1186,6.7085,146.7051,0.0000,0.0000,0.0000,0.0000
+,0x140007c20,"vsubps (%r9,%rax,1), %ymm0, %ymm0",C4 C1 7C 5C 04 01 ,2.29%,2.07%,0.5779,0.0156,0.2188,0.5323,0.1521,5.9316,140.7605,0.0000,0.0000,0.0000,0.0000
+,0x140007c26,"vdivps %ymm1, %ymm0, %ymm0",C5 FC 5E C1 ,4.32%,4.26%,0.5296,0.0148,0.1750,0.2591,0.4441,5.9215,143.0422,0.0000,0.0000,0.0000,0.0000
+,0x140007c2a,"vmovups %ymm0, (%r8,%rax,1)",C4 C1 7C 11 04 00 ,54.44%,53.43%,0.5323,0.0129,0.2450,0.4309,0.2863,6.3688,145.8004,0.0000,0.0000,0.0000,0.0000
+,0x140007c30,"add $0x20, %rax",48 83 C0 20 ,4.66%,5.13%,0.4746,0.0122,0.2791,0.3689,0.0615,5.6871,118.9364,0.0000,0.0000,0.0000,0.0000
+,0x140007c34,"cmp %rdi, %rax",48 39 F8 ,0.59%,0.62%,0.4962,0.0128,0.1111,0.2558,0.2558,7.4169,139.6419,0.0000,0.0000,0.0000,0.0000
+,0x140007c37,"jnz 0x0000000140007C00",75 C7 ,0.09%,0.08%,0.6250,0.0606,0.0000,0.0000,0.0000,6.2500,125.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007c3c,"lea (,%rax,8), %r8d",44 8D 04 C5 00 00 00 00 ,0.06%,0.06%,0.5000,0.0000,0.0000,0.0000,0.0000,5.2632,105.2632,0.0000,0.0000,0.0000,0.0000
+,0x140007c44,"cmp 0x78(%rbp), %r8d",44 3B 45 78 ,0.23%,0.22%,0.5357,0.0000,0.0000,0.0000,0.0000,6.4286,119.2857,0.0000,0.0000,0.0000,0.0000
+,0x140007c48,"jz 0x0000000140007E49",0F 84 FB 01 00 00 ,0.05%,0.04%,0.5926,0.0000,0.0000,0.0000,0.0000,18.5185,118.5185,0.0000,0.0000,0.0000,0.0000
+,0x140007e4d,"addl $0x01, -0x04(%rbp)",83 45 FC 01 ,0.09%,0.05%,0.8788,0.0000,0.0000,0.0000,0.0000,6.0606,209.0909,0.0000,0.0000,0.0000,0.0000
+,0x140007e51,"add %r15, -0x10(%rbp)",4C 01 7D F0 ,1.05%,1.04%,0.5266,0.0144,0.2143,0.4552,0.1517,6.8285,144.6131,0.0000,0.0000,0.0000,0.0000
+,0x140007e55,"mov -0x04(%rbp), %eax",8B 45 FC ,0.48%,0.59%,0.4202,0.0160,2.0000,1.0638,1.5957,5.5851,128.7234,0.0000,0.0000,0.0000,0.0000
+,0x140007e58,"add %rsi, %r12",49 01 F4 ,0.08%,0.12%,0.3291,0.0000,0.0000,0.0000,0.0000,1.2658,127.8481,0.0000,0.0000,0.0000,0.0000
+,0x140007e5b,"add %rsi, %rdx",48 01 F2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007e5e,"add %rsi, %rcx",48 01 F1 ,0.02%,0.02%,0.7000,0.0000,0.0000,0.0000,0.0000,0.0000,190.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007e61,"cmp -0x24(%rbp), %eax",3B 45 DC ,0.16%,0.16%,0.5196,0.0312,0.0000,0.0000,0.0000,7.8431,154.9020,0.0000,0.0000,0.0000,0.0000
+,0x140007e64,"jnz 0x0000000140007B90",0F 85 26 FD FF FF ,0.04%,0.04%,0.5000,0.0476,0.0000,0.0000,0.0000,0.0000,166.6667,0.0000,0.0000,0.0000,0.0000
+,0x140007e6e,"mov 0x88(%rbp), %r10d",44 8B 95 88 00 00 00 ,0.08%,0.07%,0.5745,0.0435,0.0000,0.0000,0.0000,4.2553,155.3192,0.0000,0.0000,0.0000,0.0000
+,0x140007e75,"mov -0x50(%rbp), %r9",4C 8B 4D B0 ,0.01%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007e79,"add -0x68(%rbp), %r9",4C 03 4D 98 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007e7d,"add $0x01, %r10d",41 83 C2 01 ,0.02%,0.01%,0.8333,0.0000,0.0000,0.0000,0.0000,16.6667,166.6667,0.0000,0.0000,0.0000,0.0000
+,0x140007e81,"add %r14, %r8",4D 01 F0 ,0.11%,0.12%,0.4795,0.0000,1.0000,1.3699,0.0000,2.7397,128.7671,0.0000,0.0000,0.0000,0.0000
+,0x140007e84,"cmp %r10d, 0x90(%rbp)",44 39 95 90 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007e8b,"jnz 0x0000000140007B40",0F 85 AF FC FF FF ,0.01%,0.02%,0.3333,0.0000,0.5000,8.3333,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007e94,"vmovups (%rbp), %xmm6",C5 F8 10 75 00 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007e99,"add $0x88, %rsp",48 81 C4 88 00 00 00 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ea1,"pop %rsi",5E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ea5,"pop %r13",41 5D ,0.01%,0.01%,0.7500,0.0000,0.0000,0.0000,0.0000,25.0000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ea7,"pop %r14",41 5E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ea9,"pop %r15",41 5F ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)" (Showing only disassembly),,,,10.39%,11.12%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140007280,"push %rbp",55 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007281,"push %r15",41 57 ,0.00%,0.02%,0.0909,0.0000,0.0000,0.0000,0.0000,0.0000,90.9091,0.0000,0.0000,0.0000,0.0000
+,0x140007285,"push %r13",41 55 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000728b,"push %rbx",53 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007298,"mov %rax, %rdi",48 89 C7 ,0.02%,0.02%,0.4000,0.0000,0.0000,0.0000,0.0000,0.0000,73.3333,0.0000,0.0000,0.0000,0.0000
+,0x14000729f,"mov %rcx, %r11",49 89 CB ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400072bf,"jz 0x00000001400075D1",0F 84 0C 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400072cd,"movaps %xmm2, %xmm0",0F 28 C2 ,0.00%,0.01%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,60.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400072fc,"lea 0x01(%rcx), %r10d",44 8D 51 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007308,"mov $0x01, %esi",BE 01 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007323,"mov $0x01, %r8d",41 B8 01 00 00 00 ,0.00%,0.00%,0.3333,0.0000,0.0000,0.0000,0.0000,0.0000,133.3333,0.0000,0.0000,0.0000,0.0000
+,0x140007329,"imul %r13, %rdx",49 0F AF D5 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,133.3333,0.0000,0.0000,0.0000,0.0000
+,0x14000732d,"add %rdi, %rdx",48 01 FA ,0.01%,0.00%,3.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007330,"lea (%r12,%rdx,4), %rdx",49 8D 14 94 ,0.01%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007334,"nop",90 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007335,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007340,"movssl 0x04(%rdx), %xmm1",F3 0F 10 4A 04 ,0.01%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007345,"add $0x01, %r8d",41 83 C0 01 ,1.74%,1.59%,0.5707,0.0159,0.4286,0.8902,0.5935,13.5509,138.1800,0.0000,0.0000,0.0000,0.0000
+,0x140007349,"mulss %xmm0, %xmm1",F3 0F 59 C8 ,0.25%,0.23%,0.5724,0.0284,0.0000,0.0000,0.0000,7.5862,128.9655,0.0000,0.0000,0.0000,0.0000
+,0x14000734d,"movss %xmm1, (%rdx)",F3 0F 11 0A ,0.91%,0.82%,0.5766,0.0180,0.3000,0.5747,0.5747,11.6858,148.4674,0.0000,0.0000,0.0000,0.0000
+,0x140007351,"movssl (%rdx,%r9,4), %xmm1",F3 42 0F 10 0C 8A ,0.14%,0.18%,0.3947,0.0189,0.1429,0.8772,1.7544,9.6491,142.1053,0.0000,0.0000,0.0000,0.0000
+,0x140007357,"mulss %xmm0, %xmm1",F3 0F 59 C8 ,2.57%,2.33%,0.5750,0.0114,0.2647,0.6081,0.3378,15.8784,146.2162,0.0000,0.0000,0.0000,0.0000
+,0x14000735b,"movss %xmm1, 0x04(%rdx,%r9,4)",F3 42 0F 11 4C 8A 04 ,1.28%,1.23%,0.5435,0.0113,0.3793,1.4066,0.3836,12.1483,144.2455,0.0000,0.0000,0.0000,0.0000
+,0x140007362,"add %rbx, %rdx",48 01 DA ,0.10%,0.10%,0.5231,0.0000,0.0000,0.0000,0.0000,3.0769,103.0769,0.0000,0.0000,0.0000,0.0000
+,0x140007365,"cmp %r10d, %r8d",45 39 D0 ,0.10%,0.11%,0.4928,0.0282,0.0000,0.0000,1.4493,8.6957,147.8261,0.0000,0.0000,0.0000,0.0000
+,0x140007368,"jnz 0x0000000140007340",75 D6 ,0.15%,0.14%,0.5814,0.0145,0.0000,0.0000,1.1628,11.6279,131.3954,0.0000,0.0000,0.0000,0.0000
+,0x14000736e,"cmp %rsi, %r14",49 39 F6 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007371,"jnz 0x0000000140007320",75 AD ,0.00%,0.00%,0.5000,0.5000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007377,"cmp $-0x01, %esi",83 FE FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007383,"movsxd %ecx, %r14",4C 63 F1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000738a,"mov %eax, -0x4C(%rbp)",89 45 B4 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,50.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400073b4,"mov %r9d, -0x54(%rbp)",44 89 4D AC ,0.01%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,50.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400073c3,"mov %rdi, %r10",49 89 FA ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400073cd,"mov %r10d, -0x50(%rbp)",44 89 55 B0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400073d5,"lea (%r14,%rdi,1), %rbx",49 8D 1C 3E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400073e5,"setnbe %r8b",41 0F 97 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007403,"cmp $0x08, %r11",49 83 FB 08 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007417,"lea -0x04(,%r14,4), %r11",4E 8D 1C B5 FC FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007432,"sub %r15d, %edi",44 29 FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007439,"mov %edi, -0x48(%rbp)",89 7D B8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007444,"imul %r12, %r10",4D 0F AF D4 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007461,"shr $0x02, %esi",C1 EE 02 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000746c,"lea (,%r8,4), %rcx",4A 8D 0C 85 00 00 00 00 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,50.0000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007474,"lea 0x10(,%r10,4), %rax",4A 8D 04 95 10 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000747f,"lea (,%r10,4), %r9",4E 8D 0C 95 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000
+,0x140007487,"lea 0x10(%rcx), %rax",48 8D 41 10 ,0.00%,0.00%,0.3333,0.0000,0.0000,0.0000,0.0000,33.3333,366.6667,0.0000,0.0000,0.0000,0.0000
+,0x14000748f,"cmp %r9, %rax",4C 39 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007492,"setle %al",0F 9E C0 ,0.02%,0.02%,0.3571,0.1429,0.0000,0.0000,0.0000,14.2857,107.1429,0.0000,0.0000,0.0000,0.0000
+,0x140007495,"or %r11b, %al",44 08 D8 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007498,"jz 0x00000001400078D0",0F 84 32 04 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074a2,"jz 0x00000001400078D0",0F 84 28 04 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074a8,"cmpl $0x02, -0x14(%rbp)",83 7D EC 02 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074ac,"jbe 0x000000014000797B",0F 86 C9 04 00 00 ,0.02%,0.01%,0.6250,0.0000,0.0000,12.5000,0.0000,37.5000,112.5000,0.0000,0.0000,0.0000,0.0000
+,0x1400074b2,"lea (%rdx,%rdi,4), %rbx",48 8D 1C BA ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074b6,"add %rdx, %r9",49 01 D1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074b9,"add %rdx, %rcx",48 01 D1 ,0.02%,0.01%,0.8333,0.0000,0.0000,0.0000,0.0000,0.0000,116.6667,0.0000,0.0000,0.0000,0.0000
+,0x1400074bc,"xor %eax, %eax",31 C0 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,100.0000,400.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074be,"lea (%rdx,%r13,4), %r11",4E 8D 1C AA ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074c9,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074d4,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.02%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,54.5455,0.0000,0.0000,0.0000,0.0000
+,0x1400074f5,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.01%,0.01%,0.2222,0.0000,0.0000,0.0000,0.0000,0.0000,133.3333,0.0000,0.0000,0.0000,0.0000
+,0x140007500,"movups (%rbx,%rax,1), %xmm0",0F 10 04 03 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007504,"mulps %xmm1, %xmm0",0F 59 C1 ,0.43%,0.48%,0.4721,0.0301,0.7000,2.2951,1.9672,14.7541,170.4918,0.0000,0.0000,0.0000,0.0000
+,0x140007507,"movups %xmm0, (%r9,%rax,1)",41 0F 11 04 01 ,0.24%,0.32%,0.3824,0.0078,0.4000,0.9804,0.4902,16.1765,147.0588,0.0000,0.0000,0.0000,0.0000
+,0x14000750c,"movups (%rcx,%rax,1), %xmm0",0F 10 04 01 ,0.10%,0.19%,0.2683,0.0000,0.5000,0.8130,0.8130,16.2602,143.9024,0.0000,0.0000,0.0000,0.0000
+,0x140007510,"mulps %xmm1, %xmm0",0F 59 C1 ,0.39%,0.49%,0.4188,0.0423,0.1818,1.2987,2.5974,16.2338,163.6364,0.0000,0.0000,0.0000,0.0000
+,0x140007513,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.29%,0.40%,0.3725,0.0181,0.2000,1.1765,1.5686,10.9804,128.2353,0.0000,0.0000,0.0000,0.0000
+,0x140007518,"add $0x10, %rax",48 83 C0 10 ,0.10%,0.10%,0.5079,0.0000,0.3333,1.5873,0.0000,6.3492,185.7143,0.0000,0.0000,0.0000,0.0000
+,0x14000751c,"cmp %rsi, %rax",48 39 F0 ,0.03%,0.02%,0.7692,0.0000,0.0000,0.0000,0.0000,15.3846,307.6923,0.0000,0.0000,0.0000,0.0000
+,0x14000751f,"jnz 0x0000000140007500",75 DF ,0.01%,0.00%,1.0000,0.2000,0.0000,0.0000,0.0000,0.0000,333.3333,0.0000,0.0000,0.0000,0.0000
+,0x140007528,"jz 0x0000000140007620",0F 84 F2 00 00 00 ,0.01%,0.02%,0.3000,0.0000,0.0000,0.0000,0.0000,0.0000,70.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007531,"mov %r15d, %ecx",44 89 F9 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007534,"cmp $-0x01, %ebx",83 FB FF ,0.01%,0.01%,0.3333,0.1000,0.0000,0.0000,0.0000,33.3333,250.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007537,"jz 0x0000000140007579",74 40 ,0.00%,0.01%,0.2500,0.0000,0.0000,0.0000,0.0000,0.0000,175.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007547,"lea (%r10,%rax,1), %r11",4D 8D 1C 02 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000754b,"mulps %xmm4, %xmm0",0F 59 C4 ,0.00%,0.01%,0.2500,0.0000,0.0000,0.0000,25.0000,25.0000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000754e,"movlps %xmm0, (%rdx,%r11,4)",42 0F 13 04 9A ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007557,"add %r13, %rax",4C 01 E8 ,0.01%,0.02%,0.2500,0.0000,1.0000,8.3333,8.3333,16.6667,83.3333,0.0000,0.0000,0.0000,0.0000
+,0x14000755a,"movqq (%rdx,%r11,4), %xmm0",F3 42 0F 7E 04 9A ,0.01%,0.00%,2.0000,0.0000,0.0000,0.0000,0.0000,300.0000,800.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007560,"mulps %xmm4, %xmm0",0F 59 C4 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000
+,0x140007563,"movlps %xmm0, (%rdx,%rax,4)",0F 13 04 82 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000756a,"and $-0x02, %eax",83 E0 FE ,0.01%,0.01%,0.2500,0.0000,0.0000,0.0000,0.0000,12.5000,62.5000,0.0000,0.0000,0.0000,0.0000
+,0x14000756d,"and $0x01, %r9d",41 83 E1 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007571,"jz 0x0000000140007620",0F 84 A9 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075b4,"mov -0x30(%rbp), %rax",48 8B 45 D0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075b8,"imul %r12, %r10",4D 0F AF D4 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075bc,"lea (%r10,%rax,1), %rdi",49 8D 3C 02 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075c0,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.00%,0.01%,0.0000,0.0000,0.0000,0.0000,0.0000,20.0000,140.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075c4,"lea (%r10,%r14,1), %r8",4F 8D 04 32 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075cc,"jmp 0x000000014000746C",E9 9B FE FF FF ,0.01%,0.01%,0.7500,0.1667,0.0000,0.0000,0.0000,100.0000,275.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007624,"cmp -0x38(%rbp), %r12",4C 3B 65 C8 ,0.01%,0.01%,0.5714,0.0000,0.0000,0.0000,0.0000,42.8571,171.4286,0.0000,0.0000,0.0000,0.0000
+,0x140007628,"jnz 0x00000001400075B0",75 86 ,0.00%,0.01%,0.2000,0.0000,0.0000,0.0000,0.0000,0.0000,160.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000762d,"mov -0x4C(%rbp), %eax",8B 45 B4 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007641,"lea 0x02(%rcx), %edi",8D 79 02 ,0.00%,0.01%,0.0000,0.0000,0.0000,0.0000,0.0000,12.5000,150.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000764a,"movsxd %r10d, %rsi",49 63 F2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000764d,"mov %rdi, -0x38(%rbp)",48 89 7D C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007651,"movsxd %r9d, %rdi",49 63 F9 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007667,"not %rcx",48 F7 D1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000766e,"lea (%r14,%rdi,1), %rax",49 8D 04 3E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007682,"cmp $0x08, %rax",48 83 F8 08 ,0.00%,0.01%,0.2500,0.0000,0.0000,0.0000,0.0000,0.0000,25.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007689,"shl $0x02, %rcx",48 C1 E1 02 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007694,"and %ecx, %eax",21 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076a2,"cmp $0x08, %rcx",48 83 F9 08 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076a9,"and %ecx, %eax",21 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076c2,"lea 0x02(%rdi), %eax",8D 47 02 ,0.00%,0.01%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,75.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076d6,"mov -0x30(%rbp), %r10",4C 8B 55 D0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076da,"mov -0x28(%rbp), %rax",48 8B 45 D8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076e2,"lea (%rax,%r10,1), %rdi",4A 8D 3C 10 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076e6,"lea (%r14,%r10,1), %r8",4F 8D 04 16 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076ea,"cmpl $-0x01, -0x20(%rbp)",83 7D E0 FF ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076f7,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076fe,"lea (%rax,%r10,1), %r13",4E 8D 2C 10 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007702,"shl $0x04, %rsi",48 C1 E6 04 ,0.00%,0.01%,0.2000,0.0000,0.0000,0.0000,0.0000,0.0000,40.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000770e,"lea 0x10(,%r10,4), %rax",4A 8D 04 95 10 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,800.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007716,"cmp %rax, %r9",49 39 C1 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007719,"lea (,%r10,4), %r11",4E 8D 1C 95 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007721,"lea 0x10(%r9), %rax",49 8D 41 10 ,0.01%,0.01%,0.5000,0.0000,0.0000,0.0000,0.0000,25.0000,225.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007725,"setnl %cl",0F 9D C1 ,0.00%,0.00%,1.0000,1.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007728,"cmp %rax, %r11",49 39 C3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000772b,"setnl %al",0F 9D C0 ,0.01%,0.02%,0.2500,0.0000,0.0000,0.0000,8.3333,0.0000,125.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000772e,"or %cl, %al",08 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007730,"jz 0x0000000140007858",0F 84 22 01 00 00 ,0.01%,0.01%,0.8000,0.0000,0.0000,0.0000,0.0000,0.0000,260.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000773a,"jz 0x0000000140007858",0F 84 18 01 00 00 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,350.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007740,"cmpl $0x02, -0x14(%rbp)",83 7D EC 02 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007744,"jbe 0x000000014000796B",0F 86 21 02 00 00 ,0.01%,0.01%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000774a,"lea (%rdx,%rdi,4), %rbx",48 8D 1C BA ,0.00%,0.01%,0.2500,0.0000,0.0000,0.0000,0.0000,25.0000,175.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007751,"add %rdx, %r9",49 01 D1 ,0.00%,0.02%,0.1000,0.0000,0.0000,10.0000,0.0000,0.0000,220.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007756,"lea (%rdx,%r13,4), %rcx",4A 8D 0C AA ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000775a,"nop %eax, (%rax,%rax,1)",0F 1F 44 00 00 ,0.00%,0.00%,1.0000,0.5000,0.0000,0.0000,0.0000,0.0000,400.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000776a,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007775,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007784,"mulps %xmm1, %xmm0",0F 59 C1 ,0.15%,0.19%,0.4050,0.0325,0.1667,0.8264,2.4793,7.4380,110.7438,0.0000,0.0000,0.0000,0.0000
+,0x140007787,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.16%,0.26%,0.3210,0.0353,0.3077,2.4691,1.2346,9.8765,112.3457,0.0000,0.0000,0.0000,0.0000
+,0x14000778c,"movups (%r9,%rax,1), %xmm0",41 0F 10 04 01 ,0.17%,0.25%,0.3522,0.0275,0.6667,2.5157,0.0000,9.4340,138.3648,0.0000,0.0000,0.0000,0.0000
+,0x140007791,"mulps %xmm1, %xmm0",0F 59 C1 ,0.10%,0.26%,0.2073,0.0149,0.2000,0.6098,0.0000,5.4878,127.4390,0.0000,0.0000,0.0000,0.0000
+,0x140007794,"movups %xmm0, (%rcx,%rax,1)",0F 11 04 01 ,0.36%,0.50%,0.3742,0.0232,0.8333,3.1447,0.6289,4.7170,141.5094,0.0000,0.0000,0.0000,0.0000
+,0x140007798,"add $0x10, %rax",48 83 C0 10 ,0.14%,0.18%,0.4107,0.0870,0.3846,4.4643,2.6786,13.3929,167.8571,0.0000,0.0000,0.0000,0.0000
+,0x14000779c,"cmp %rsi, %rax",48 39 F0 ,0.00%,0.01%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,77.7778,0.0000,0.0000,0.0000,0.0000
+,0x1400077a8,"jz 0x0000000140007958",0F 84 AA 01 00 00 ,0.01%,0.02%,0.2000,0.0000,0.0000,0.0000,0.0000,10.0000,60.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400077b1,"mov %r15d, %ecx",44 89 F9 ,0.00%,0.01%,0.0000,0.0000,0.0000,0.0000,0.0000,16.6667,83.3333,0.0000,0.0000,0.0000,0.0000
+,0x1400077b7,"jz 0x00000001400077F9",74 40 ,0.01%,0.02%,0.1667,0.0000,0.0000,0.0000,0.0000,0.0000,116.6667,0.0000,0.0000,0.0000,0.0000
+,0x1400077bd,"lea (%rax,%rdi,1), %r11",4C 8D 1C 38 ,0.02%,0.01%,1.1667,0.1250,0.0000,16.6667,0.0000,33.3333,133.3333,0.0000,0.0000,0.0000,0.0000
+,0x1400077c1,"movqq (%rdx,%r11,4), %xmm0",F3 42 0F 7E 04 9A ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400077c7,"lea (%rax,%r10,1), %r11",4E 8D 1C 10 ,0.01%,0.01%,0.5714,0.0000,0.0000,0.0000,0.0000,14.2857,128.5714,0.0000,0.0000,0.0000,0.0000
+,0x1400077cb,"mulps %xmm2, %xmm0",0F 59 C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400077ce,"movlps %xmm0, (%rdx,%r11,4)",42 0F 13 04 9A ,0.01%,0.01%,0.5000,0.0000,0.0000,12.5000,0.0000,0.0000,237.5000,0.0000,0.0000,0.0000,0.0000
+,0x1400077d3,"lea (%rax,%r8,1), %r11",4E 8D 1C 00 ,0.02%,0.02%,0.5714,0.0526,0.0000,0.0000,0.0000,14.2857,135.7143,0.0000,0.0000,0.0000,0.0000
+,0x1400077da,"movqq (%rdx,%r11,4), %xmm0",F3 42 0F 7E 04 9A ,0.00%,0.01%,0.1111,0.0000,1.0000,11.1111,0.0000,11.1111,177.7778,0.0000,0.0000,0.0000,0.0000
+,0x1400077e0,"mulps %xmm2, %xmm0",0F 59 C2 ,0.01%,0.02%,0.3000,0.0000,0.0000,0.0000,0.0000,20.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400077e3,"movlps %xmm0, (%rdx,%rax,4)",0F 13 04 82 ,0.01%,0.03%,0.1429,0.0000,0.0000,0.0000,0.0000,0.0000,109.5238,0.0000,0.0000,0.0000,0.0000
+,0x1400077e7,"mov %r9d, %eax",44 89 C8 ,0.02%,0.01%,1.2500,0.0000,0.0000,0.0000,25.0000,25.0000,300.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400077ed,"and $0x01, %r9d",41 83 E1 01 ,0.01%,0.01%,0.8000,0.0000,0.0000,0.0000,0.0000,20.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400077f1,"jz 0x0000000140007940",0F 84 49 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000
+,0x140007838,"mov -0x28(%rbp), %rax",48 8B 45 D8 ,0.01%,0.01%,0.6000,0.0000,0.0000,0.0000,0.0000,20.0000,120.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000783c,"imul %r12, %r10",4D 0F AF D4 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000
+,0x140007840,"lea (%rax,%r10,1), %rdi",4A 8D 3C 10 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007844,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007848,"lea (%r14,%r10,1), %r8",4F 8D 04 16 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000784c,"lea (%rax,%r10,1), %r13",4E 8D 2C 10 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007850,"jmp 0x0000000140007706",E9 B1 FE FF FF ,0.01%,0.02%,0.3077,0.0714,0.0000,0.0000,7.6923,7.6923,115.3846,0.0000,0.0000,0.0000,0.0000
+,0x1400078b5,"add $0x68, %rsp",48 83 C4 68 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078b9,"pop %rbx",5B ,0.01%,0.02%,0.3077,0.0000,0.0000,0.0000,0.0000,0.0000,284.6154,0.0000,0.0000,0.0000,0.0000
+,0x1400078ba,"pop %rsi",5E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078be,"pop %r13",41 5D ,0.01%,0.02%,0.1538,0.0000,0.0000,0.0000,0.0000,0.0000,261.5385,0.0000,0.0000,0.0000,0.0000
+,0x1400078c2,"pop %r15",41 5F ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078c5,"ret",C3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007944,"cmp %r12, -0x38(%rbp)",4C 39 65 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007948,"jnz 0x0000000140007834",0F 85 E6 FE FF FF ,0.01%,0.03%,0.1000,0.0000,0.0000,0.0000,0.0000,10.0000,115.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke::Field3D::fill(float)" (Showing only disassembly),,,,0.64%,0.82%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400016d3,"add $0x20, %rax",48 83 C0 20 ,0.25%,0.39%,0.3333,0.0197,0.1667,0.4065,0.8130,2.0325,260.9756,0.0000,0.0000,0.0000,0.0000
+,0x1400016d7,"movups %xmm0, -0x10(%rax)",0F 11 40 F0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400016db,"cmp %rcx, %rax",48 39 C8 ,0.39%,0.43%,0.4723,0.0165,0.0000,0.0000,0.3690,4.0590,280.0738,0.0000,0.0000,0.0000,0.0000
+,0x1400016de,"jnz 0x00000001400016D0",75 F0 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,800.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"main" (Showing only disassembly),,,,0.07%,0.04%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400dfade,"sub %r13, %rax",4C 29 E8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfae6,"divsd %xmm6, %xmm0",F2 0F 5E C6 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb04,"movsxdl 0xA0(%rbp), %rax",48 63 85 A0 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb0b,"test %eax, %eax",85 C0 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb27,"movdl 0x300(%rbp), %xmm0",66 0F 6E 85 00 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb42,"mov 0x334(%rbp), %rdx",48 8B 95 34 03 00 00 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb57,"mov %rax, 0x300(%rbp)",48 89 85 00 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb5e,"mov 0x330(%rbp), %eax",8B 85 30 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb84,"mov %rdx, 0x30C(%rbp)",48 89 95 0C 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb8b,"mov 0x340(%rbp), %rdx",48 8B 95 40 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfb96,"mov %eax, 0x338(%rbp)",89 85 38 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfba7,"mov %rdx, 0x318(%rbp)",48 89 95 18 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfbbc,"mov 0x320(%rbp), %rax",48 8B 85 20 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfbe2,"lea 0x300(%rbp), %rcx",48 8D 8D 00 03 00 00 ,0.03%,0.01%,1.1250,0.0000,0.0000,0.0000,0.0000,12.5000,200.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfbee,"movsxdl 0xA0(%rbp), %rax",48 63 85 A0 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfbf5,"add $0x01, %edi",83 C7 01 ,0.02%,0.02%,0.5714,0.0000,0.0000,0.0000,0.0000,7.1429,242.8571,0.0000,0.0000,0.0000,0.0000
+,0x1400dfbf8,"cmp %eax, %edi",39 C7 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfbfa,"jl 0x00000001400DFB20",0F 8C 20 FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400dfc03,"jmp 0x00000001400DFAD0",E9 C8 FE FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke::serial::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::serial::SlabRange, smoke::serial::KernelIsa)" (Showing only disassembly),,,,0.06%,0.04%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400068b1,"push %r15",41 57 ,0.01%,0.00%,0.6667,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000
+,0x1400068ba,"push %rsi",56 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068bc,"sub $0x78, %rsp",48 83 EC 78 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068c0,"lea 0x70(%rsp), %rbp",48 8D 6C 24 70 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068c5,"mov (%rcx), %rax",48 8B 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068c8,"movsxdl 0x0C(%rcx), %r13",4C 63 69 0C ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068d0,"mov %rcx, %rbx",48 89 CB ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068d9,"mov %rax, -0x0C(%rbp)",48 89 45 F4 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068f5,"jbe 0x0000000140006950",76 59 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006931,"mov $0x01, %eax",B8 01 00 00 00 ,0.02%,0.01%,1.7500,0.0000,0.0000,0.0000,0.0000,25.0000,675.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006936,"add $0x78, %rsp",48 83 C4 78 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000693b,"pop %rsi",5E ,0.02%,0.01%,0.7143,0.0000,0.0000,0.0000,0.0000,28.5714,128.5714,0.0000,0.0000,0.0000,0.0000
+,0x14000693f,"pop %r13",41 5D ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006941,"pop %r14",41 5E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006943,"pop %r15",41 5F ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006959,"mov -0x08(%rbp), %eax",8B 45 F8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000695c,"mov 0x20(%rdi), %rdx",48 8B 57 20 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006972,"mov %r12d, 0x30(%rsp)",44 89 64 24 30 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000697c,"mov %eax, 0x20(%rsp)",89 44 24 20 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006984,"call 0x0000000140007A40",E8 B7 10 00 00 ,0.01%,0.01%,0.7500,0.0000,0.0000,25.0000,0.0000,0.0000,325.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1446" (DEBUG INFO NOT FOUND),,,,0.02%,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1446,"test %eax, %eax",85 C0 ,0.02%,0.01%,1.1667,0.0769,0.0000,0.0000,0.0000,0.0000,133.3333,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"ntdll.dll!0x1800e0c50" (DEBUG INFO NOT FOUND),,,,0.02%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800e0c50,"mov 0x000000007FFE0300, %rax",48 8B 04 25 00 03 FE 7F ,0.02%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"kernel32.dll!0x1800326b0" (DEBUG INFO NOT FOUND),,,,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800326b0,"jmp *0x000000018008BBE8",48 FF 25 31 95 05 00 ,0.01%,0.00%,1.5000,1.0000,0.0000,0.0000,0.0000,50.0000,50.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke::avx2Supported()" (Showing only disassembly),,,,0.01%,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140007a00,"push %rbp",55 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a01,"mov %rsp, %rbp",48 89 E5 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a04,"sub $0x20, %rsp",48 83 EC 20 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a14,"movzxb 0x0D(%rax), %eax",0F B6 40 0D ,0.00%,0.00%,0.3333,0.0000,0.0000,0.0000,33.3333,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000
+,0x140007a18,"shr $0x02, %al",C0 E8 02 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a1e,"add $0x20, %rsp",48 83 C4 20 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e143c" (DEBUG INFO NOT FOUND),,,,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e143c,"sub $0x18, %rsp",48 83 EC 18 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1432" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1432,"push %r14",41 56 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"ntdll.dll!0x1800e0c58" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800e0c58,"mov %rax, (%rcx)",48 89 01 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400c3904" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400c3904,"mov 0x00000001400EDC40, %rcx",48 8B 0D 35 A3 02 00 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1b0d" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1b0d,"add $0x18, %rsp",48 83 C4 18 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400c390e" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400c390e,"mov %rdx, 0x38(%rsp)",48 89 54 24 38 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1440" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1440,"mov 0x00000001401160F0, %eax",8B 05 AA 4C 03 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"ucrtbase.dll!0x1800ee2f8" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800ee2f8,"add %r10, %r9",4D 03 CA ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"ntdll.dll!0x1800a4e82" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800a4e82,"jbe 0x00000001800A4E59",76 D5 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1b12" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1b12,"pop %rsi",5E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1438" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1438,"push %rbp",55 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400264aa" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400264aa,"mov %r8, %rdx",4C 89 C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1b14" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1b14,"pop %rbp",5D ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1448" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1448,"jnz 0x00000001400E1B0B",0F 85 BD 06 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x14002646d" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x14002646d,"call *0x0000000140117738",FF 15 C5 12 0F 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1436" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1436,"push %r12",41 54 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400264b5" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400264b5,"idiv %r8",49 F7 F8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400c3900" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400c3900,"sub $0x48, %rsp",48 83 EC 48 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x140026330" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140026330,"push %rbx",53 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"ntdll.dll!0x180047396" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x180047396,"jnz 0x0000000180047617",0F 85 7B 02 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1430" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1430,"push %r15",41 57 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"ntdll.dll!0x18006ed2d" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x18006ed2d,"shl $0x20, %rdx",48 C1 E2 20 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"ntdll.dll!0x18006ed18" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x18006ed18,"test %r9, %r9",4D 85 C9 ,0.00%,0.00%,0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400e1b19" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400e1b19,"pop %r14",41 5E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"ntdll.dll!0x180022705" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x180022705,"mov %rsi, 0x18(%rsp)",48 89 74 24 18 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400264b3" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400264b3,"cqo",48 99 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x1400c390b" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400c390b,"mov (%rcx), %rdx",48 8B 11 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"smoke_prof.exe!0x140026364" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140026364,"add %rdx, %rax",48 01 D0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+

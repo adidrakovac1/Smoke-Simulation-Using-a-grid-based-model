@@ -19,8 +19,12 @@ U novoj sesiji reci Claudeu: **"Pročitaj docs/plan/TODO/M4D_HANDOFF.md i nastav
 | P0: kalibracija memorije, `--hwinfo`, README/PLAN | gotovo | `7a80ec8` |
 | P1.2, P1.3: profilna gradnja, `smoke_prof` | gotovo | `f495144` |
 | P2: `smoke_bench --convergence`, tabela u MATH.md | izmjereno, odluka D15 nije upisana (G1) | `358e2ac` |
-| P1.4 do P1.6: skupljanje, HTML, PROFILE.md | gotovo **samo s vremenskim uzorkovanjem (TBP)** | `c9732d4`, `7570a8c` |
-| P1 s hardverskim brojačima | **čeka isključen WSL2 / Hyper-V i restart** | |
+| P1.4 do P1.6: skupljanje, HTML, PROFILE.md (TBP) | gotovo | `c9732d4`, `7570a8c` |
+| P1 s hardverskim brojačima (`assess_ext`, `inst_access`) | **gotovo 2026-11-11 navečer**; PROFILE.md odjeljci 3.3, 4.3, 4.5 do 4.7 i 5 | commit poslije ovog reda |
+
+**Stanje poslije restarta:** WSL2 je isključen i brojači (EBP) rade. Hipervizor je i dalje aktivan zbog VBS-a,
+pa IBS nije dostupan (PROFILE.md, 3.3). Odjeljci "Zašto restart" i "Prvi koraci poslije restarta" ispod su
+urađeni i ostaju samo kao zapis. **Sada se čeka samo G0 i G1.** HTML sa svim sesijama: `perf/uprof/report.html`.
 
 Provjera stanja: 48/48 testova u običnoj gradnji, gradnji bez AVX2 i profilnoj gradnji; `smoke_bench --verify`
 bit po bit isto kao `serial_64_100steps_pc2.bin`.
@@ -81,11 +85,17 @@ Udio u cijelom koraku:
 
 ## Odluke koje čekaju Ermina
 
-**G0: šta optimizirati** (ništa nije implementirano). Kandidati po jačini dokaza:
+**G0: šta optimizirati** (ništa nije implementirano). Kandidati po jačini dokaza, puna tabela je u PROFILE.md,
+odjeljak 5 (ova lista je dopunjena poslije brojača):
 1. `setBoundary` bez množenja za skalarna polja: najjači dokaz, može ostati bit po bit isto. Claudeova preporuka kao prvo.
-2. Jacobi na 128³, manje prometa memorije: samo za velike mreže, dobitak nije izmjeren.
-3. Množenje s 1/6 umjesto `vdivps`: mijenja rezultat, D11 to trenutno isključuje.
-4. Pravi gather u advekciji: dobitak nije izmjeren.
+2. Poravnanje onoga što petlje stvarno čitaju (T11, nivo 1): novi nalaz iz brojača, 342 do 413 čitanja preko
+   granice linije keša na 1000 instrukcija u Jacobiju. Trošak nije izmjeren; mijenja `Field3D`.
+3. Jacobi na 128³, manje prometa memorije: samo za velike mreže, dobitak nije izmjeren.
+4. Množenje s 1/6 umjesto `vdivps`: mijenja rezultat, D11 to trenutno isključuje.
+5. Pravi gather u advekciji: dobitak nije izmjeren.
+
+Hipoteze poslije brojača: H1 podržana (CPI 0.54 prema 1.45), H2 i dalje otvorena, H3 djelimično, H4 podržana
+(pogrešna grananja ispod 1.3%), H5 podržana u okviru mjerenog (keš instrukcija, op cache, ITLB).
 
 **G1: odluka D15** (MATH.md, odjeljak 5). 128³, isti K u svih 100 koraka, `max|div|` poslije / rms:
 

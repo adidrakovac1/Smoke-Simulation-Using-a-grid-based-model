@@ -1,0 +1,117 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 64 --seconds 12 --stage jacobi "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config inst_access --start-delay 2 -o perf\uprof\2026-11-11_inst\g64_jacobi C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 64 --seconds 12 --stage jacobi"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-11_inst\g64_jacobi --cutoff 0 --report-output perf\uprof\2026-11-11_inst\g64_jacobi\report.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Investigate Instruction Access"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Wed Nov 11 21:31:41 2026"
+Profile End Time:,"Wed Nov 11 21:31:55 2026"
+Profile Duration:,"14.097 seconds"
+Start Delay:,"2 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-11_inst\g64_jacobi"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Instruction Cache"
+
+MONITORED EVENTS
+PMC Events:,Name,Interval,Unitmask,Countmask,Invert Countmask,User,OS,Description
+,"CYCLES_NOT_IN_HALT (PMCx076)",250000,0x00,0x00,False,True,False,"The number of cpu cycles when the thread is not in halt state."
+,"L1_ITLB_MISSES_L2_HITS (PMCx084)",25000,0x00,0x00,False,True,False,"The instruction fetches that Misses in the L1 Instruction Translation Lookaside Buffer (ITLB) but hit in the L2-ITLB."
+,"RETIRED_INST (PMCx0C0)",250000,0x00,0x00,False,True,False,"The number of instructions retired from execution. This count includes exceptions and interrupts. Each exception or interrupt is counted as one instruction."
+,"L2_CACHE_MISS_FROM_L1_IC_MISS (PMCx064)",25000,0x01,0x00,False,True,False,"Count all the Instruction cache fill requests that misses in L2 cache."
+,"OP_CACHE_MISS (PMCx28F)",25000,0x04,0x00,False,True,False,"Op Cache Miss"
+,"L2_ITLB_MISSES (PMCx085)",25000,0x07,0x00,False,True,False,"The ITLB reloads originating from page table walker. The table walk requests are made for L1-ITLB Miss and L2-ITLB Misses."
+,"BpL1TlbFetchHit.IF1G.IF2M.IF4K (PMCx094)",25000,0x07,0x00,False,True,False,"The number of instruction fetches that hit in the L1 ITLB. "
+,"OP_CACHE_ALL_ACCESS (PMCx28F)",25000,0x07,0x00,False,True,False,"All OP Cache Accesses"
+,"L2_CACHE_ACCESS_FROM_L1_IC_MISS (PMCx060)",25000,0x10,0x00,False,True,False,"The L2 cache access requests due to L1 instruction cache misses."
+,"IC_TAG_IC_MISS (PMCx18E)",25000,0x18,0x00,False,True,False,"IC Tag Instruction Cache Miss"
+,"IC_TAG_ALL_IC_ACCESS (PMCx18E)",25000,0x1F,0x00,False,True,False,"IC Tag All Instruction Cache Access"
+
+
+DERIVED METRICS
+Metric Name,Expression,Description
+"CPI","CYCLES_NOT_IN_HALT / RETIRED_INST","The average number of CPU cycles consumed to retire an instruction. This metric is computed as the ratio of CYCLES_NOT_IN_HALT to RETIRED_INST event. The higher values means the application consumes more CPU cycles to retire an instruction due to high cache misses, branch mispredictions, pipeline stalls, I/O or any other bottlenecks. If the CPI values exceeds a threshold value, it will be highlighted in pink."
+"OP_CACHE_64B_FETCH_MISS_RATIO","OP_CACHE_MISS / OP_CACHE_ALL_ACCESS","Op Cache micro-tag miss ratio"
+"IC_MISS_RATIO","IC_TAG_IC_MISS / IC_TAG_ALL_IC_ACCESS","IC Miss Ratio"
+"IC_MISSES (PTI)","(IC_TAG_IC_MISS * 1000) / RETIRED_INST","The number of L1 instruction cache misses, per thousand retired instructions."
+"L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","( L2_CACHE_ACCESS_FROM_L1_IC_MISS * 1000 ) / RETIRED_INST","The number of L2 cache access requests due to L1 instruction cache misses, per thousand retired instructions. This L2 cache access requests also includes the prefetches."
+"L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","( L2_CACHE_MISS_FROM_L1_IC_MISS * 1000 ) / RETIRED_INST","The number of L2 cache misses from L1 Instruction cache misses, per thousand retired instructions."
+"L1_ITLB_REQUESTS (PTI)","((L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES + BpL1TlbFetchHit.IF1G.IF2M.IF4K) * 1000) / RETIRED_INST","The number of L1 ITLB Requests, per thousand retired instructions."
+"L1_ITLB_MISSES (PTI)","((L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES) * 1000) / RETIRED_INST","The number of L1 ITLB Misses, per thousand retired instructions."
+"L2_ITLB_MISSES (PTI)","(L2_ITLB_MISSES * 1000) / RETIRED_INST","The number of L2 ITLB Misses, per thousand retired instructions."
+"L1_ITLB_MISS_RATE","(L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES) / RETIRED_INST","The ITLB L1 Miss rate is the number of ITLB L1_Miss_L2_Hits and L1_Miss_L2_Miss divided by the total number of retired instructions."
+"L2_ITLB_MISS_RATE","L2_ITLB_MISSES / RETIRED_INST","The ITLB L2 Miss rate is the number of ITLB L2 Miss divided by the total number of retired instructions."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CYCLES_NOT_IN_HALT)"
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE",Module
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",29411.0000,55780.0000,0.5273,0.0128,0.2364,0.4195,0.2671,6.2316,142.4274,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",3444.0000,7055.0000,0.4882,0.0191,0.3254,1.1623,0.7938,12.5301,144.1106,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::Field3D::fill(float)",212.0000,518.0000,0.4093,0.0179,0.0526,0.1931,0.5792,3.0888,272.5869,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"main",22.0000,26.0000,0.8462,0.0000,0.0000,0.0000,3.8462,11.5385,246.1538,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::serial::SlabRange, smoke::serial::KernelIsa)",21.0000,23.0000,0.9130,0.0000,0.0000,4.3478,0.0000,13.0435,282.6087,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1446",7.0000,6.0000,1.1667,0.0769,0.0000,0.0000,0.0000,0.0000,133.3333,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c50",5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"kernel32.dll!0x1800326b0",3.0000,2.0000,1.5000,1.0000,0.0000,0.0000,0.0000,50.0000,50.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\kernel32.dll"
+"smoke::avx2Supported()",2.0000,4.0000,0.5000,0.0000,0.0000,0.0000,25.0000,0.0000,125.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e143c",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1432",1.0000,1.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c58",1.0000,1.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400c3904",1.0000,2.0000,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1b0d",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1b19",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x140026364",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1430",0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c390b",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18006ed2d",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x180022705",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18006ed18",0.0000,0.0000,0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400e1b12",0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400264b5",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c3900",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x140026330",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x180047396",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400264b3",0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c390e",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1438",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400264aa",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1b14",0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1448",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1436",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x14002646d",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1440",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee2f8",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ntdll.dll!0x1800a4e82",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+
+"HOTTEST PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10460)",33133.0000,63422.0000,0.5224,0.0137,0.2510,0.5014,0.3343,6.9156,143.7813,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST MODULES (Sort Event - CYCLES_NOT_IN_HALT)"
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",33124.0000,63419.0000,0.5223,0.0136,0.2516,0.5014,0.3327,6.9128,143.7771,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\ntdll.dll",6.0000,1.0000,6.0000,0.2500,0.0000,0.0000,100.0000,0.0000,600.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\kernel32.dll",3.0000,2.0000,1.5000,1.0000,0.0000,0.0000,0.0000,50.0000,50.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\ucrtbase.dll",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST THREADS (Sort Event - CYCLES_NOT_IN_HALT)"
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE",THREAD ID
+"Thread-16536 (PID:10460)",33133.0000,63422.0000,0.5224,0.0137,0.2510,0.5014,0.3343,6.9156,143.7813,0.0000,0.0000,0.0000,0.0000,"16536"
