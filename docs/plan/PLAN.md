@@ -138,7 +138,8 @@ Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 do P2. Još uvijek s
 - [x] P0: popraviti kalibraciju memorije (triad), `smoke_bench --hwinfo`, ažurirati README i ovaj plan.
       (2026-11-11: triad je bio 6 puta prevelik; sada 17.9 GB/s uz teorijskih 38.4 GB/s; E za Jacobi na 128³ je
       oko 0.94. PROFILE.md, odjeljci 1 i 2; PERF_LOG.md, odjeljak 8.)
-- [ ] P1: AMD uProf instaliran, `Solver/build-prof` (`-g -fno-omit-frame-pointer`), `smoke_prof`, tbp/assess/IBS na 64³ i 128³,
+- [ ] P1 (2026-11-11: urađeno s vremenskim uzorkovanjem, HTML u `perf/uprof/2026-11-11_tbp/report.html`; brojači i IBS
+      nisu dostupni dok je uključen WSL2 / Hyper-V, PROFILE.md odjeljak 3.3; čeka tačku G0): AMD uProf instaliran, `Solver/build-prof` (`-g -fno-omit-frame-pointer`), `smoke_prof`, tbp/assess/IBS na 64³ i 128³,
       `tools/uprof_report.py` pravi samostalan HTML, `docs/plan/PROFILE.md` s hardverom i odgovorima na hipoteze H1 do H5.
 - [ ] P2: tabela ostatak/divergencija naspram K (32³, 64³, 128³) u MATH.md; odluka D15 o rješavaču.
       (2026-11-11: tabela je izmjerena, `smoke_bench --convergence`, MATH.md odjeljak 5. Odluka D15 čeka tačku G1.)

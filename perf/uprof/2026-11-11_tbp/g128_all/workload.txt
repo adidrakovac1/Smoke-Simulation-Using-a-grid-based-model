@@ -1,0 +1,5 @@
+smoke_prof: faza=all mreza=128^3 razvoj_koraka=100 K=40
+  trajanje_s: 34.068
+  ponavljanja: 363
+  ms_po_ponavljanju: 93.850515
+  kontrolna_vrijednost: 1.972544
