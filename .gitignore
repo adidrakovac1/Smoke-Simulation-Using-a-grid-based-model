@@ -37,3 +37,7 @@ perf/uprof/**/*.log
 perf/uprof/**/.config
 perf/uprof/**/.error
 perf/uprof/**/.log
+
+# Python
+__pycache__/
+*.pyc
