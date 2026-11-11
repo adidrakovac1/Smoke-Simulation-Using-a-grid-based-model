@@ -168,7 +168,7 @@ Razlog što može čekati: Solver je odvojen i renderer čita samo `density()` (
 
 **Kriterij:** dim se vidi u realnom vremenu u rendereru, a veličina mreže se mijenja iz menija.
 
-**Stanje 2026-11-11 (čeka tačku G2, Erminov pregled demoa):** na PC-2 (RTX 4060 Ti) 64³ radi 60 FPS (ograničeno
+**Stanje 2026-11-11 (tačka G2 prošla: Ermin je pogledao demo, bez ispravki):** na PC-2 (RTX 4060 Ti) 64³ radi 60 FPS (ograničeno
 vsync-om), 128³ oko 11 FPS. Slike: `docs/plan/img/mviz_64.png`, `mviz_128.png`. Provjereno automatskim
 pokretanjem (260 koraka, slika prozora); promjena mreže provjerena kroz `resize()` na 128³, a dugmad panela
 nisu kliknuta rukom. Objašnjenje i ograničenja: `Integration/README.md`.
