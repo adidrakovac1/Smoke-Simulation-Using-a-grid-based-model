@@ -92,14 +92,17 @@ Smoke-Simulation-Using-a-grid-based-model/
 │   ├── bench/                     smoke_bench: CSV po fazama, kalibracija, reference
 │   └── reference/                 spremljeni referentni rezultati za poređenje verzija
 │
-└── Integration/               TEK U ZADNJEM MILESTONE-U (M-VIZ): spoj Solvera i Renderera
-    ├── CMakeLists.txt
-    ├── include/ i src/
+└── Integration/               M-VIZ: spoj Solvera i Renderera (urađeno 2026-11-11, vidi Integration/README.md)
+    ├── CMakeLists.txt         gradi se iz Renderer/test-app, nije samostalan
+    ├── README.md              objašnjenje dijelova, prenosa gustine i ray marchinga
+    ├── include/smokeviz/ i src/
     │   ├── SmokeScene.*           Scene koja drži SmokeSolver
     │   ├── Texture3D.*            GL 3D tekstura (Renderer je nema)
     │   ├── VolumeRaymarchPass.*   crtanje dima
-    │   └── SmokeUI.*              ImGui kontrole
-    └── shaders/volume_raymarch.{vert,frag}
+    │   ├── BoxOutline.*           ivice kutije kao linije
+    │   ├── SmokeUI.*              ImGui kontrole
+    │   └── Screenshot.*           snimanje prozora u PNG
+    └── shaders/               volume_raymarch.{vert,frag}, box_outline.{vert,frag}
 ```
 
 ---
@@ -220,7 +223,12 @@ struct DensityView {
 ```
 Time `Integration` može poslati u GPU samo unutrašnji dio (OpenGL ima parametre
 `GL_UNPACK_ROW_LENGTH` i `GL_UNPACK_IMAGE_HEIGHT` upravo za preskakanje redova), ili prvo
-kopirati unutrašnjost u kompaktan bafer. Odluka je u zadnjem milestone-u (M-VIZ).
+kopirati unutrašnjost u kompaktan bafer.
+
+**Odluka (M-VIZ, 2026-11-11): direktan prenos, bez međukopije.** `Texture3D::Upload` postavlja
+`GL_UNPACK_ROW_LENGTH = strideJ` i `GL_UNPACK_IMAGE_HEIGHT = strideK / strideJ`, zove `glTexSubImage3D` nad
+solverovim nizom i vraća postavke na 0. Kopiranje u zbijen bafer ostaje kao rezervni put ako raspored nema
+cijeli broj redova po ravni. Format teksture je `GL_R32F`. Objašnjenje: `Integration/README.md`.
 
 ### Redoslijed unutar `step(dt)`
 
@@ -285,7 +293,20 @@ Renderer već ima ono što nam treba za crtanje dima:
 **Dozvoljene izmjene u `Renderer/` (cijeli popis):**
 1. `Renderer/test-app/CMakeLists.txt`: dodati `add_subdirectory(../../Solver ...)`,
    `add_subdirectory(../../Integration ...)` i povezati `SmokeIntegration` s `TestApp`.
+   **Urađeno 2026-11-11.** Iz Solvera se tu gradi samo biblioteka (`SMOKE_BUILD_CLI/TESTS/BENCH/LAB/PROF = OFF`).
 2. `Renderer/test-app/src/main.cpp`: napraviti `SmokeScene` i dodati je u listu scena.
+   **Urađeno 2026-11-11.** Scena dima je dodana na kraj liste (postojeće scene zadržavaju svoje tipke) i otvara se prva.
+
+**Šta smo naučili o Rendereru pri spajanju (M-VIZ), bez izmjene njegovog koda:**
+- "Gore" je +Y, isto kao uzgon u solveru.
+- `ShaderProgram` sam dodaje liniju `#version` (najviše 4.10), pa je naši shaderi nemaju.
+- Shadere i `config/settings.json` traži relativno od radnog foldera, pa se program pokreće iz `Renderer/`.
+  Naše shadere zato ne stavljamo u `Renderer/assets`, nego ih čitamo iz `Integration/shaders` (putanja upisana pri gradnji).
+- Neprozirni objekti se crtaju s odbacivanjem zadnjih strana; prednja strana je ona čiji su vrhovi u smjeru
+  suprotnom od kazaljke na satu.
+- `Scene::OnPostRender` se zove s vezanim HDR baferom i viewportom veličine tog bafera.
+- CMake pri svakom konfigurisanju osvježava `stb` s grane `master`; na PC-2 to pada na git konfliktu. Zaobilazi
+  se opcijom `-DFETCHCONTENT_FULLY_DISCONNECTED=ON` u build folderu (koristi već preuzete biblioteke).
 
 3. (D13, M-OBS) `Renderer/src/opengl/core/HdrFramebuffer.cpp` i pripadni header: depth iz renderbuffera u teksturu koja se
    može uzorkovati, da volumni prolaz ograniči zraku na dubinu scene. Prije i poslije provjeriti barem dvije postojeće scene.
@@ -303,7 +324,7 @@ i upisuje u ovaj odjeljak.
 | Solver je odvojena biblioteka bez OpenGL-a | **Donesena** | odjeljak 1 |
 | Veličina mreže se mijenja u toku rada, zadano 64³ | **Donesena** | po zahtjevu tima |
 | Ghost sloj i Stamova konvencija | **Donesena** (D2) | literatura koristi isto |
-| Spajanje preko `Integration/` (+ 2 izmjene u test-app) | Preporuka, potvrditi prije M-VIZ (zadnji milestone) | najmanje diranje Renderera |
+| Spajanje preko `Integration/` (+ 2 izmjene u test-app) | **Urađeno** (M-VIZ, 2026-11-11; plan odobren kroz EXECUTION_PLAN.md) | najmanje diranje Renderera |
 | Solver se gradi i pokreće potpuno bez Renderera | **Donesena** | `cmake -S Solver ...`, bez OpenGL-a i bez preuzimanja biblioteka |
 | Alat za testove: doctest, header zapakovan u `Solver/third_party/doctest/` | **Donesena** (D5) | jedan header, brz; bez `FetchContent`, pa gradnja ne treba internet |
 | Optimizacija u ovoj fazi samo sekvencijalna; paralelizacija nije milestone | **Donesena** (D8) | PLAN.md, M4 |

@@ -6,6 +6,7 @@
 #include "BistroScene.h"
 #include "CapturePresetScene.h"
 #include "TerrainScene.h"
+#include "smokeviz/SmokeScene.h"
 
 int main()
 {
@@ -24,7 +25,9 @@ int main()
     CapturePresetScene captureDenseGrid(CapturePresetKind::DenseGrid);
     CapturePresetScene captureMaterialSweep(CapturePresetKind::MaterialSweep);
     CapturePresetScene captureCulling(CapturePresetKind::CullingTest);
+    smokeviz::SmokeScene smokeScene;
 
+    bool smokeOk = smokeScene.Setup();
     bool terrainOk = terrainScene.Setup();
     bool bistroOk = bistroScene.Setup();
     bool captureBaselineOk = captureBaseline.Setup();
@@ -32,6 +35,8 @@ int main()
     bool captureMaterialSweepOk = captureMaterialSweep.Setup();
     bool captureCullingOk = captureCulling.Setup();
 
+    if (!smokeOk)
+        spdlog::error("[TestApp] SmokeScene::Setup() failed");
     if (!terrainOk)
         spdlog::error("[TestApp] TerrainScene::Setup() failed");
     if (!bistroOk)
@@ -53,11 +58,19 @@ int main()
     if (captureMaterialSweepOk) scenes.push_back(&captureMaterialSweep);
     if (captureCullingOk) scenes.push_back(&captureCulling);
 
+    // The smoke scene is added last, so the existing scenes keep their number keys, and it is the one shown first.
+    std::size_t initialScene = 0;
+    if (smokeOk)
+    {
+        initialScene = scenes.size();
+        scenes.push_back(&smokeScene);
+    }
+
     for (std::size_t i = 0; i < scenes.size(); ++i)
         spdlog::info("[TestApp] Press {} for {}", i + 1, scenes[i]->GetName());
 
     if (!scenes.empty())
-        app.Run(scenes, 0);
+        app.Run(scenes, initialScene);
     else
         spdlog::error("[TestApp] No scenes were available to run");
 

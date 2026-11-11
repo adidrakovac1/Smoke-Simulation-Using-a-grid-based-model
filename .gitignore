@@ -41,3 +41,6 @@ perf/uprof/**/.log
 # Python
 __pycache__/
 *.pyc
+
+# Screenshots saved by the smoke scene (F12) into the working directory
+smoke_screenshot_*.png

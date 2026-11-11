@@ -160,13 +160,18 @@ fazi. Kad tim odluči da počinje, za to se pišu posebni milestone-ovi. Do tada
 Radi se tek kad je solver gotov, sekvencijalno optimiziran i izmjeren. Do tada se dim provjerava konzolnim programom
 i slikama presjeka (`.pgm`, vidi [CLI_OUTPUT.md](CLI_OUTPUT.md)), bez renderera.
 Razlog što može čekati: Solver je odvojen i renderer čita samo `density()` (ARCHITECTURE.md).
-- [ ] `Integration/` s `SmokeScene` registrovanom u `test-app`.
-- [ ] `Texture3D` i prenos gustoće svaki frejm (`glTexSubImage3D`).
-- [ ] Volumni prolaz: ray marching kroz kocku, prozirnost (Beer-Lambert), crtanje u HDR FBO u
-      `OnPostRender`. Reference: [Crane07].
-- [ ] ImGui panel: izbor veličine mreže (32/64/96/128 + Apply), parametri, pauza, jedan korak, reset.
+- [x] `Integration/` s `SmokeScene` registrovanom u `test-app`.
+- [x] `Texture3D` i prenos gustoće svaki frejm (`glTexSubImage3D`, direktno iz solverovog niza, bez međukopije).
+- [x] Volumni prolaz: ray marching kroz kocku, prozirnost (Beer-Lambert), crtanje u HDR FBO u
+      `OnPostRender`. Reference: [Crane07]. Dodano: sjena u dimu (zraka prema svjetlu).
+- [x] ImGui panel: izbor veličine mreže (32/64/96/128 + Apply), parametri, pauza, jedan korak, reset.
 
 **Kriterij:** dim se vidi u realnom vremenu u rendereru, a veličina mreže se mijenja iz menija.
+
+**Stanje 2026-11-11 (čeka tačku G2, Erminov pregled demoa):** na PC-2 (RTX 4060 Ti) 64³ radi 60 FPS (ograničeno
+vsync-om), 128³ oko 11 FPS. Slike: `docs/plan/img/mviz_64.png`, `mviz_128.png`. Provjereno automatskim
+pokretanjem (260 koraka, slika prozora); promjena mreže provjerena kroz `resize()` na 128³, a dugmad panela
+nisu kliknuta rukom. Objašnjenje i ograničenja: `Integration/README.md`.
 
 Razrada: EXECUTION_PLAN.md, faza P3. Prva verzija scene je jednostavna: dim u zatvorenoj kutiji s vidljivim
 okvirom, podom i izvorom pri dnu (D17).
