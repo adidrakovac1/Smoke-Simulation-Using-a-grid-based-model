@@ -11,7 +11,10 @@ U novoj sesiji reci Claudeu: **"Pročitaj docs/plan/TODO/MOBS_HANDOFF.md i nasta
 - Grana: `feature/obstacles`. **Ništa nije pushano ni mergano.**
 - Radno stablo je čisto, osim `Renderer/imgui.ini` i `docs/Sazetak_Simulacija_Dima.pdf` (nisu dio plana, ne dirati).
 - **P4 je cijeli urađen** (2026-11-12 dovršen P4.4). **G3 je prošla 2026-11-12** (Ermin: "možeš nastaviti").
-- Radi se **P5**. Urađeno: profil s preprekama (PROFILE.md, odjeljak 6). Sljedeće: M4c (vidi dolje).
+- **P5 je urađen u dijelu koji može uraditi izvršitelj** (2026-11-12): profil s preprekama, automatski pregled
+  koda, test za `SlabRange` (62 testa), nacrt izvještaja (`docs/plan/REPORT_DRAFT.md`), usklađeni README fajlovi.
+- Od plana ostaje samo **zadnja stavka**: ljepši HTML izvještaj profila po uzoru na VTune. Ona traži dogovor s
+  Erminom šta tačno znači "kao VTune", pa se **ne počinje bez njega**.
 
 Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
 `docs/execution-plan` → `feature/m4d-profiling` → `feature/mviz` → `feature/obstacles`.
@@ -24,9 +27,10 @@ Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
 | P4.1 do P4.3: solver s preprekama, testovi, OBSTACLES.md | gotovo | `88ad96c` |
 | P4.4: mjerenje troška prepreka (protokol D10) | gotovo 2026-11-12 (PERF_LOG.md, odjeljak 9) | `5228eb2` |
 | P4.5, P4.6: prepreke u rendereru, zaklanjanje, deka | gotovo | `afaf239` |
-| P5a: profil s preprekama (uProf, 6 sesija, HTML, PROFILE.md odjeljak 6) | gotovo 2026-11-12 | commit poslije `5228eb2` |
-| P5b: M4c (pregled koda, TODO-ovi, `SlabRange`, nacrt izvještaja), označeni milestone-ovi | **sljedeće** | |
-| Zadnja stavka: ljepši HTML izvještaj profila, po uzoru na VTune | tek poslije svega | |
+| P5a: profil s preprekama (uProf, 6 sesija, HTML, PROFILE.md odjeljak 6) | gotovo 2026-11-12 | `6fd9d21` |
+| P5b: test za `SlabRange`, pregled koda (automatski dio) | gotovo 2026-11-12 | `5c90943` |
+| P5c: nacrt izvještaja, README fajlovi, PLAN | gotovo 2026-11-12 | commit poslije `5c90943` |
+| Zadnja stavka: ljepši HTML izvještaj profila, po uzoru na VTune | **sljedeće; čeka dogovor s Erminom** | |
 
 ## Otvoreno za Ermina (ne blokira rad)
 
@@ -49,7 +53,10 @@ ne zaobilaziti, javiti Erminu.
 
 ## Šta je provjereno
 
-2026-11-12, AVX2 gradnja (`Solver/build`):
+2026-11-12, kraj dana: **62/62 testa** u gradnji s AVX2 (`Solver/build`) i bez AVX2 (`Solver/build-noavx`);
+`--verify` bit po bit isto u obje, i u profilnoj gradnji (`Solver/build-prof`).
+
+2026-11-12, AVX2 gradnja (`Solver/build`), prije dodavanja testa za `SlabRange`:
 - 58/58 testova; `--verify` bit po bit isto kao `serial_64_100steps_pc2.bin`.
 - Gradnja iz `278a0c4` (prije prepreka): `--verify` bit po bit isto.
 - Trošak prepreka: dvije sesije po D10, unos u PERF_LOG.md (odjeljak 9) i 140 redova u `perf/results.csv`
@@ -63,7 +70,6 @@ ne zaobilaziti, javiti Erminu.
   `mobs_cube_700.png`, `mobs_blanket_700.png`.
 
 Nije provjereno rukom: dugmad u ImGui panelu, upravljanje kamerom mišem, vlastiti `.obj` fajl.
-Gradnja bez AVX2 nije ponovo pokrenuta 2026-11-12 (u solveru se ništa nije mijenjalo, samo `smoke_bench`).
 
 ## Kako se gradi i pokreće
 
@@ -88,12 +94,19 @@ build\test-app\TestApp.exe
 
 ## Sljedeći koraci, redom
 
-1. G3: Erminov pregled demoa i odluke iznad.
-2. P5: ponovni profil s preprekama (uProf, isti postupak kao P1), M4c iz PLAN.md (pregled koda, nacrt izvještaja),
-   označeni milestone-ovi.
-3. Zadnja stavka: ljepši i jednostavniji HTML izvještaj profila, po uzoru na VTune (dogovoriti s Erminom šta tačno).
-4. Push i merge u `main` samo kad Ermin zatraži. `CLAUDE.md` još opisuje stanje od prije M-VIZ ("Redoslijed: M4d,
-   M-VIZ, M-OBS") i broj testova 48 (sada ih je 58); ažurirati ga kad se grane spoje.
+1. **Dogovor za zadnju stavku plana** (HTML izvještaj profila kao VTune). Pitanja za Ermina:
+   koji prikazi su mu bitni (sažetak s najvrelijim funkcijama, "bottom-up" tabela, traka udjela faza, poređenje
+   dvije sesije, prikaz instrukcija), i da li izvještaj ostaje jedan samostalan HTML bez interneta.
+   Polazna tačka: `tools/uprof_report.py`, sadašnji izlaz `perf/uprof/report.html` (36 sesija).
+2. Ermin: pregled demoa rukom i potvrda dva odstupanja (lista "Otvoreno za Ermina" gore).
+3. Tim: pregled koda među članovima i mjesta **[DOPUNITI]** u `docs/plan/REPORT_DRAFT.md`.
+4. Push i merge u `main` samo kad Ermin zatraži. Lanac grana:
+   `docs/execution-plan` → `feature/m4d-profiling` → `feature/mviz` → `feature/obstacles`.
+   Pri spajanju ažurirati `CLAUDE.md`: još opisuje stanje od prije M-VIZ ("Redoslijed: M4d, M-VIZ, M-OBS") i
+   navodi 48 testova (sada ih je 62).
+5. Po želji: ponoviti mjerenje troška prepreka na tihom računaru (komande su na dnu PERF_LOG.md, odjeljak 9).
+
+Paralelizacija ostaje izvan plana (D8) dok Ermin i asistent predmeta ne kažu drugačije.
 
 ## Gdje je šta objašnjeno
 
@@ -104,4 +117,7 @@ build\test-app\TestApp.exe
 | Prepreke: voxelizacija, liste, fizika, ograničenja, testovi, trošak | `docs/plan/OBSTACLES.md` |
 | Mjerenje troška prepreka (tabele) | `docs/plan/PERF_LOG.md`, odjeljak 9 |
 | Šta je mijenjano u Rendereru i šta smo o njemu naučili | `docs/plan/ARCHITECTURE.md`, odjeljak 6 |
+| Profil s preprekama | `docs/plan/PROFILE.md`, odjeljak 6 |
+| Gdje se `SlabRange` smije dijeliti | `docs/plan/ARCHITECTURE.md`, odjeljak 5, pravilo 1 |
+| Nacrt izvještaja | `docs/plan/REPORT_DRAFT.md` |
 | Stanje milestone-ova i odluke D1 do D17 | `docs/plan/PLAN.md` |

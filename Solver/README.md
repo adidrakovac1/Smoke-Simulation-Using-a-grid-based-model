@@ -60,8 +60,11 @@ bench/           mjerenje
 reference/       referentni rezultati (kasnije)
 ```
 
-## Stanje (M3)
+## Stanje (2026-11-12)
 
-Radi cijeli korak s opcionim vorticity confinementom; dijagnostika i mjerenje po fazi (uključujući
-Jacobi iteraciju); `smoke_bench` s CSV, kalibracijom i serijskom referencom; testovi T1 do T10.
+Radi cijeli korak s opcionim vorticity confinementom, serijski optimiziran u M4 (vektorizacija, AVX2 po fajlu,
+fuzija jezgara u advekciji); rezultat je bit po bit isti kao referenca snimljena prije optimizacije.
+Prepreke (`SmokeSolver::setObstacles`, `ObstacleGrid`, `voxelize`, `loadObj`) su opisane u
+`../docs/plan/OBSTACLES.md`. 62 testa: T1 do T10, prepreke i raspon slojeva (`SlabRange`).
+Mjerenje s preprekom: `smoke_bench --obstacle sphere|blanket`; opterećenje za profiler: `smoke_prof`.
 Zadani confinement `ε = 5` vizualno je podešen na 64³; `smoke_cli --vorticity-eps 0` ga isključuje.

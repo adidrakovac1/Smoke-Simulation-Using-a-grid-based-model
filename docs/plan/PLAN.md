@@ -127,8 +127,10 @@ PERF_LOG.md, odjeljak 7. Ostale stavke ispod su namjerno ostavljene (D11).
       (2026-11-12, automatski dio: u `Solver/`, `Integration/`, `tools/` i `perf/` nema oznaka TODO ni FIXME;
       u Solveru nema OpenGL-a, GLM-a ni headera Renderera, nema `static` ni globalnog stanja, nema slučajnih
       brojeva, nema niti ni `omp` pragmi. Pregled **među članovima tima** nije urađen; to je posao ljudi.)
-- [ ] Nacrt izvještaja: opis algoritma, tačnost, tabela serijskih vremena **i** tabela ubrzanja
+- [x] Nacrt izvještaja: opis algoritma, tačnost, tabela serijskih vremena **i** tabela ubrzanja
       (S, Δ, E) po tehnici, prema osnovama B0/B1.
+      (2026-11-12: [REPORT_DRAFT.md](REPORT_DRAFT.md). To je skelet s brojevima prepisanim iz ostalih dokumenata;
+      mjesta za tim su označena s [DOPUNITI].)
 - [ ] Sve odluke i izmjerene vrijednosti upisane u dokumente.
 - [x] Granica `SlabRange` i dalje poštovana (da kasnija paralelizacija ne traži prepravljanje).
       (2026-11-12: do sada to nijedan test nije provjeravao. Dodan `test_slab_range.cpp`: jezgra pozvana u
@@ -213,8 +215,11 @@ ako ih želi drugačije, to je izmjena poslije G3. Demo rukom još nije pregleda
 - [x] Profil s preprekama (uProf, isti postupak kao P1), poređenje u HTML izvještaju.
       (2026-11-12: PROFILE.md, odjeljak 6. Prepreke su nova faza od 2.2 do 2.5% koraka za kuglu i 0.1% za deku;
       ostala jezgra se ne mijenjaju.)
-- [ ] M4c: pregled koda i očišćeni TODO-ovi, nacrt izvještaja, provjera `SlabRange` (stavke su gore, pod M4c).
+- [x] M4c, dio koji može uraditi izvršitelj: automatski pregled koda, test za `SlabRange`, nacrt izvještaja
+      (stavke su gore, pod M4c). Ostaje pregled koda među članovima tima.
 - [ ] Označeni milestone-ovi; `CLAUDE.md` i `README.md` usklađeni sa stanjem.
+      (2026-11-12: `README.md`, `docs/plan/README.md` i ovaj plan su usklađeni. `CLAUDE.md` još opisuje stanje od
+      prije M-VIZ i 48 testova; mijenja se kad se grane spoje u `main`, uz Erminovu potvrdu.)
 
 ---
 
