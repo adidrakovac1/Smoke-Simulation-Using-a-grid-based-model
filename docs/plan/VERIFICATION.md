@@ -144,7 +144,9 @@ Profilisanje dolazi prije paralelizacije jer bez njega ne znamo šta paralelizir
 koraka; `--grid N`, `--warmup N`, `--steps N` i `--output FILE` mijenjaju postavke. CSV ima
 `grid,stage,median_ms,min_ms,max_ms,steps`, sa redovima za pet faza, `jacobi_iteration` (prosjek
 po iteraciji, unutar projekcije) i `total`. `smoke_bench --calibrate` ispisuje otisak mašine,
-memorijski triad i latenciju zavisnog lanca.
+memorijski triad i latenciju zavisnog lanca. `--obstacle sphere|blanket` (od 2026-11-12) u isti scenarij
+stavlja čvrstu kuglu ili porozni sloj, za mjerenje troška prepreka (PERF_LOG.md, odjeljak 9); veličine lista
+ispisuje na stderr. Opcija ne vrijedi uz `--reference` i `--verify`, jer referentni scenarij nema prepreka.
 
 **M3, izmjereno 2026-11-09:** B1 medijani u ms po koraku (100 koraka + 10 zagrijavanja), Apple M4,
 AppleClang 21.0.0.21000101, Release, `-O3 -DNDEBUG`, `dt=1/60`, K=40, `ε=5`, jedna nit:

@@ -1,7 +1,9 @@
 #include "smoke/SmokeSolver.h"
 
-// Internal headers, used only by --convergence (it needs the pressure and divergence fields).
+// Internal headers, used by --convergence (it needs the pressure and divergence fields) and by --obstacle
+// (it prints the sizes of the sparse lists).
 #include "SmokeState.h"
+#include "stages/ObstacleLists.h"
 #include "stages/Stages.h"
 
 #include <algorithm>
@@ -96,6 +98,8 @@ struct Options {
     std::string referencePath;
     std::string verifyPath;
     std::string outputPath;
+    std::string obstacle = "none";  // benchmark mode only: none | sphere | blanket
+    bool obstacleExplicit = false;
     std::vector<int> gridSizes{32, 64, 96, 128};
     int steps = 100;
     int warmup = 10;
@@ -118,6 +122,7 @@ bool parsePositiveInt(std::string_view text, int& value, bool allowZero = false)
 
 void printUsage(std::ostream& out) {
     out << "Usage: smoke_bench [--grid N] [--steps N] [--warmup N] [--output FILE]\n"
+           "                   [--obstacle none|sphere|blanket]\n"
            "       smoke_bench --calibrate\n"
            "       smoke_bench --hwinfo\n"
            "       smoke_bench --convergence [--k-all-steps] [--grid N] [--steps N]\n"
@@ -142,7 +147,8 @@ bool parseArgs(int argc, char** argv, Options& options) {
             if (options.convergenceAllSteps) return false;
             options.convergenceAllSteps = true;
         } else if (arg == "--grid" || arg == "--steps" || arg == "--warmup" ||
-                   arg == "--output" || arg == "--reference" || arg == "--verify") {
+                   arg == "--output" || arg == "--reference" || arg == "--verify" ||
+                   arg == "--obstacle") {
             if (i + 1 >= argc) return false;
             const std::string value(argv[++i]);
             if (arg == "--grid") {
@@ -167,6 +173,11 @@ bool parseArgs(int argc, char** argv, Options& options) {
                 options.outputPath = value;
                 if (options.outputPath.empty()) return false;
                 options.outputExplicit = true;
+            } else if (arg == "--obstacle") {
+                if (options.obstacleExplicit) return false;
+                if (value != "none" && value != "sphere" && value != "blanket") return false;
+                options.obstacle = value;
+                options.obstacleExplicit = true;
             } else if (arg == "--verify") {
                 if (!options.verifyPath.empty() || value.empty()) return false;
                 options.verifyPath = value;
@@ -184,6 +195,10 @@ bool parseArgs(int argc, char** argv, Options& options) {
         }
     }
     if (options.convergenceAllSteps && !options.convergence) return false;
+    // Obstacles are only for the timing mode: the reference scenario has none (VERIFICATION.md, section 3).
+    if (options.obstacleExplicit && (options.convergence || options.calibrate || options.hwinfo ||
+                                     !options.referencePath.empty() || !options.verifyPath.empty()))
+        return false;
     if (options.convergence)
         return !options.calibrate && !options.hwinfo && options.referencePath.empty() &&
                options.verifyPath.empty() && options.outputPath.empty() && !options.warmupExplicit;
@@ -849,12 +864,58 @@ bool runConvergence(const Options& options) {
     return true;
 }
 
+// Obstacle scenarios for measuring what obstacles cost per step (docs/plan/EXECUTION_PLAN.md, P4.4).
+// The cells are marked directly from a formula, without a mesh, so the scenario is the same on every run
+// and scales with the grid. Positions follow the renderer demo (Integration/src/SmokeScene.cpp):
+//   sphere   solid ball, centre (0.5, 0.5, 0.5), radius 0.15 of the box, above the smoke source;
+//   blanket  porous horizontal layer two cells thick at height 0.45, 0.7 x 0.7 of the box, sigma = 20 1/s.
+// A cell belongs to the obstacle when its centre does. Returns an all-Fluid grid for "none".
+smoke::ObstacleGrid makeBenchObstacles(const std::string& name, const smoke::GridSize& size) {
+    smoke::ObstacleGrid grid(size);
+    if (name == "sphere") {
+        constexpr double radius = 0.15;
+        for (int k = 1; k <= size.nz; ++k)
+            for (int j = 1; j <= size.ny; ++j)
+                for (int i = 1; i <= size.nx; ++i) {
+                    const double x = (i - 0.5) / size.nx - 0.5;
+                    const double y = (j - 0.5) / size.ny - 0.5;
+                    const double z = (k - 0.5) / size.nz - 0.5;
+                    if (x * x + y * y + z * z <= radius * radius) grid.set(i, j, k, smoke::CellType::Solid);
+                }
+    } else if (name == "blanket") {
+        grid.porousDrag = 20.0f;  // the default of the renderer panel; a tuning value, not a measured material
+        const int firstLayer = static_cast<int>(0.45 * size.ny) + 1;
+        for (int k = 1; k <= size.nz; ++k)
+            for (int j = firstLayer; j <= std::min(firstLayer + 1, size.ny); ++j)
+                for (int i = 1; i <= size.nx; ++i) {
+                    const double x = (i - 0.5) / size.nx - 0.5;
+                    const double z = (k - 0.5) / size.nz - 0.5;
+                    if (std::fabs(x) <= 0.35 && std::fabs(z) <= 0.35) grid.set(i, j, k, smoke::CellType::Porous);
+                }
+    }
+    return grid;
+}
+
 bool runBenchmarks(const Options& options, std::ostream& csv) {
     csv << "grid,stage,median_ms,min_ms,max_ms,steps\n";
     for (const int n : options.gridSizes) {
         smoke::SolverConfig config;
         config.grid = {n, n, n};
         smoke::SmokeSolver solver(config);
+        if (options.obstacle != "none") {
+            const smoke::ObstacleGrid obstacles = makeBenchObstacles(options.obstacle, config.grid);
+            if (!solver.setObstacles(obstacles)) {
+                std::cerr << "Cannot set obstacles at grid " << n << "^3\n";
+                return false;
+            }
+            // List sizes go to stderr, so the CSV on stdout keeps its format.
+            smoke::SmokeState layout;
+            layout.resize(config.grid);
+            const smoke::ObstacleLists lists = smoke::buildObstacleLists(obstacles, layout.density);
+            std::cerr << "obstacle=" << options.obstacle << " grid=" << n << "^3 solid=" << lists.solid.size()
+                      << " boundary_solid=" << lists.boundarySolid.size() << " neighbour_links="
+                      << lists.neighbour.size() << " porous=" << lists.porous.size() << '\n';
+        }
         for (int step = 0; step < options.warmup; ++step) solver.step();
 
         std::array<std::vector<double>, smoke::kStageCount + 2> samples;

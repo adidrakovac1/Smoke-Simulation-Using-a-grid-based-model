@@ -222,5 +222,28 @@ Solver\build\smoke_bench.exe --verify Solver\reference\serial_64_100steps_pc2.bi
   vidljiv bez obzira na to kako fajl reda vrhove.
 
 Stanje 2026-11-11: gradnja bez AVX2 prolazi 58/58 i `--verify` je bit po bit isto; s AVX2 jezgrima `--verify` je
-bit po bit isto, a hash gustine s preprekama je isti u obje gradnje. Trošak prepreka po protokolu D10 **nije
-izmjeren** (vidi PLAN.md, M-OBS).
+bit po bit isto, a hash gustine s preprekama je isti u obje gradnje.
+
+Stanje 2026-11-12: Windows više ne blokira programe u `Solver/build`; AVX2 gradnja prolazi 58/58 i `--verify` je
+bit po bit isto. Trošak prepreka je izmjeren (odjeljak 8).
+
+## 8. Koliko prepreke koštaju (izmjereno 2026-11-12)
+
+Puni unos s tabelama je u [PERF_LOG.md](PERF_LOG.md), odjeljak 9. Mjereno je po protokolu D10 (naizmjenične
+runde, ista sesija) programom `smoke_bench --obstacle sphere|blanket`, koji ćelije označava formulom: kugla
+poluprečnika 0.15 kutije u sredini, odnosno porozni sloj debeo dvije ćelije na visini 0.45.
+
+- **Bez prepreka: trošak nije mjerljiv.** Sadašnji kod bez prepreka prema kodu od prije prepreka (`278a0c4`) je
+  "šum" u svakoj fazi i na svakoj mreži, a rezultat je bit po bit isti. To je ono što D16 traži.
+- **S preprekom: trošak cijelog koraka je ispod šuma mjerenja.** Na 64³ dvije sesije daju za kuglu procjenu oko
+  3.6% sporije, a za deku 1.3% i 3.0%, ali je šum osnove bio 6 do 7% koraka (računar je bio u upotrebi), pa po
+  D10 to nije dokazan trošak, nego gornja procjena.
+- **Dokazano sporije** je samo brisanje dima po listi čvrstih ćelija u fazi izvora (128³, kugla od 29 464 ćelije:
+  +0.068 ms na korak od oko 100 ms) i, u jednoj sesiji, Jacobi iteracija s kuglom na 64³ (+0.0027 ms po iteraciji,
+  896 graničnih ćelija).
+
+Zašto je trošak mali: kugla na 64³ ima 3648 čvrstih ćelija, od toga 896 graničnih, prema 262 144 ćelije mreže.
+Petlje po listama diraju dakle oko 1% ćelija, dok jezgra (Jacobi, advekcija, sile) i dalje prolaze kroz sve.
+
+Nije izmjereno: tih računar, trošak po ćeliji liste, predmeti koji zauzimaju veći dio kutije, i sama
+voxelizacija (radi se jednom, izvan koraka).

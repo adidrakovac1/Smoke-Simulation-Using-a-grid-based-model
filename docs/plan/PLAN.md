@@ -182,10 +182,12 @@ Razrada: EXECUTION_PLAN.md, faza P4; objašnjenja u `docs/plan/OBSTACLES.md`.
 - [x] Fizika kroz rijetke liste graničnih ćelija (pritisak, brzina, gustina), porozni objekti (deka) s otporom.
       **Odstupanje od EXECUTION_PLAN P4.2, potvrditi na G3:** brzina u graničnim čvrstim ćelijama se odbija (kao na
       zidu kutije), ne postavlja na nulu; s nulom dim nije obilazio kuglu (OBSTACLES.md, odjeljak 4).
-- [ ] Testovi; mjerenje troška; bez prepreka `--verify` ostaje bit po bit isti kao PC-2 referenca.
+- [x] Testovi; mjerenje troška; bez prepreka `--verify` ostaje bit po bit isti kao PC-2 referenca.
       (2026-11-11: 10 novih testova, ukupno 58. Bez AVX2: 58/58 i `--verify` bit po bit. S AVX2: `--verify` bit po
-      bit i isti hash gustine s preprekama; zadnje puno pokretanje testova u AVX2 gradnji blokirao je Windows
-      Smart App Control. **Trošak po protokolu D10 nije izmjeren** iz istog razloga: programi u `Solver/build` su blokirani.)
+      bit i isti hash gustine s preprekama. 2026-11-12: blokada Windows Smart App Control je prošla; AVX2 gradnja
+      58/58 i `--verify` bit po bit. **Trošak izmjeren po protokolu D10** (PERF_LOG.md, odjeljak 9): bez prepreka
+      nije mjerljiv; s kuglom ili dekom trošak cijelog koraka je ispod šuma te sesije, procjena za kuglu na 64³
+      oko 3.6%.)
 - [x] Integration: učitavanje `.obj` iz menija, crtanje mesha, test meshevi (kocka, kugla, deka).
       (Mesh se crta iz istih trouglova koje čita naš parser, ne kroz Assimp, da crtanje i voxelizacija dijele transformaciju.)
 - [x] Renderer (D13): depth u teksturu, zaklanjanje dima; prozirni prolaz za deku.
