@@ -13,8 +13,8 @@ U novoj sesiji reci Claudeu: **"Pročitaj docs/plan/TODO/MOBS_HANDOFF.md i nasta
 - **P4 je cijeli urađen** (2026-11-12 dovršen P4.4). **G3 je prošla 2026-11-12** (Ermin: "možeš nastaviti").
 - **P5 je urađen u dijelu koji može uraditi izvršitelj** (2026-11-12): profil s preprekama, automatski pregled
   koda, test za `SlabRange` (62 testa), nacrt izvještaja (`docs/plan/REPORT_DRAFT.md`), usklađeni README fajlovi.
-- Od plana ostaje samo **zadnja stavka**: ljepši HTML izvještaj profila po uzoru na VTune. Ona traži dogovor s
-  Erminom šta tačno znači "kao VTune", pa se **ne počinje bez njega**.
+- Od plana ostaje samo **zadnja stavka**: HTML izvještaj profila po uzoru na VTune. **Dogovoreno 2026-11-12,
+  radi se u narednoj sesiji** (prvi korak u "Sljedeći koraci" dolje).
 
 Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
 `docs/execution-plan` → `feature/m4d-profiling` → `feature/mviz` → `feature/obstacles`.
@@ -30,7 +30,7 @@ Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
 | P5a: profil s preprekama (uProf, 6 sesija, HTML, PROFILE.md odjeljak 6) | gotovo 2026-11-12 | `6fd9d21` |
 | P5b: test za `SlabRange`, pregled koda (automatski dio) | gotovo 2026-11-12 | `5c90943` |
 | P5c: nacrt izvještaja, README fajlovi, PLAN | gotovo 2026-11-12 | commit poslije `5c90943` |
-| Zadnja stavka: ljepši HTML izvještaj profila, po uzoru na VTune | **sljedeće; čeka dogovor s Erminom** | |
+| Zadnja stavka: HTML izvještaj profila s prikazima kao VTune | **sljedeće (naredna sesija); opseg dogovoren 2026-11-12** | |
 
 ## Otvoreno za Ermina (ne blokira rad)
 
@@ -94,10 +94,25 @@ build\test-app\TestApp.exe
 
 ## Sljedeći koraci, redom
 
-1. **Dogovor za zadnju stavku plana** (HTML izvještaj profila kao VTune). Pitanja za Ermina:
-   koji prikazi su mu bitni (sažetak s najvrelijim funkcijama, "bottom-up" tabela, traka udjela faza, poređenje
-   dvije sesije, prikaz instrukcija), i da li izvještaj ostaje jedan samostalan HTML bez interneta.
-   Polazna tačka: `tools/uprof_report.py`, sadašnji izlaz `perf/uprof/report.html` (36 sesija).
+1. **URADITI U NAREDNOJ SESIJI: HTML izvještaj profila s prikazima kao Intel VTune.**
+   Erminove riječi (2026-11-12): "može HTML, ali želim prikaze kao što VTune ima, dakle cache misses, hotness,
+   i šta već ne."
+   - **Dogovoreno:** ostaje HTML (jedan samostalan fajl, bez interneta, kao sada). Traženi prikazi: **hotness**
+     (gdje ide vrijeme: najvrelije funkcije i instrukcije) i **cache misses** (promašaji keša po funkciji), plus
+     ostali prikazi koje VTune ima.
+   - **Nije precizirano** ("i šta već ne"): koji još VTune prikazi. Prijedlog izvršitelja, potvrditi s Erminom na
+     početku sesije kratkim popisom prije pisanja koda: Summary (ukupno vrijeme, CPI, top hotspots), Hotspots /
+     Bottom-up tabela s trakama, Microarchitecture prikaz (CPI, pogrešna grananja, punjenja L1 iz L2 / L3 / RAM-a
+     po funkciji), prikaz instrukcija izabrane funkcije s toplotnom skalom, poređenje dvije sesije.
+   - **Ograničenja podataka koja treba reći Erminu:** nemamo L3 ni memorijske brojače (`L3 PMC`, `UMC PMC` nisu
+     dostupni) ni IBS, pa "cache misses" znači `%L1_DC_MISSES` i punjenja L1 iz L2 / L3 / RAM-a iz konfiguracije
+     `assess_ext` (PROFILE.md, odjeljci 3.3 i 4.5). VTune-ov "Top-down" (frontend / backend / bad speculation /
+     retiring) se iz ovih brojača ne može izračunati; ne izmišljati ga.
+   - **Polazna tačka:** `tools/uprof_report.py` (čita `report.csv`, `detail.csv`, `workload.txt`,
+     `session_info.txt`; samo standardna biblioteka Pythona), sadašnji izlaz `perf/uprof/report.html` (36 sesija
+     iz `perf/uprof/2026-11-11_*` i `2026-11-12_obs_*`). Novo skupljanje podataka nije potrebno.
+   - Bez novih biblioteka bez pitanja (pravilo iz CLAUDE.md). Poslije izrade otvoriti izvještaj i pokazati Erminu;
+     označiti stavku u PLAN.md (M4d, zadnja stavka) i ažurirati PROFILE.md, odjeljak 3.4.
 2. Ermin: pregled demoa rukom i potvrda dva odstupanja (lista "Otvoreno za Ermina" gore).
 3. Tim: pregled koda među članovima i mjesta **[DOPUNITI]** u `docs/plan/REPORT_DRAFT.md`.
 4. Push i merge u `main` samo kad Ermin zatraži. Lanac grana:

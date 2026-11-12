@@ -174,6 +174,9 @@ asistent predmeta ne kažu drugačije.
 paralelizacije:** prepraviti HTML izvještaj profila (`tools/uprof_report.py`, `perf/uprof/report.html`) da ima
 ljepši i jednostavniji grafički prikaz, po uzoru na Intel VTune. Šta tačno znači "kao VTune" (koji prikazi)
 dogovara se s Erminom kad dođe na red; do tada se izvještaj ne dotjeruje.
+**Dogovor 2026-11-12 (Ermin):** ostaje HTML, s prikazima kakve ima VTune: hotness (gdje ide vrijeme), cache misses
+i ostali njegovi prikazi. Radi se u narednoj sesiji; razrada i ograničenja podataka su u
+[TODO/MOBS_HANDOFF.md](TODO/MOBS_HANDOFF.md), "Sljedeći koraci", tačka 1.
 
 ---
 
