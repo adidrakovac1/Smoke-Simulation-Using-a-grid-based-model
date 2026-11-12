@@ -255,6 +255,15 @@ sad paraleliziramo, nego da ne ugrađujemo prepreke:
 1. **Svaka faza je slobodna funkcija** u `namespace smoke::serial`, koja prima polja i
    `SlabRange{k0, k1}` (raspon slojeva po z). Serijska verzija zove s punim rasponom. OpenMP
    kasnije podijeli raspon među nitima, a nijedan algoritam se ne mijenja.
+   **Pregled u M4c (2026-11-12): gdje se raspon smije dijeliti.** Dijeliti se smiju **jezgra**: `addSources`,
+   `applyBuoyancy`, `advectScalar` / `advectFields`, `computeDivergence`, `jacobiIteration`,
+   `subtractPressureGradient`. Test `test_slab_range.cpp` ih zove u komadima i traži bit po bit isti rezultat.
+   **Ne smiju** se zvati po komadima složene funkcije faza: `applyVorticityConfinement` (dva prolaza i
+   `setBoundary` između njih; drugi prolaz čita |ω| iz susjednih slojeva), `advectVelocity` i `advectScalars`
+   (zamjena bafera), `project` (`p = 0`, zamjene bafera, `setBoundary` poslije svake iteracije). One se zovu
+   jednom po koraku s cijelim rasponom, a buduća paralelna verzija dijeli raspon **unutar** njih, oko poziva
+   jezgra. `setBoundary` i petlje po listama prepreka (`Obstacles.cpp`) uopšte ne primaju raspon: rade nad
+   cijelim poljem i u paralelnoj verziji ostaju serijski dio ili traže vlastitu podjelu.
 2. **Dvostruko baferovanje.** Advekcija i Jacobi čitaju iz starog polja, a pišu u novo. Tako
    nema trke podataka (jedan od ciljeva projekta). Zamjena polja je zamjena pokazivača.
 3. **Bez skrivenog stanja.** Nema `static` pomoćnih nizova unutar funkcija, nema globalnih

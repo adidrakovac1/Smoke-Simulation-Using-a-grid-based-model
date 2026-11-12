@@ -158,6 +158,7 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/test_projection.cpp
     tests/test_stability.cpp
     tests/test_obstacles.cpp
+    tests/test_slab_range.cpp
     tests/demo_advect.cpp                              # M1 demo, started by "smoke_cli --demo advect"
   )
   target_link_libraries(smoke_selftest PUBLIC smoke_solver)

@@ -124,10 +124,17 @@ PERF_LOG.md, odjeljak 7. Ostale stavke ispod su namjerno ostavljene (D11).
 
 **M4c: zatvaranje faze**
 - [ ] Pregled koda među članovima, očišćeni TODO-ovi.
+      (2026-11-12, automatski dio: u `Solver/`, `Integration/`, `tools/` i `perf/` nema oznaka TODO ni FIXME;
+      u Solveru nema OpenGL-a, GLM-a ni headera Renderera, nema `static` ni globalnog stanja, nema slučajnih
+      brojeva, nema niti ni `omp` pragmi. Pregled **među članovima tima** nije urađen; to je posao ljudi.)
 - [ ] Nacrt izvještaja: opis algoritma, tačnost, tabela serijskih vremena **i** tabela ubrzanja
       (S, Δ, E) po tehnici, prema osnovama B0/B1.
 - [ ] Sve odluke i izmjerene vrijednosti upisane u dokumente.
-- [ ] Granica `SlabRange` i dalje poštovana (da kasnija paralelizacija ne traži prepravljanje).
+- [x] Granica `SlabRange` i dalje poštovana (da kasnija paralelizacija ne traži prepravljanje).
+      (2026-11-12: do sada to nijedan test nije provjeravao. Dodan `test_slab_range.cpp`: jezgra pozvana u
+      komadima daju bit po bit isto, u gradnji s AVX2 i bez njega; ukupno 62 testa. Nalaz: složene funkcije faza
+      se ne smiju zvati po komadima, raspon se dijeli unutar njih; `setBoundary` i liste prepreka nemaju raspon.
+      ARCHITECTURE.md, odjeljak 5, pravilo 1.)
 
 **Kriterij:** za svako bitno jezgro nivo 1 je iscrpljen i upisan; dodatne tehnike koje su probane
 su izmjerene i upisane (zadržane ili odbačene); optimizirana verzija prolazi sve testove i poređenje

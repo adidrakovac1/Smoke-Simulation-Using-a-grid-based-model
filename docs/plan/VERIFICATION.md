@@ -24,6 +24,12 @@ Isti testovi se pokreću i komandom `smoke_cli --selftest` (za računare na koji
 | T9 | Promjena veličine | `resize` 64³, pa 32³, pa 128³ | nema pada programa, polja su nulirana, dimenzije tačne |
 | T10 | Sačuvana ukupna masa (približno) | zatvorena kutija bez izvora | ukupna masa se **ne mora** tačno održati (semi-Lagrangian ne čuva masu tačno), ali promjena je ograničena; **prag određujemo mjerenjem, ne pogađamo** |
 
+Dodatni testovi izvan ove tabele: prepreke (`test_obstacles.cpp`, 10 testova, opisani u OBSTACLES.md, odjeljak 6)
+i **raspon slojeva** (`test_slab_range.cpp`, 4 testa, od 2026-11-12): svako jezgro koje prima `SlabRange` pozove
+se jednom za cijelu unutrašnjost i jednom u četiri komada (neravnomjerna, s jednim praznim), i rezultat mora biti
+bit po bit isti; prazan raspon ne smije promijeniti ništa. To je osobina na koju će se osloniti paralelna verzija
+(ARCHITECTURE.md, odjeljak 5, pravilo 1). Ukupno 62 testa.
+
 **O pragovima:** brojevi u T3 i T10 mjere se na stvarnom solveru, pa se upisuju u test kao komentar
 s datumom i veličinom mreže.
 

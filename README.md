@@ -16,7 +16,7 @@ OpenMP, eventualno GPU) uz mjerenje šta je koja tehnika donijela, i na kraju pr
 | `docs/` | Literatura (PDF), uputstvo za Windows i planovi u `docs/plan/`. |
 | `perf/` | Evidencija mjerenja (`results.csv`). |
 
-Programi u `Solver/build`: `smoke_cli` (simulacija u konzoli), `smoke_tests` (48 testova), `smoke_bench`
+Programi u `Solver/build`: `smoke_cli` (simulacija u konzoli), `smoke_tests` (62 testa), `smoke_bench`
 (mjerenje, `--verify`, `--calibrate`, `--hwinfo`), `smoke_lab` i `smoke_demo` (poređenje verzija); opis je u
 [`Solver/README.md`](Solver/README.md).
 
