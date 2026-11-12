@@ -1,0 +1,137 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 64 --seconds 22 --stage all --obstacle none "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config assess_ext --start-delay 2 -o perf\uprof\2026-11-12_obs_none_ebp\g64_all C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 64 --seconds 22 --stage all --obstacle none"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-12_obs_none_ebp\g64_all --cutoff 0 --report-output perf\uprof\2026-11-12_obs_none_ebp\g64_all\report.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Assess Performance (Extended)"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Thu Nov 12 20:04:03 2026"
+Profile End Time:,"Thu Nov 12 20:04:28 2026"
+Profile Duration:,"24.309 seconds"
+Start Delay:,"2 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-12_obs_none_ebp\g64_all"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Overall Assessment (Extended)"
+
+MONITORED EVENTS
+PMC Events:,Name,Interval,Unitmask,Countmask,Invert Countmask,User,OS,Description
+,"CYCLES_NOT_IN_HALT (PMCx076)",250000,0x00,0x00,False,True,False,"The number of cpu cycles when the thread is not in halt state."
+,"RETIRED_INST (PMCx0C0)",250000,0x00,0x00,False,True,False,"The number of instructions retired from execution. This count includes exceptions and interrupts. Each exception or interrupt is counted as one instruction."
+,"RETIRED_BR_INST (PMCx0C2)",25000,0x00,0x00,False,True,False,"The number of branch instructions retired. This includes all types of architectural control flow changes, including exceptions and interrupts.
+            "
+,"RETIRED_BR_INST_MISP (PMCx0C3)",25000,0x00,0x00,False,True,False,"The number of retired branch instructions, that were mispredicted.Note that only EX direct mispredicts and indirect target mispredicts are counted.
+            "
+,"L1_DEMAND_DC_REFILLS_LOCAL_L2 (PMCx043)",25000,0x01,0x00,False,True,False,"The demand Data Cache (DC) fills from local L2 cache to the core."
+,"LsWcbCloseFlush.FullLine64B (PMCx050)",25000,0x01,0x00,False,True,False,"
+                UnitMask events ADDed. Multiple WCB can report events at the same time.
+            "
+,"LsBadStatus2.StliOther (PMCx024)",25000,0x02,0x00,False,True,False,"Bad Status 2"
+,"L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PMCx043)",25000,0x02,0x00,False,True,False,"The demand Data Cache (DC) fills from L3 cache of same CCX or different L2 cache in the same CCX."
+,"MISALIGNED_LOADS (PMCx047)",25000,0x03,0x00,False,True,False,"The number of misaligned loads. On Zen3, this predefined counts the 64B (cacheline crossing) and 4K (page crossing) misaligned loads."
+,"INEFFECTIVE_SW_PF (PMCx052)",25000,0x03,0x00,False,True,False,"The number of software prefetches that did not fetch data outside of the processor core. This predefined counts the Software PREFETCH instruction that saw a match on an already - allocated miss request buffer.Also counts the Software PREFETCH instruction that saw a DC hit."
+,"L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PMCx043)",25000,0x04,0x00,False,True,False,"The demand Data Cache (DC) fills from cache of CCX in the same package (node)."
+,"L1_DC_ACCESSES_ALL (PMCx029)",250000,0x07,0x00,False,True,False,"The number of load and store ops dispatched to LS unit. This counts the dispatch of single op that performs a memory load, dispatch of single op that performs a memory store, dispatch of a single op that performs a load from and store to the same memory address."
+,"L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PMCx043)",25000,0x08,0x00,False,True,False,"The demand Data Cache (DC) fills from DRAM or IO connected in the same package (node)."
+,"FpDispFaults.YmmSpillFault.YmmFillFault.XmmFillFault (PMCx00E)",25000,0x0E,0x00,False,True,False,"Floating-point Dispatch Faults."
+,"L2WcbReq.WcbClose (PMCx063)",25000,0x20,0x00,False,True,False,"For information on Write Combining see docAPM2 sections: Memory System, Memory Types, Buffering and Combining Memory Writes. "
+,"L2WcbReq.WcbWrite (PMCx063)",25000,0x40,0x00,False,True,False,"For information on Write Combining see docAPM2 sections: Memory System, Memory Types, Buffering and Combining Memory Writes. "
+,"L2_CACHE_ACCESS_FROM_L1_DC_MISS (PMCx060)",25000,0xE8,0x00,False,True,False,"The L2 cache access requests due to L1 data cache misses. This also counts hardware and software prefetches"
+
+
+DERIVED METRICS
+Metric Name,Expression,Description
+"CPI","CYCLES_NOT_IN_HALT / RETIRED_INST","The average number of CPU cycles consumed to retire an instruction. This metric is computed as the ratio of CYCLES_NOT_IN_HALT to RETIRED_INST event. The higher values means the application consumes more CPU cycles to retire an instruction due to high cache misses, branch mispredictions, pipeline stalls, I/O or any other bottlenecks. If the CPI values exceeds a threshold value, it will be highlighted in pink."
+"RETIRED_BR_INST (PTI)","( RETIRED_BR_INST * 1000 ) / RETIRED_INST","The number of retired branch instructions per thousand retired instructions."
+"%RETIRED_BR_INST_MISP","( RETIRED_BR_INST_MISP * 100 ) / RETIRED_BR_INST","The percentage of retired mispredicted branches with respect to the total number of retired branches."
+"L1_DC_ACCESSES (PTI)","( L1_DC_ACCESSES_ALL * 1000 ) / RETIRED_INST","The number of load and store operations per thousand instructions. This counts the dispatch of single op that performs a memory load, dispatch of single op that performs a memory store, dispatch of a single op that performs a load from and store to the same memory address"
+"%L1_DC_MISSES","( L2_CACHE_ACCESS_FROM_L1_DC_MISS * 100 ) / L1_DC_ACCESSES_ALL","The percentage of L2 cache access requests due to L1 data cache misses with respect to the total number of load and store operations. This also counts the hardware and software prefetches."
+"L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","( L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These DC fills are from external cache to the core."
+"L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_DRAM * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These demand DC fills are from DRAM or IO connected in the same package (node)."
+"L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_CACHE * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These demand DC fills are from same the cache of same CCX or cache of different CCX in the same package (node)."
+"L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_L2 * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These DC fills are from local L2 cache to the core."
+"MISALIGNED_LOADS (PTI)","( MISALIGNED_LOADS * 1000 ) / RETIRED_INST","The number of misaligned loads per thousand retired instructions."
+"STLI_OTHER (PTI)","( LsBadStatus2.StliOther * 1000 ) / RETIRED_INST","Store-to-load conflicts: A load was unable to complete due to a non-forwardable conflict with an older store. Most commonly, a load's address range partially but not completely overlaps with an uncompleted older store. Software can avoid this problem by using same-size and same-alignment loads and stores when accessing the same data. Vector/SIMD code is particularly susceptible to this problem; software should construct wide vector stores by manipulating vector elements in registers using shuffle/blend/swap instructions prior to storing to memory, instead of using narrow element-by-element stores."
+"WCB_WRITE (PTI)","( L2WcbReq.WcbWrite * 1000 ) / RETIRED_INST","WcbWrite per thousand retired instructions."
+"%WCB_NOT_FULLLINE64B_TO_CLOSE","(L2WcbReq.WcbClose - LsWcbCloseFlush.FullLine64B) * 100 / L2WcbReq.WcbClose","The precentage of Write Combining Buffer Close operations which did not write all 64 bytes of the WCB entry."
+"%WCB_CLOSE_TO_WRITE","(L2WcbReq.WcbClose * 100 ) / L2WcbReq.WcbWrite","The precentage of Write Combining Buffer Close operations to Write Combining Buffer Write operations."
+"SSE_AVX_STALLS (PTC)","( FpDispFaults.YmmSpillFault.YmmFillFault.XmmFillFault * 1000 ) / CYCLES_NOT_IN_HALT","SSE AVX Dispatch Stalls."
+"INEFFECTIVE_SW_PF (PTI)","( INEFFECTIVE_SW_PF * 1000 ) / RETIRED_INST","The number of ineffective software prefetches per thousand instructions."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CYCLES_NOT_IN_HALT)"
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",Module
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",17404.0000,30870.0000,0.5638,86.1289,0.1805,624.0363,29.0106,0.0000,0.0389,0.9783,27.1558,362.5332,23.9326,0.0907,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::advectRow3(float*, float*, float*, float const*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)",12356.0000,32675.0000,0.3781,2.7911,1.2061,627.7582,1.7755,0.0000,0.0092,0.1316,2.4514,5.8332,13.9617,0.0551,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::advectRow2(float*, float*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)",12155.0000,26737.0000,0.4546,3.6990,1.2133,633.2797,2.3270,0.0000,0.0935,0.0486,3.2390,18.7456,8.9127,0.0112,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",4499.0000,5563.0000,0.8087,107.9993,0.1498,408.4127,33.2350,0.0000,5.5905,140.5537,26.9459,8.8621,9.5991,0.1079,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::vorticityRow(float*, float*, float*, float*, float const*, float const*, float const*, int, long long, long long)",2393.0000,2327.0000,1.0284,37.6450,0.3425,608.9385,24.1567,0.0000,1.0743,0.9024,81.1345,371.2935,149.7207,0.0430,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::confinementRow(float*, float*, float*, float const*, float const*, float const*, float const*, int, float, long long, long long)",1827.0000,3169.0000,0.5765,28.9681,0.0000,393.8151,22.8766,0.0000,0.0000,0.1262,6.2165,184.5062,39.8548,0.1578,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke::serial::SlabRange)",1402.0000,2921.0000,0.4800,46.1143,0.1485,509.7569,13.4184,0.0000,0.0342,0.0685,2.7730,133.9267,64.2246,0.0685,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke::serial::SlabRange)",1369.0000,2015.0000,0.6794,68.2878,0.0000,456.0794,18.3460,0.0000,0.0993,0.0993,5.1117,165.5583,20.3970,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",779.0000,1608.0000,0.4845,87.4378,0.0000,393.0348,14.3829,0.0000,0.1866,0.3731,5.4104,149.1294,2.5498,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::Field3D::fill(float)",630.0000,368.0000,1.7120,202.4457,0.0000,404.8913,24.8322,0.0000,0.5435,0.0000,4.8913,0.2717,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::advectSlabAvx2(float* const*, float const* const*, int, float const*, float const*, float const*, smoke::GridSize, int, int, float, long long, long long)",103.0000,291.0000,0.3540,1.3746,25.0000,481.0997,2.7857,0.0000,0.0000,0.3436,2.7491,5.8419,11.3402,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::vorticitySlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, long long, long long)",69.0000,62.0000,1.1129,35.4839,0.0000,483.8710,21.6667,0.0000,1.6129,6.4516,58.0645,308.0645,148.3871,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",37.0000,55.0000,0.6727,107.2727,0.0000,272.7273,3.3333,0.0000,3.6364,3.6364,3.6364,0.0000,10.9091,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::confinementSlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, float, long long, long long)",24.0000,52.0000,0.4615,38.4615,0.0000,442.3077,10.8696,0.0000,0.0000,0.0000,5.7692,165.3846,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::project(smoke::SmokeState&, smoke::SmokeParams const&, smoke::serial::SlabRange, double*, smoke::ObstacleLists const*)",15.0000,27.0000,0.5556,81.4815,0.0000,481.4815,18.4615,0.0000,0.0000,3.7037,37.0370,88.8889,25.9259,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e55c6",7.0000,6.0000,1.1667,83.3333,0.0000,333.3333,20.0000,0.0000,0.0000,0.0000,16.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c58",4.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke::serial::advectScalars(smoke::SmokeState&, float, smoke::serial::SlabRange)",4.0000,2.0000,2.0000,50.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"main",3.0000,1.0000,3.0000,200.0000,0.0000,1000.0000,10.0000,0.0000,0.0000,0.0000,100.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::avx2Supported()",3.0000,11.0000,0.2727,100.0000,0.0000,90.9091,130.0000,0.0000,0.0000,0.0000,100.0000,9.0909,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e55b2",2.0000,4.0000,0.5000,150.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::advectVelocity(smoke::SmokeState&, float, smoke::serial::SlabRange)",2.0000,5.0000,0.4000,20.0000,0.0000,400.0000,5.0000,0.0000,0.0000,20.0000,20.0000,0.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::setVelocityBoundary(smoke::SmokeState&)",2.0000,2.0000,1.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"(anonymous namespace)::wholeStep(smoke::SmokeState&, smoke::SmokeParams const&, smoke::serial::SlabRange, smoke::ObstacleLists const*) (.constprop.0)",2.0000,3.0000,0.6667,166.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,166.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c6ecb",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c6ec4",1.0000,2.0000,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::applyForces(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",1.0000,2.0000,0.5000,250.0000,0.0000,500.0000,40.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18006ed18",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18004650a",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400e5c8d",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0232",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x1800e0c50",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18002cf1a",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x180046519",0.0000,1.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18004641d",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400e55b6",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"kernelbase.dll!0x1800b30d4",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\kernelbase.dll"
+"smoke_prof.exe!0x1400e5c99",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke::serial::SlabRange, smoke::serial::KernelIsa)",0.0000,4.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800a4ee5",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18011c123",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400e55c8",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18012bf0a",0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+
+"HOTTEST PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:34292)",55099.0000,108784.0000,0.5065,38.0010,0.2080,598.1027,12.6734,0.0000,0.3567,7.5572,12.8732,132.1693,20.3228,0.0579,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST MODULES (Sort Event - CYCLES_NOT_IN_HALT)"
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",55091.0000,108782.0000,0.5064,37.9971,0.2081,598.1045,12.6736,0.0000,0.3558,7.5573,12.8735,132.1717,20.3232,0.0579,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\ntdll.dll",8.0000,2.0000,4.0000,200.0000,0.0000,500.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\kernelbase.dll",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST THREADS (Sort Event - CYCLES_NOT_IN_HALT)"
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",THREAD ID
+"Thread-10904 (PID:34292)",55099.0000,108784.0000,0.5065,38.0010,0.2080,598.1027,12.6734,0.0000,0.3567,7.5572,12.8732,132.1693,20.3228,0.0579,0.0000,0.0000,0.0000,0.0000,"10904"

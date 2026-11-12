@@ -10,7 +10,8 @@ U novoj sesiji reci Claudeu: **"Pročitaj docs/plan/TODO/MOBS_HANDOFF.md i nasta
 
 - Grana: `feature/obstacles`. **Ništa nije pushano ni mergano.**
 - Radno stablo je čisto, osim `Renderer/imgui.ini` i `docs/Sazetak_Simulacija_Dima.pdf` (nisu dio plana, ne dirati).
-- **P4 je cijeli urađen** (2026-11-12 dovršen P4.4). Stojimo na tački **G3**: čeka se Ermin.
+- **P4 je cijeli urađen** (2026-11-12 dovršen P4.4). **G3 je prošla 2026-11-12** (Ermin: "možeš nastaviti").
+- Radi se **P5**. Urađeno: profil s preprekama (PROFILE.md, odjeljak 6). Sljedeće: M4c (vidi dolje).
 
 Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
 `docs/execution-plan` → `feature/m4d-profiling` → `feature/mviz` → `feature/obstacles`.
@@ -21,12 +22,13 @@ Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
 | P2: konvergencija Jacobija; G1: Jacobi ostaje (D15) | gotovo | `604e3c2` |
 | P3 (M-VIZ): dim u rendereru; G2 prošla | gotovo | `0f41561`, `278a0c4` |
 | P4.1 do P4.3: solver s preprekama, testovi, OBSTACLES.md | gotovo | `88ad96c` |
-| P4.4: mjerenje troška prepreka (protokol D10) | gotovo 2026-11-12 (PERF_LOG.md, odjeljak 9) | commit poslije `32f38a7` |
+| P4.4: mjerenje troška prepreka (protokol D10) | gotovo 2026-11-12 (PERF_LOG.md, odjeljak 9) | `5228eb2` |
 | P4.5, P4.6: prepreke u rendereru, zaklanjanje, deka | gotovo | `afaf239` |
-| P5: zatvaranje (profil s preprekama, M4c, nacrt izvještaja) | nije početo (čeka G3) | |
+| P5a: profil s preprekama (uProf, 6 sesija, HTML, PROFILE.md odjeljak 6) | gotovo 2026-11-12 | commit poslije `5228eb2` |
+| P5b: M4c (pregled koda, TODO-ovi, `SlabRange`, nacrt izvještaja), označeni milestone-ovi | **sljedeće** | |
 | Zadnja stavka: ljepši HTML izvještaj profila, po uzoru na VTune | tek poslije svega | |
 
-## Šta Ermin treba odlučiti na G3
+## Otvoreno za Ermina (ne blokira rad)
 
 1. **Odstupanje od plana u fizici.** EXECUTION_PLAN P4.2 kaže "brzina u solid ćelijama je nula". Urađeno je
    drugačije: u čvrstim ćelijama uz fluid brzina se **odbija** (normalna komponenta = −susjed, ostale = susjed),

@@ -28,6 +28,10 @@ from pathlib import Path
 
 # Which step phase a function belongs to (names from Solver/src/stages). First match wins.
 PHASES = [
+    # Obstacle loops over the sparse lists (Solver/src/stages/Obstacles.cpp). Listed first: "enforceSolidVelocity"
+    # and friends must not fall into another phase by a partial name match.
+    ("Prepreke", r"extendIntoSolids|setInSolids|reflectVelocityIntoSolids|enforceSolidVelocity|clearSolidScalars"
+                 r"|applyPorousDrag|applyPorousFilter"),
     ("Jacobi", r"jacobi"),
     ("Projekcija (ostalo)", r"computeDivergence|subtractPressureGradient|divergenceRow|gradientRow|\bproject\b"),
     ("Advekcija", r"advect"),

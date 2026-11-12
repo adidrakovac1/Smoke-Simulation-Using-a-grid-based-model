@@ -1,0 +1,1435 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 64 --seconds 22 --stage all --obstacle none "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config tbp --start-delay 2 -o perf\uprof\2026-11-12_obs_none_tbp\g64_all C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 64 --seconds 22 --stage all --obstacle none"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-12_obs_none_tbp\g64_all --detail --disasm-only --disasm-style att --show-percentage --cutoff 0 --report-output perf\uprof\2026-11-12_obs_none_tbp\g64_all\detail.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Time-based Sampling"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Thu Nov 12 19:59:19 2026"
+Profile End Time:,"Thu Nov 12 19:59:43 2026"
+Profile Duration:,"24.056 seconds"
+Start Delay:,"2 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-12_obs_none_tbp\g64_all"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Time based hotspots"
+
+MONITORED EVENTS
+TBP Events:,Name,Interval,Description
+,"CPU_TIME","1.000 milliseconds","CPU Time is the time in which the CPU core is executing the code."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CPU_TIME)"
+FUNCTION,"CPU_TIME",Module
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",34.82%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::advectRow3(float*, float*, float*, float const*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)",22.31%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::advectRow2(float*, float*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)",20.32%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",7.69%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::vorticityRow(float*, float*, float*, float*, float const*, float const*, float const*, int, long long, long long)",4.26%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::confinementRow(float*, float*, float*, float const*, float const*, float const*, float const*, int, float, long long, long long)",3.29%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke::serial::SlabRange)",2.17%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke::serial::SlabRange)",2.15%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",1.33%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::Field3D::fill(float)",1.04%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::advectSlabAvx2(float* const*, float const* const*, int, float const*, float const*, float const*, smoke::GridSize, int, int, float, long long, long long)",0.25%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::vorticitySlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, long long, long long)",0.20%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::confinementSlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, float, long long, long long)",0.06%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",0.04%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"(anonymous namespace)::wholeStep(smoke::SmokeState&, smoke::SmokeParams const&, smoke::serial::SlabRange, smoke::ObstacleLists const*) (.constprop.0)",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::project(smoke::SmokeState&, smoke::SmokeParams const&, smoke::serial::SlabRange, double*, smoke::ObstacleLists const*)",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::avx2Supported()",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke::serial::SlabRange, smoke::serial::KernelIsa)",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c6ec4",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::advectVelocity(smoke::SmokeState&, float, smoke::serial::SlabRange)",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e55c6",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c50",0.01%,"c:\windows\system32\ntdll.dll"
+"main",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+
+"HOTTEST PROCESSES (Sort Event - CPU_TIME)"
+PROCESS,"CPU_TIME"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:30672)",100.00%
+
+"HOTTEST MODULES (Sort Event - CPU_TIME)"
+MODULE,"CPU_TIME"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",99.99%
+"c:\windows\system32\ntdll.dll",0.01%
+
+"HOTTEST THREADS (Sort Event - CPU_TIME)"
+THREAD,"CPU_TIME",THREAD ID
+"Thread-24572 (PID:30672)",100.00%,"24572"
+
+"ALL PROCESSES (Sort Event - CPU_TIME)"
+PROCESS,"CPU_TIME"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:30672)",100.00%
+
+
+PROFILE REPORT FOR PROCESS - c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:30672)
+PROCESS,"CPU_TIME"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:30672)",100.00%
+
+THREAD SUMMARY
+THREAD,"CPU_TIME",THREAD ID
+"Thread-24572 (PID:30672)",100.00%,"24572"
+
+
+MODULE SUMMARY
+MODULE,"CPU_TIME"
+c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe,99.99%
+c:\windows\system32\ntdll.dll,0.01%
+
+
+FUNCTION SUMMARY
+FUNCTION,"CPU_TIME",MODULE
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",34.82%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::(anonymous namespace)::advectRow3(float*, float*, float*, float const*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)",22.31%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::(anonymous namespace)::advectRow2(float*, float*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)",20.32%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",7.69%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::(anonymous namespace)::vorticityRow(float*, float*, float*, float*, float const*, float const*, float const*, int, long long, long long)",4.26%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::(anonymous namespace)::confinementRow(float*, float*, float*, float const*, float const*, float const*, float const*, int, float, long long, long long)",3.29%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke::serial::SlabRange)",2.17%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke::serial::SlabRange)",2.15%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",1.33%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::Field3D::fill(float)",1.04%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::advectSlabAvx2(float* const*, float const* const*, int, float const*, float const*, float const*, smoke::GridSize, int, int, float, long long, long long)",0.25%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::vorticitySlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, long long, long long)",0.20%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::confinementSlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, float, long long, long long)",0.06%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",0.04%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::avx2Supported()",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke::serial::SlabRange, smoke::serial::KernelIsa)",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"(anonymous namespace)::wholeStep(smoke::SmokeState&, smoke::SmokeParams const&, smoke::serial::SlabRange, smoke::ObstacleLists const*) (.constprop.0)",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::project(smoke::SmokeState&, smoke::SmokeParams const&, smoke::serial::SlabRange, double*, smoke::ObstacleLists const*)",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x1800e0c50",0.01%,c:\windows\system32\ntdll.dll
+"main",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400c6ec4",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::advectVelocity(smoke::SmokeState&, float, smoke::serial::SlabRange)",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e55c6",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+
+Function Detail Data
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)" (Showing only disassembly),,,,34.82%
+,0x14000b100,"lea (%r15,%r8,1), %rax",4B 8D 04 07 ,0.01%
+,0x14000b104,"mov -0x60(%rbp), %rdi",48 8B 7D A0 ,0.02%
+,0x14000b10f,"mov %rax, -0x10(%rbp)",48 89 45 F0 ,0.01%
+,0x14000b11f,"add $0x04, %rdi",48 83 C7 04 ,0.01%
+,0x14000b123,"movl $0x01, -0x04(%rbp)",C7 45 FC 01 00 00 00 ,0.01%
+,0x14000b135,"mov %r10d, 0x88(%rbp)",44 89 95 88 00 00 00 ,0.01%
+,0x14000b143,"mov %eax, -0x28(%rbp)",89 45 D8 ,0.01%
+,0x14000b146,"mov %eax, %edi",89 C7 ,0.01%
+,0x14000b154,"jbe 0x000000014000B46D",0F 86 13 03 00 00 ,0.04%
+,0x14000b15a,"mov -0x30(%rbp), %rax",48 8B 45 D0 ,0.38%
+,0x14000b15e,"lea 0x08(%rdx), %rsi",48 8D 72 08 ,0.02%
+,0x14000b162,"lea (%rax,%r12,1), %rbx",4A 8D 1C 20 ,0.02%
+,0x14000b166,"mov -0x18(%rbp), %rax",48 8B 45 E8 ,0.02%
+,0x14000b16a,"lea (%rcx,%rax,1), %r11",4C 8D 1C 01 ,0.01%
+,0x14000b16e,"mov -0x38(%rbp), %rax",48 8B 45 C8 ,0.09%
+,0x14000b172,"lea (%rcx,%rax,1), %r10",4C 8D 14 01 ,0.01%
+,0x14000b176,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.02%
+,0x14000b17a,"lea 0x04(%r12,%rax,1), %r9",4D 8D 4C 04 04 ,0.31%
+,0x14000b17f,"mov -0x48(%rbp), %rax",48 8B 45 B8 ,0.04%
+,0x14000b183,"lea 0x04(%r12,%rax,1), %r8",4D 8D 44 04 04 ,0.05%
+,0x14000b188,"xor %eax, %eax",31 C0 ,0.09%
+,0x14000b18a,"nop %ax, (%rax,%rax,1)",66 2E 0F 1F 84 00 00 00 00 00 ,0.01%
+,0x14000b194,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.02%
+,0x14000b19f,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.36%
+,0x14000b1aa,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.06%
+,0x14000b1c5,"vaddps (%rsi,%rax,1), %ymm0, %ymm0",C5 FC 58 04 06 ,0.69%
+,0x14000b1ca,"vaddps (%rcx,%rax,1), %ymm0, %ymm0",C5 FC 58 04 01 ,0.69%
+,0x14000b1cf,"vaddps (%rbx,%rax,1), %ymm0, %ymm0",C5 FC 58 04 03 ,0.38%
+,0x14000b1d4,"vaddps (%r11,%rax,1), %ymm0, %ymm0",C4 C1 7C 58 04 03 ,0.68%
+,0x14000b1da,"vaddps (%r10,%rax,1), %ymm0, %ymm0",C4 C1 7C 58 04 02 ,3.63%
+,0x14000b1e0,"vsubps (%r9,%rax,1), %ymm0, %ymm0",C4 C1 7C 5C 04 01 ,1.21%
+,0x14000b1e6,"vdivps %ymm1, %ymm0, %ymm0",C5 FC 5E C1 ,2.31%
+,0x14000b1ea,"vmovups %ymm0, (%r8,%rax,1)",C4 C1 7C 11 04 00 ,20.91%
+,0x14000b1f0,"add $0x20, %rax",48 83 C0 20 ,1.54%
+,0x14000b1f4,"cmp %rdi, %rax",48 39 F8 ,0.30%
+,0x14000b1f7,"jnz 0x000000014000B1C0",75 C7 ,0.03%
+,0x14000b1fc,"lea (,%rax,8), %r8d",44 8D 04 C5 00 00 00 00 ,0.02%
+,0x14000b204,"cmp 0x78(%rbp), %r8d",44 3B 45 78 ,0.13%
+,0x14000b208,"jz 0x000000014000B409",0F 84 FB 01 00 00 ,0.03%
+,0x14000b40d,"addl $0x01, -0x04(%rbp)",83 45 FC 01 ,0.06%
+,0x14000b411,"add %r15, -0x10(%rbp)",4C 01 7D F0 ,0.32%
+,0x14000b415,"mov -0x04(%rbp), %eax",8B 45 FC ,0.09%
+,0x14000b418,"add %rsi, %r12",49 01 F4 ,0.06%
+,0x14000b41e,"add %rsi, %rcx",48 01 F1 ,0.01%
+,0x14000b421,"cmp -0x24(%rbp), %eax",3B 45 DC ,0.05%
+,0x14000b424,"jnz 0x000000014000B150",0F 85 26 FD FF FF ,0.01%
+,0x14000b42e,"mov 0x88(%rbp), %r10d",44 8B 95 88 00 00 00 ,0.04%
+,0x14000b439,"add -0x68(%rbp), %r9",4C 03 4D 98 ,0.01%
+,0x14000b43d,"add $0x01, %r10d",41 83 C2 01 ,0.01%
+,0x14000b441,"add %r14, %r8",4D 01 F0 ,0.04%
+,0x14000b465,"pop %r13",41 5D ,0.02%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::(anonymous namespace)::advectRow3(float*, float*, float*, float const*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)" (Showing only disassembly),,,,22.31%
+,0x14000e2c0,"push %rbp",55 ,0.01%
+,0x14000e2c5,"push %r13",41 55 ,0.04%
+,0x14000e2c7,"push %r12",41 54 ,0.01%
+,0x14000e2cb,"push %rbx",53 ,0.01%
+,0x14000e2fb,"vmovups %xmm10, 0x330(%rbp)",C5 78 11 95 30 03 00 00 ,0.01%
+,0x14000e303,"vmovups %xmm11, 0x340(%rbp)",C5 78 11 9D 40 03 00 00 ,0.01%
+,0x14000e30b,"vmovups %xmm12, 0x350(%rbp)",C5 78 11 A5 50 03 00 00 ,0.01%
+,0x14000e313,"vmovups %xmm13, 0x360(%rbp)",C5 78 11 AD 60 03 00 00 ,0.02%
+,0x14000e32b,"mov 0x428(%rbp), %rax",48 8B 85 28 04 00 00 ,0.01%
+,0x14000e34a,"mov 0x420(%rbp), %r14",4C 8B B5 20 04 00 00 ,0.02%
+,0x14000e351,"vbroadcastss %xmm3, %ymm2",C4 E2 7D 18 D3 ,0.01%
+,0x14000e35f,"vbroadcastssl 0x438(%rbp), %ymm0",C4 E2 7D 18 85 38 04 00 00 ,0.01%
+,0x14000e36f,"vpbroadcastdl 0x448(%rbp), %ymm5",C4 E2 7D 58 AD 48 04 00 00 ,0.01%
+,0x14000e388,"mov %r8, 0x3F0(%rbp)",4C 89 85 F0 03 00 00 ,0.01%
+,0x14000e396,"mov %ebx, 0xDC(%rbp)",89 9D DC 00 00 00 ,0.01%
+,0x14000e3ad,"vxorps %xmm7, %xmm7, %xmm7",C5 C0 57 FF ,0.02%
+,0x14000e3be,"vaddssl 0x00000001400EB6E0, %xmm1, %xmm14",C5 72 58 35 1A D3 0D 00 ,0.02%
+,0x14000e3c6,"vcvtsi2ssl 0x04(%rax), %xmm7, %xmm1",C5 C2 2A 48 04 ,0.01%
+,0x14000e3cb,"vaddssl 0x00000001400EB6E0, %xmm1, %xmm15",C5 72 58 3D 0D D3 0D 00 ,0.02%
+,0x14000e3d3,"vmovups %ymm9, -0x70(%rbp)",C5 7C 11 4D 90 ,0.02%
+,0x14000e3d8,"vcvtsi2ssl 0x08(%rax), %xmm7, %xmm7",C5 C2 2A 78 08 ,0.01%
+,0x14000e3ed,"vbroadcastss %xmm14, %ymm6",C4 C2 7D 18 F6 ,0.01%
+,0x14000e3f7,"vmovss %xmm7, -0x74(%rbp)",C5 FA 11 7D 8C ,0.01%
+,0x14000e3fc,"vbroadcastss %xmm7, %ymm13",C4 62 7D 18 EF ,0.01%
+,0x14000e401,"cmp $0x06, %eax",83 F8 06 ,0.01%
+,0x14000e422,"vmovdqu 0x00000001400EB6C0, %ymm11",C5 7E 6F 1D 96 D2 0D 00 ,0.01%
+,0x14000e432,"lea 0x04(%rdi), %rbx",48 8D 5F 04 ,0.01%
+,0x14000e445,"lea 0x04(%r14), %r8",4D 8D 46 04 ,0.01%
+,0x14000e449,"mov %rax, 0x1D0(%rbp)",48 89 85 D0 01 00 00 ,0.01%
+,0x14000e459,"vmovd %eax, %xmm7",C5 F9 6E F8 ,0.01%
+,0x14000e480,"vmovups %ymm6, 0x120(%rbp)",C5 FC 11 B5 20 01 00 00 ,0.01%
+,0x14000e488,"vmovdqu %ymm5, 0x2D0(%rbp)",C5 FE 7F AD D0 02 00 00 ,0.01%
+,0x14000e490,"vmovdqu %ymm8, 0x100(%rbp)",C5 7E 7F 85 00 01 00 00 ,0.01%
+,0x14000e498,"vmovdqu %ymm7, 0xE0(%rbp)",C5 FE 7F BD E0 00 00 00 ,0.01%
+,0x14000e4a0,"vmovss %xmm14, 0xD4(%rbp)",C5 7A 11 B5 D4 00 00 00 ,0.01%
+,0x14000e4a8,"vmovups %ymm0, 0xB0(%rbp)",C5 FC 11 85 B0 00 00 00 ,0.01%
+,0x14000e4b0,"vmovups %ymm2, 0x90(%rbp)",C5 FC 11 95 90 00 00 00 ,0.01%
+,0x14000e4b8,"vmovups %ymm13, 0x70(%rbp)",C5 7C 11 6D 70 ,0.02%
+,0x14000e4c2,"vmovups %ymm4, 0x30(%rbp)",C5 FC 11 65 30 ,0.03%
+,0x14000e4d1,"vmovdqu %ymm8, -0x30(%rbp)",C5 7E 7F 45 D0 ,0.01%
+,0x14000e4d6,"nop %ax, (%rax,%rax,1)",66 2E 0F 1F 84 00 00 00 00 00 ,0.02%
+,0x14000e4f3,"vmovups 0x120(%rbp), %ymm3",C5 FC 10 9D 20 01 00 00 ,0.02%
+,0x14000e4fb,"mov 0x400(%rbp), %rcx",48 8B 8D 00 04 00 00 ,0.02%
+,0x14000e502,"vmulps 0x04(%rsi,%rax,1), %ymm12, %ymm1",C5 9C 59 4C 06 04 ,0.05%
+,0x14000e508,"vmovups 0x140(%rbp), %ymm7",C5 FC 10 BD 40 01 00 00 ,0.15%
+,0x14000e51f,"vsubps %ymm1, %ymm0, %ymm0",C5 FC 5C C1 ,0.01%
+,0x14000e527,"vminps %ymm0, %ymm3, %ymm0",C5 E4 5D C0 ,0.08%
+,0x14000e52b,"vmulps 0x04(%rcx,%rax,1), %ymm12, %ymm3",C5 9C 59 5C 01 04 ,0.06%
+,0x14000e531,"vcvttps2dq %ymm0, %ymm4",C5 FE 5B E0 ,0.07%
+,0x14000e535,"vcvtdq2ps %ymm4, %ymm1",C5 FC 5B CC ,0.07%
+,0x14000e539,"vsubps %ymm1, %ymm0, %ymm0",C5 FC 5C C1 ,0.12%
+,0x14000e53d,"vsubps %ymm3, %ymm7, %ymm3",C5 C4 5C DB ,0.11%
+,0x14000e54d,"vmaxps %ymm3, %ymm10, %ymm3",C5 AC 5F DB ,0.22%
+,0x14000e551,"vminps %ymm3, %ymm7, %ymm3",C5 C4 5D DB ,0.01%
+,0x14000e555,"vcvttps2dq %ymm3, %ymm1",C5 FE 5B CB ,0.01%
+,0x14000e559,"vpmulld %ymm15, %ymm1, %ymm2",C4 C2 75 40 D7 ,0.01%
+,0x14000e55e,"vcvtdq2ps %ymm1, %ymm1",C5 FC 5B C9 ,0.02%
+,0x14000e566,"vmovups 0x1A0(%rbp), %ymm1",C5 FC 10 8D A0 01 00 00 ,0.02%
+,0x14000e572,"vpaddd %ymm4, %ymm2, %ymm2",C5 ED FE D4 ,0.16%
+,0x14000e57c,"vsubps %ymm4, %ymm1, %ymm4",C5 F4 5C E4 ,0.01%
+,0x14000e58c,"vminps %ymm4, %ymm1, %ymm4",C5 F4 5D E4 ,0.01%
+,0x14000e594,"vpmulld %ymm5, %ymm8, %ymm1",C4 E2 3D 40 CD ,0.01%
+,0x14000e599,"vcvtdq2ps %ymm8, %ymm8",C4 41 7C 5B C0 ,0.08%
+,0x14000e59e,"vsubps %ymm8, %ymm4, %ymm4",C4 C1 5C 5C E0 ,0.01%
+,0x14000e5a3,"vsubps %ymm4, %ymm9, %ymm8",C5 34 5C C4 ,0.06%
+,0x14000e5a7,"vpaddd %ymm2, %ymm1, %ymm1",C5 F5 FE CA ,0.13%
+,0x14000e5ab,"vpextrd $0x01, %xmm1, %eax",C4 E3 79 16 C8 01 ,0.01%
+,0x14000e5b1,"vpaddd %ymm5, %ymm1, %ymm2",C5 F5 FE D5 ,0.01%
+,0x14000e5b5,"vpaddd %ymm1, %ymm15, %ymm13",C5 05 FE E9 ,0.01%
+,0x14000e5b9,"movsxd %eax, %rsi",48 63 F0 ,0.05%
+,0x14000e5bc,"vmovd %xmm1, %r11d",C4 C1 79 7E CB ,0.35%
+,0x14000e5c7,"mov %rsi, 0x2D0(%rbp)",48 89 B5 D0 02 00 00 ,0.01%
+,0x14000e5ce,"vpextrd $0x02, %xmm1, %esi",C4 E3 79 16 CE 02 ,0.01%
+,0x14000e5d7,"movsxd %r11d, %rdx",49 63 D3 ,0.32%
+,0x14000e5da,"vextracti128 $0x01, %ymm1, %xmm1",C4 E3 7D 39 C9 01 ,0.02%
+,0x14000e5f1,"vpextrd $0x02, %xmm1, %r13d",C4 C3 79 16 CD 02 ,0.04%
+,0x14000e5f7,"mov %rdx, 0x228(%rbp)",48 89 95 28 02 00 00 ,0.16%
+,0x14000e5fe,"movsxd %esi, %rdx",48 63 D6 ,0.01%
+,0x14000e601,"movsxd %eax, %r11",4C 63 D8 ,0.01%
+,0x14000e604,"movsxd %r13d, %rax",49 63 C5 ,0.33%
+,0x14000e607,"mov %rdx, 0x220(%rbp)",48 89 95 20 02 00 00 ,0.08%
+,0x14000e61a,"vpextrd $0x03, %xmm1, %eax",C4 E3 79 16 C8 03 ,0.01%
+,0x14000e620,"movsxd %r12d, %rsi",49 63 F4 ,0.01%
+,0x14000e623,"movsxd %eax, %r9",4C 63 C8 ,0.04%
+,0x14000e626,"vmovd %xmm13, %eax",C5 79 7E E8 ,0.11%
+,0x14000e62a,"mov %rsi, 0x218(%rbp)",48 89 B5 18 02 00 00 ,0.01%
+,0x14000e63b,"vpextrd $0x01, %xmm13, %eax",C4 63 79 16 E8 01 ,0.02%
+,0x14000e641,"movsxd %eax, %rcx",48 63 C8 ,0.01%
+,0x14000e644,"vpextrd $0x02, %xmm13, %eax",C4 63 79 16 E8 02 ,0.05%
+,0x14000e64a,"mov %r9, 0x2B0(%rbp)",4C 89 8D B0 02 00 00 ,0.06%
+,0x14000e651,"mov %rcx, 0x2A8(%rbp)",48 89 8D A8 02 00 00 ,0.01%
+,0x14000e658,"movsxd %eax, %rcx",48 63 C8 ,0.01%
+,0x14000e65b,"vpextrd $0x03, %xmm13, %eax",C4 63 79 16 E8 03 ,0.05%
+,0x14000e667,"cdqe",48 98 ,0.02%
+,0x14000e669,"vpextrd $0x02, %xmm13, %r9d",C4 43 79 16 E9 02 ,0.09%
+,0x14000e66f,"mov %rcx, 0x2A0(%rbp)",48 89 8D A0 02 00 00 ,0.01%
+,0x14000e67a,"mov %rax, 0x298(%rbp)",48 89 85 98 02 00 00 ,0.02%
+,0x14000e681,"vpextrd $0x01, %xmm13, %eax",C4 63 79 16 E8 01 ,0.01%
+,0x14000e687,"movsxd %ecx, %rcx",48 63 C9 ,0.04%
+,0x14000e68a,"cdqe",48 98 ,0.10%
+,0x14000e68c,"mov %rax, 0x210(%rbp)",48 89 85 10 02 00 00 ,0.09%
+,0x14000e696,"mov %rax, 0x290(%rbp)",48 89 85 90 02 00 00 ,0.03%
+,0x14000e6a3,"movsxd %eax, %r13",4C 63 E8 ,0.02%
+,0x14000e6a6,"vmovd %xmm2, %eax",C5 F9 7E D0 ,0.11%
+,0x14000e6aa,"cdqe",48 98 ,0.02%
+,0x14000e6ac,"mov %rax, 0x288(%rbp)",48 89 85 88 02 00 00 ,0.07%
+,0x14000e6b9,"movsxd %eax, %rdx",48 63 D0 ,0.01%
+,0x14000e6bc,"vpextrd $0x02, %xmm2, %eax",C4 E3 79 16 D0 02 ,0.12%
+,0x14000e6c2,"mov %rdx, 0x280(%rbp)",48 89 95 80 02 00 00 ,0.04%
+,0x14000e6c9,"movsxd %eax, %rdx",48 63 D0 ,0.03%
+,0x14000e6cc,"vpextrd $0x03, %xmm2, %eax",C4 E3 79 16 D0 03 ,0.11%
+,0x14000e6d2,"vextracti128 $0x01, %ymm2, %xmm2",C4 E3 7D 39 D2 01 ,0.03%
+,0x14000e6da,"mov %rdx, 0x278(%rbp)",48 89 95 78 02 00 00 ,0.06%
+,0x14000e6e1,"vpextrd $0x02, %xmm2, %edx",C4 E3 79 16 D2 02 ,0.02%
+,0x14000e6e7,"mov %rax, 0x270(%rbp)",48 89 85 70 02 00 00 ,0.01%
+,0x14000e6ee,"vmovd %xmm2, %eax",C5 F9 7E D0 ,0.04%
+,0x14000e6f2,"movsxd %eax, %r9",4C 63 C8 ,0.01%
+,0x14000e6f5,"vpextrd $0x01, %xmm2, %eax",C4 E3 79 16 D0 01 ,0.07%
+,0x14000e6fb,"movsxd %eax, %r12",4C 63 E0 ,0.04%
+,0x14000e6fe,"movsxd %edx, %rax",48 63 C2 ,0.11%
+,0x14000e701,"mov %r9, 0x1F8(%rbp)",4C 89 8D F8 01 00 00 ,0.03%
+,0x14000e708,"mov %rax, 0x268(%rbp)",48 89 85 68 02 00 00 ,0.02%
+,0x14000e70f,"vpextrd $0x03, %xmm2, %eax",C4 E3 79 16 D0 03 ,0.03%
+,0x14000e715,"cdqe",48 98 ,0.01%
+,0x14000e717,"mov %rax, 0x1E8(%rbp)",48 89 85 E8 01 00 00 ,0.09%
+,0x14000e722,"movsxd %eax, %r9",4C 63 C8 ,0.02%
+,0x14000e725,"vpextrd $0x01, %xmm5, %eax",C4 E3 79 16 E8 01 ,0.08%
+,0x14000e72b,"mov %r11, 0x200(%rbp)",4C 89 9D 00 02 00 00 ,0.01%
+,0x14000e732,"cdqe",48 98 ,0.01%
+,0x14000e734,"mov %r9, 0x260(%rbp)",4C 89 8D 60 02 00 00 ,0.08%
+,0x14000e73b,"mov %rax, 0x258(%rbp)",48 89 85 58 02 00 00 ,0.03%
+,0x14000e742,"vpextrd $0x02, %xmm5, %eax",C4 E3 79 16 E8 02 ,0.01%
+,0x14000e748,"movsxd %eax, %rdx",48 63 D0 ,0.02%
+,0x14000e74b,"vpextrd $0x03, %xmm5, %eax",C4 E3 79 16 E8 03 ,0.06%
+,0x14000e751,"vextracti128 $0x01, %ymm5, %xmm5",C4 E3 7D 39 ED 01 ,0.01%
+,0x14000e757,"mov %rdx, 0x250(%rbp)",48 89 95 50 02 00 00 ,0.02%
+,0x14000e75e,"movsxd %eax, %rdx",48 63 D0 ,0.03%
+,0x14000e761,"vmovd %xmm5, %eax",C5 F9 7E E8 ,0.06%
+,0x14000e765,"vpextrd $0x03, %xmm5, %esi",C4 E3 79 16 EE 03 ,0.02%
+,0x14000e76b,"cdqe",48 98 ,0.02%
+,0x14000e76d,"movsxd %esi, %r9",4C 63 CE ,0.04%
+,0x14000e770,"mov %rdx, 0x248(%rbp)",48 89 95 48 02 00 00 ,0.07%
+,0x14000e77e,"mov %rax, 0x240(%rbp)",48 89 85 40 02 00 00 ,0.01%
+,0x14000e785,"vpextrd $0x01, %xmm5, %eax",C4 E3 79 16 E8 01 ,0.01%
+,0x14000e78b,"mov 0x220(%rbp), %rdx",48 8B 95 20 02 00 00 ,0.03%
+,0x14000e792,"cdqe",48 98 ,0.01%
+,0x14000e794,"mov %r9, 0x238(%rbp)",4C 89 8D 38 02 00 00 ,0.06%
+,0x14000e79b,"mov 0x2B8(%rbp), %r9",4C 8B 8D B8 02 00 00 ,0.02%
+,0x14000e7a2,"mov %rax, 0x1E0(%rbp)",48 89 85 E0 01 00 00 ,0.01%
+,0x14000e7a9,"vpextrd $0x02, %xmm5, %eax",C4 E3 79 16 E8 02 ,0.04%
+,0x14000e7af,"vmovssl (%rdi,%rsi,4), %xmm2",C5 FA 10 14 B7 ,0.03%
+,0x14000e7b4,"cdqe",48 98 ,0.02%
+,0x14000e7b6,"vinsertpsl $0x10, (%rdi,%r11,4), %xmm2, %xmm2",C4 A3 69 21 14 9F 10 ,0.01%
+,0x14000e7bd,"vmovssl (%rdi,%rdx,4), %xmm5",C5 FA 10 2C 97 ,0.06%
+,0x14000e7c2,"mov %rax, 0x208(%rbp)",48 89 85 08 02 00 00 ,0.02%
+,0x14000e7c9,"mov 0x2C0(%rbp), %rax",48 8B 85 C0 02 00 00 ,0.01%
+,0x14000e7d7,"mov 0x2C8(%rbp), %rsi",48 8B B5 C8 02 00 00 ,0.02%
+,0x14000e7e3,"vinsertpsl $0x10, (%rdi,%r9,4), %xmm1, %xmm1",C4 A3 71 21 0C 8F 10 ,0.02%
+,0x14000e7ea,"vinsertpsl $0x10, (%rdi,%rsi,4), %xmm5, %xmm5",C4 E3 51 21 2C B7 10 ,0.09%
+,0x14000e7f1,"vmovlhps %xmm1, %xmm2, %xmm2",C5 E8 16 D1 ,0.02%
+,0x14000e7f5,"vmovssl (%rdi,%rdx,4), %xmm1",C5 FA 10 0C 97 ,0.02%
+,0x14000e7fa,"mov 0x2D0(%rbp), %rdx",48 8B 95 D0 02 00 00 ,0.01%
+,0x14000e808,"vmovlhps %xmm5, %xmm1, %xmm1",C5 F0 16 CD ,0.05%
+,0x14000e80c,"vinsertf128 $0x01, %xmm2, %ymm1, %ymm1",C4 E3 75 18 CA 01 ,0.01%
+,0x14000e812,"vmovssl (%rbx,%rax,4), %xmm2",C5 FA 10 14 83 ,0.05%
+,0x14000e81e,"mov 0x218(%rbp), %r9",4C 8B 8D 18 02 00 00 ,0.02%
+,0x14000e825,"vmulps %ymm6, %ymm1, %ymm1",C5 F4 59 CE ,0.01%
+,0x14000e829,"vmovssl (%rbx,%r9,4), %xmm5",C4 A1 7A 10 2C 8B ,0.19%
+,0x14000e82f,"vinsertpsl $0x10, (%rbx,%r11,4), %xmm5, %xmm5",C4 A3 51 21 2C 9B 10 ,0.01%
+,0x14000e836,"mov 0x220(%rbp), %r11",4C 8B 9D 20 02 00 00 ,0.04%
+,0x14000e83d,"vmovlhps %xmm2, %xmm5, %xmm5",C5 D0 16 EA ,0.01%
+,0x14000e841,"vmovssl (%rbx,%r11,4), %xmm13",C4 21 7A 10 2C 9B ,0.01%
+,0x14000e847,"vinsertpsl $0x10, (%rbx,%rsi,4), %xmm13, %xmm13",C4 63 11 21 2C B3 10 ,0.01%
+,0x14000e84e,"mov 0x228(%rbp), %rsi",48 8B B5 28 02 00 00 ,0.02%
+,0x14000e855,"mov 0x290(%rbp), %rax",48 8B 85 90 02 00 00 ,0.02%
+,0x14000e85c,"mov %r13, 0x1D8(%rbp)",4C 89 AD D8 01 00 00 ,0.04%
+,0x14000e86a,"mov 0x2A0(%rbp), %r11",4C 8B 9D A0 02 00 00 ,0.02%
+,0x14000e876,"vinsertpsl $0x10, (%rbx,%rdx,4), %xmm2, %xmm2",C4 E3 69 21 14 93 10 ,0.01%
+,0x14000e87d,"mov 0x298(%rbp), %rsi",48 8B B5 98 02 00 00 ,0.03%
+,0x14000e884,"mov 0x2A8(%rbp), %rdx",48 8B 95 A8 02 00 00 ,0.02%
+,0x14000e88b,"vmovlhps %xmm13, %xmm2, %xmm2",C4 C1 68 16 D5 ,0.01%
+,0x14000e890,"vinsertf128 $0x01, %xmm5, %ymm2, %ymm2",C4 E3 6D 18 D5 01 ,0.05%
+,0x14000e896,"vmovssl (%rdi,%rcx,4), %xmm5",C5 FA 10 2C 8F ,0.04%
+,0x14000e89b,"vinsertpsl $0x10, (%rdi,%r9,4), %xmm5, %xmm5",C4 A3 51 21 2C 8F 10 ,0.01%
+,0x14000e8a2,"vmulps %ymm0, %ymm2, %ymm2",C5 EC 59 D0 ,0.02%
+,0x14000e8a6,"mov 0x2B0(%rbp), %r9",4C 8B 8D B0 02 00 00 ,0.13%
+,0x14000e8ad,"vmovssl (%rdi,%r11,4), %xmm13",C4 21 7A 10 2C 9F ,0.02%
+,0x14000e8ba,"vmovssl (%rbx,%r11,4), %xmm14",C4 21 7A 10 34 9B ,0.01%
+,0x14000e8c0,"vinsertpsl $0x10, (%rbx,%rsi,4), %xmm14, %xmm14",C4 63 09 21 34 B3 10 ,0.01%
+,0x14000e8ca,"vaddps %ymm2, %ymm1, %ymm1",C5 F4 58 CA ,0.02%
+,0x14000e8ce,"vmovssl (%rdi,%rax,4), %xmm2",C5 FA 10 14 87 ,0.01%
+,0x14000e8d3,"vinsertpsl $0x10, (%rdi,%r13,4), %xmm2, %xmm2",C4 A3 69 21 14 AF 10 ,0.02%
+,0x14000e8da,"vmovlhps %xmm2, %xmm5, %xmm5",C5 D0 16 EA ,0.03%
+,0x14000e8de,"vmovssl (%rdi,%r9,4), %xmm2",C4 A1 7A 10 14 8F ,0.02%
+,0x14000e8e4,"vinsertpsl $0x10, (%rdi,%rdx,4), %xmm2, %xmm2",C4 E3 69 21 14 97 10 ,0.01%
+,0x14000e8eb,"vmulps %ymm7, %ymm1, %ymm1",C5 F4 59 CF ,0.03%
+,0x14000e8ef,"vmovlhps %xmm13, %xmm2, %xmm2",C4 C1 68 16 D5 ,0.24%
+,0x14000e8f4,"vinsertf128 $0x01, %xmm5, %ymm2, %ymm2",C4 E3 6D 18 D5 01 ,0.02%
+,0x14000e8fa,"vmovssl (%rbx,%rax,4), %xmm5",C5 FA 10 2C 83 ,0.02%
+,0x14000e906,"mov 0x210(%rbp), %r13",4C 8B AD 10 02 00 00 ,0.01%
+,0x14000e912,"vmulps %ymm6, %ymm2, %ymm2",C5 EC 59 D6 ,0.01%
+,0x14000e916,"mov 0x268(%rbp), %rax",48 8B 85 68 02 00 00 ,0.14%
+,0x14000e91d,"vinsertpsl $0x10, (%rbx,%r13,4), %xmm13, %xmm13",C4 23 11 21 2C AB 10 ,0.04%
+,0x14000e924,"mov 0x1E8(%rbp), %r13",4C 8B AD E8 01 00 00 ,0.03%
+,0x14000e93c,"vmovlhps %xmm14, %xmm5, %xmm5",C4 C1 50 16 EE ,0.01%
+,0x14000e941,"vinsertf128 $0x01, %xmm13, %ymm5, %ymm5",C4 C3 55 18 ED 01 ,0.01%
+,0x14000e947,"vmulps %ymm0, %ymm5, %ymm5",C5 D4 59 E8 ,0.09%
+,0x14000e94b,"vaddps %ymm5, %ymm2, %ymm2",C5 EC 58 D5 ,0.18%
+,0x14000e94f,"vmulps %ymm3, %ymm2, %ymm2",C5 EC 59 D3 ,0.02%
+,0x14000e953,"vaddps %ymm2, %ymm1, %ymm1",C5 F4 58 CA ,0.56%
+,0x14000e957,"vmovssl (%rdi,%rax,4), %xmm2",C5 FA 10 14 87 ,0.01%
+,0x14000e963,"mov 0x1F8(%rbp), %r13",4C 8B AD F8 01 00 00 ,0.02%
+,0x14000e983,"mov 0x270(%rbp), %r11",4C 8B 9D 70 02 00 00 ,0.47%
+,0x14000e98a,"mov 0x288(%rbp), %r13",4C 8B AD 88 02 00 00 ,0.01%
+,0x14000e991,"mov 0x280(%rbp), %r9",4C 8B 8D 80 02 00 00 ,0.01%
+,0x14000e99f,"vmovssl (%rdi,%rdx,4), %xmm13",C5 7A 10 2C 97 ,0.01%
+,0x14000e9b2,"vmovlhps %xmm2, %xmm5, %xmm5",C5 D0 16 EA ,0.01%
+,0x14000e9b6,"vmovssl (%rbx,%rdx,4), %xmm14",C5 7A 10 34 93 ,0.09%
+,0x14000e9c1,"vinsertpsl $0x10, (%rdi,%r9,4), %xmm2, %xmm2",C4 A3 69 21 14 8F 10 ,0.01%
+,0x14000e9c8,"vinsertpsl $0x10, (%rbx,%r11,4), %xmm14, %xmm14",C4 23 09 21 34 9B 10 ,0.01%
+,0x14000e9cf,"mov 0x248(%rbp), %rdx",48 8B 95 48 02 00 00 ,0.01%
+,0x14000e9e1,"vmovssl (%rbx,%rax,4), %xmm5",C5 FA 10 2C 83 ,0.01%
+,0x14000e9e6,"vinsertpsl $0x10, (%rbx,%r12,4), %xmm5, %xmm5",C4 A3 51 21 2C A3 10 ,0.10%
+,0x14000e9ed,"mov 0x1F8(%rbp), %r12",4C 8B A5 F8 01 00 00 ,0.01%
+,0x14000ea1a,"mov 0x238(%rbp), %rsi",48 8B B5 38 02 00 00 ,0.11%
+,0x14000ea25,"vmovssl (%rbx,%r13,4), %xmm5",C4 A1 7A 10 2C AB ,0.01%
+,0x14000ea2b,"vinsertpsl $0x10, (%rbx,%r9,4), %xmm5, %xmm5",C4 A3 51 21 2C 8B 10 ,0.01%
+,0x14000ea32,"mov 0x250(%rbp), %r9",4C 8B 8D 50 02 00 00 ,0.01%
+,0x14000ea44,"vmovssl (%rdi,%r11,4), %xmm13",C4 21 7A 10 2C 9F ,0.01%
+,0x14000ea4a,"vinsertpsl $0x10, (%rdi,%r12,4), %xmm13, %xmm13",C4 23 11 21 2C A7 10 ,0.10%
+,0x14000ea51,"vmulps %ymm0, %ymm5, %ymm5",C5 D4 59 E8 ,0.02%
+,0x14000ea55,"vmovssl (%rdi,%r9,4), %xmm14",C4 21 7A 10 34 8F ,0.04%
+,0x14000ea5b,"vaddps %ymm5, %ymm2, %ymm2",C5 EC 58 D5 ,0.01%
+,0x14000ea64,"vinsertpsl $0x10, (%rdi,%rsi,4), %xmm5, %xmm5",C4 E3 51 21 2C B7 10 ,0.01%
+,0x14000ea6b,"vinsertpsl $0x10, (%rdi,%rdx,4), %xmm14, %xmm14",C4 63 09 21 34 97 10 ,0.05%
+,0x14000ea79,"mov 0x258(%rbp), %r13",4C 8B AD 58 02 00 00 ,0.10%
+,0x14000ea84,"vmovssl (%rdi,%r12,4), %xmm5",C4 A1 7A 10 2C A7 ,0.02%
+,0x14000ea8e,"vinsertpsl $0x10, (%rdi,%r13,4), %xmm5, %xmm5",C4 A3 51 21 2C AF 10 ,0.22%
+,0x14000ea95,"vmovlhps %xmm14, %xmm5, %xmm5",C4 C1 50 16 EE ,0.01%
+,0x14000eaa6,"mov 0x1E0(%rbp), %r11",4C 8B 9D E0 01 00 00 ,0.04%
+,0x14000eab6,"vinsertpsl $0x10, (%rbx,%rsi,4), %xmm13, %xmm13",C4 63 11 21 2C B3 10 ,0.13%
+,0x14000eabd,"vinsertpsl $0x10, (%rbx,%r11,4), %xmm14, %xmm14",C4 23 09 21 34 9B 10 ,0.04%
+,0x14000eac4,"mov 0x3E0(%rbp), %rsi",48 8B B5 E0 03 00 00 ,0.01%
+,0x14000ead7,"vmovssl (%rbx,%r9,4), %xmm13",C4 21 7A 10 2C 8B ,0.01%
+,0x14000eaec,"vmovssl (%rbx,%r12,4), %xmm13",C4 21 7A 10 2C A3 ,0.06%
+,0x14000eaf2,"vinsertpsl $0x10, (%rbx,%r13,4), %xmm13, %xmm13",C4 23 11 21 2C AB 10 ,0.03%
+,0x14000eb00,"mov 0x2C0(%rbp), %r12",4C 8B A5 C0 02 00 00 ,0.01%
+,0x14000eb07,"vmovlhps %xmm14, %xmm13, %xmm13",C4 41 10 16 EE ,0.01%
+,0x14000eb0c,"mov 0x2B8(%rbp), %r9",4C 8B 8D B8 02 00 00 ,0.03%
+,0x14000eb13,"vinsertf128x $0x01, 0x1C0(%rbp), %ymm13, %ymm13",C4 63 15 18 AD C0 01 00 00 01 ,0.01%
+,0x14000eb1d,"vmulps %ymm0, %ymm13, %ymm13",C5 14 59 E8 ,0.20%
+,0x14000eb21,"vaddps %ymm13, %ymm5, %ymm5",C4 C1 54 58 ED ,0.38%
+,0x14000eb26,"vmulps %ymm3, %ymm5, %ymm5",C5 D4 59 EB ,0.01%
+,0x14000eb2a,"vaddps %ymm5, %ymm2, %ymm2",C5 EC 58 D5 ,0.48%
+,0x14000eb2e,"vmulps %ymm4, %ymm2, %ymm2",C5 EC 59 D4 ,0.01%
+,0x14000eb32,"vaddps %ymm2, %ymm1, %ymm1",C5 F4 58 CA ,0.61%
+,0x14000eb36,"vmovups %ymm1, 0x04(%rsi,%rdx,1)",C5 FC 11 4C 16 04 ,0.03%
+,0x14000eb3c,"mov 0x218(%rbp), %rsi",48 8B B5 18 02 00 00 ,0.09%
+,0x14000eb43,"vmovssl (%r15,%r12,4), %xmm1",C4 81 7A 10 0C A7 ,0.03%
+,0x14000eb49,"mov 0x228(%rbp), %rdx",48 8B 95 28 02 00 00 ,0.01%
+,0x14000eb57,"vmovssl (%r15,%rsi,4), %xmm2",C4 C1 7A 10 14 B7 ,0.02%
+,0x14000eb5d,"vinsertpsl $0x10, (%r15,%r11,4), %xmm2, %xmm2",C4 83 69 21 14 9F 10 ,0.01%
+,0x14000eb64,"mov 0x220(%rbp), %r11",4C 8B 9D 20 02 00 00 ,0.02%
+,0x14000eb6b,"vmovlhps %xmm1, %xmm2, %xmm2",C5 E8 16 D1 ,0.02%
+,0x14000eb6f,"vmovssl (%r15,%r11,4), %xmm5",C4 81 7A 10 2C 9F ,0.04%
+,0x14000eb83,"vmovssl (%r15,%rdx,4), %xmm1",C4 C1 7A 10 0C 97 ,0.02%
+,0x14000eb97,"mov 0x228(%rbp), %rsi",48 8B B5 28 02 00 00 ,0.03%
+,0x14000eba5,"vinsertpsl $0x10, (%r15,%rdx,4), %xmm1, %xmm1",C4 C3 71 21 0C 97 10 ,0.08%
+,0x14000ebac,"vmovlhps %xmm5, %xmm1, %xmm1",C5 F0 16 CD ,0.01%
+,0x14000ebb6,"vinsertf128 $0x01, %xmm2, %ymm1, %ymm1",C4 E3 75 18 CA 01 ,0.01%
+,0x14000ebbc,"mov 0x200(%rbp), %r11",4C 8B 9D 00 02 00 00 ,0.01%
+,0x14000ebc9,"vinsertpsl $0x10, (%r10,%r9,4), %xmm2, %xmm2",C4 83 69 21 14 8A 10 ,0.02%
+,0x14000ebd0,"vinsertpsl $0x10, (%r10,%r11,4), %xmm5, %xmm5",C4 83 51 21 2C 9A 10 ,0.03%
+,0x14000ebd7,"mov 0x220(%rbp), %r9",4C 8B 8D 20 02 00 00 ,0.08%
+,0x14000ebde,"mov 0x2C8(%rbp), %r11",4C 8B 9D C8 02 00 00 ,0.01%
+,0x14000ebe9,"vmovssl (%r10,%r9,4), %xmm13",C4 01 7A 10 2C 8A ,0.03%
+,0x14000ebef,"vmovlhps %xmm2, %xmm5, %xmm5",C5 D0 16 EA ,0.01%
+,0x14000ebf9,"vinsertpsl $0x10, (%r10,%r11,4), %xmm13, %xmm13",C4 03 11 21 2C 9A 10 ,0.03%
+,0x14000ec00,"vinsertpsl $0x10, (%r10,%rdx,4), %xmm2, %xmm2",C4 C3 69 21 14 92 10 ,0.05%
+,0x14000ec07,"mov 0x290(%rbp), %rsi",48 8B B5 90 02 00 00 ,0.06%
+,0x14000ec20,"mov 0x298(%rbp), %r9",4C 8B 8D 98 02 00 00 ,0.01%
+,0x14000ec2e,"vmulps %ymm0, %ymm2, %ymm2",C5 EC 59 D0 ,0.02%
+,0x14000ec32,"vmovssl (%r15,%rcx,4), %xmm5",C4 C1 7A 10 2C 8F ,0.08%
+,0x14000ec38,"vmovssl (%r15,%r11,4), %xmm13",C4 01 7A 10 2C 9F ,0.04%
+,0x14000ec45,"mov 0x2B0(%rbp), %r9",4C 8B 8D B0 02 00 00 ,0.01%
+,0x14000ec5d,"mov 0x210(%rbp), %r13",4C 8B AD 10 02 00 00 ,0.01%
+,0x14000ec64,"vmulps %ymm7, %ymm1, %ymm1",C5 F4 59 CF ,0.04%
+,0x14000ec68,"vinsertpsl $0x10, (%r15,%r13,4), %xmm5, %xmm5",C4 83 51 21 2C AF 10 ,0.15%
+,0x14000ec6f,"mov 0x290(%rbp), %r13",4C 8B AD 90 02 00 00 ,0.01%
+,0x14000ec7a,"vmovssl (%r15,%r9,4), %xmm2",C4 81 7A 10 14 8F ,0.01%
+,0x14000ec87,"vmovlhps %xmm13, %xmm2, %xmm2",C4 C1 68 16 D5 ,0.01%
+,0x14000ec8c,"vinsertf128 $0x01, %xmm5, %ymm2, %ymm2",C4 E3 6D 18 D5 01 ,0.03%
+,0x14000ec92,"vmovssl (%r10,%r13,4), %xmm5",C4 81 7A 10 2C AA ,0.01%
+,0x14000ec98,"mov 0x1D8(%rbp), %r13",4C 8B AD D8 01 00 00 ,0.06%
+,0x14000ecaf,"vinsertpsl $0x10, (%r10,%r13,4), %xmm5, %xmm5",C4 83 51 21 2C AA 10 ,0.04%
+,0x14000ecb6,"mov 0x210(%rbp), %r13",4C 8B AD 10 02 00 00 ,0.01%
+,0x14000ecbd,"mov 0x298(%rbp), %r11",4C 8B 9D 98 02 00 00 ,0.02%
+,0x14000ecc4,"mov 0x268(%rbp), %rax",48 8B 85 68 02 00 00 ,0.02%
+,0x14000eccb,"vinsertpsl $0x10, (%r10,%r13,4), %xmm13, %xmm13",C4 03 11 21 2C AA 10 ,0.08%
+,0x14000ecd2,"mov 0x1E8(%rbp), %r12",4C 8B A5 E8 01 00 00 ,0.02%
+,0x14000ece0,"mov 0x270(%rbp), %r13",4C 8B AD 70 02 00 00 ,0.02%
+,0x14000ece7,"vmovlhps %xmm5, %xmm13, %xmm13",C5 10 16 ED ,0.02%
+,0x14000eceb,"vmovssl (%r10,%r9,4), %xmm5",C4 81 7A 10 2C 8A ,0.01%
+,0x14000ecf1,"vinsertpsl $0x10, (%r10,%rdx,4), %xmm5, %xmm5",C4 C3 51 21 2C 92 10 ,0.01%
+,0x14000ecf8,"mov 0x278(%rbp), %rdx",48 8B 95 78 02 00 00 ,0.01%
+,0x14000ecff,"mov 0x280(%rbp), %r9",4C 8B 8D 80 02 00 00 ,0.05%
+,0x14000ed06,"vmovlhps %xmm14, %xmm5, %xmm5",C4 C1 50 16 EE ,0.01%
+,0x14000ed0b,"vinsertf128 $0x01, %xmm13, %ymm5, %ymm5",C4 C3 55 18 ED 01 ,0.01%
+,0x14000ed11,"vmulps %ymm0, %ymm5, %ymm5",C5 D4 59 E8 ,0.03%
+,0x14000ed15,"vmovssl (%r15,%rdx,4), %xmm13",C4 41 7A 10 2C 97 ,0.13%
+,0x14000ed1b,"vinsertpsl $0x10, (%r15,%r13,4), %xmm13, %xmm13",C4 03 11 21 2C AF 10 ,0.03%
+,0x14000ed22,"mov 0x288(%rbp), %r13",4C 8B AD 88 02 00 00 ,0.02%
+,0x14000ed2d,"vmulps %ymm3, %ymm2, %ymm2",C5 EC 59 D3 ,0.09%
+,0x14000ed31,"vaddps %ymm2, %ymm1, %ymm1",C5 F4 58 CA ,0.26%
+,0x14000ed35,"vmovssl (%r15,%rax,4), %xmm2",C4 C1 7A 10 14 87 ,0.04%
+,0x14000ed3b,"vinsertpsl $0x10, (%r15,%r12,4), %xmm2, %xmm2",C4 83 69 21 14 A7 10 ,0.01%
+,0x14000ed42,"mov 0x1F8(%rbp), %r12",4C 8B A5 F8 01 00 00 ,0.02%
+,0x14000ed49,"vmovssl (%r15,%r12,4), %xmm5",C4 81 7A 10 2C A7 ,0.01%
+,0x14000ed4f,"mov 0x1F0(%rbp), %r12",4C 8B A5 F0 01 00 00 ,0.01%
+,0x14000ed5b,"vinsertpsl $0x10, (%r15,%r12,4), %xmm5, %xmm5",C4 83 51 21 2C A7 10 ,0.49%
+,0x14000ed62,"mov 0x1E8(%rbp), %r12",4C 8B A5 E8 01 00 00 ,0.01%
+,0x14000ed73,"vinsertpsl $0x10, (%r15,%r9,4), %xmm2, %xmm2",C4 83 69 21 14 8F 10 ,0.01%
+,0x14000ed7a,"vmovlhps %xmm13, %xmm2, %xmm2",C4 C1 68 16 D5 ,0.01%
+,0x14000ed8b,"vinsertpsl $0x10, (%r10,%r12,4), %xmm5, %xmm5",C4 83 51 21 2C A2 10 ,0.11%
+,0x14000ed92,"mov 0x1F8(%rbp), %r12",4C 8B A5 F8 01 00 00 ,0.02%
+,0x14000ed9d,"vmovssl (%r10,%r12,4), %xmm13",C4 01 7A 10 2C A2 ,0.07%
+,0x14000eda3,"mov 0x1F0(%rbp), %r12",4C 8B A5 F0 01 00 00 ,0.01%
+,0x14000edb0,"mov 0x270(%rbp), %rdx",48 8B 95 70 02 00 00 ,0.01%
+,0x14000edbe,"mov 0x208(%rbp), %rax",48 8B 85 08 02 00 00 ,0.12%
+,0x14000edc5,"vinsertpsl $0x10, (%r10,%rdx,4), %xmm14, %xmm14",C4 43 09 21 34 92 10 ,0.01%
+,0x14000edcc,"mov 0x238(%rbp), %rsi",48 8B B5 38 02 00 00 ,0.01%
+,0x14000edd3,"vmovlhps %xmm5, %xmm13, %xmm13",C5 10 16 ED ,0.01%
+,0x14000edd7,"vmovssl (%r10,%r13,4), %xmm5",C4 81 7A 10 2C AA ,0.01%
+,0x14000ede4,"mov 0x240(%rbp), %r11",4C 8B 9D 40 02 00 00 ,0.01%
+,0x14000edeb,"mov 0x1E0(%rbp), %r13",4C 8B AD E0 01 00 00 ,0.01%
+,0x14000edf2,"vmovlhps %xmm14, %xmm5, %xmm5",C4 C1 50 16 EE ,0.07%
+,0x14000edf7,"vinsertf128 $0x01, %xmm13, %ymm5, %ymm5",C4 C3 55 18 ED 01 ,0.01%
+,0x14000edfd,"mov 0x250(%rbp), %r9",4C 8B 8D 50 02 00 00 ,0.02%
+,0x14000ee0f,"vmovssl (%r15,%r11,4), %xmm13",C4 01 7A 10 2C 9F ,0.11%
+,0x14000ee15,"mov 0x258(%rbp), %r12",4C 8B A5 58 02 00 00 ,0.02%
+,0x14000ee23,"mov 0x260(%rbp), %r13",4C 8B AD 60 02 00 00 ,0.07%
+,0x14000ee37,"vaddps %ymm5, %ymm2, %ymm2",C5 EC 58 D5 ,0.02%
+,0x14000ee3b,"vmovssl (%r15,%rax,4), %xmm5",C4 C1 7A 10 2C 87 ,0.01%
+,0x14000ee41,"vinsertpsl $0x10, (%r15,%rsi,4), %xmm5, %xmm5",C4 C3 51 21 2C B7 10 ,0.01%
+,0x14000ee48,"vmovlhps %xmm5, %xmm13, %xmm13",C5 10 16 ED ,0.01%
+,0x14000ee4c,"vmovssl (%r15,%r13,4), %xmm5",C4 81 7A 10 2C AF ,0.01%
+,0x14000ee52,"vinsertpsl $0x10, (%r15,%r12,4), %xmm5, %xmm5",C4 83 51 21 2C A7 10 ,0.04%
+,0x14000ee59,"vmulps %ymm7, %ymm2, %ymm2",C5 EC 59 D7 ,0.01%
+,0x14000ee5d,"vmovlhps %xmm14, %xmm5, %xmm5",C4 C1 50 16 EE ,0.21%
+,0x14000ee62,"vmovssl (%r10,%r11,4), %xmm14",C4 01 7A 10 34 9A ,0.01%
+,0x14000ee6e,"mov 0x1E0(%rbp), %r11",4C 8B 9D E0 01 00 00 ,0.03%
+,0x14000ee82,"vmulps %ymm6, %ymm5, %ymm5",C5 D4 59 EE ,0.07%
+,0x14000ee86,"vinsertpsl $0x10, (%r10,%r11,4), %xmm14, %xmm14",C4 03 09 21 34 9A 10 ,0.12%
+,0x14000ee8d,"vmovlhps %xmm13, %xmm14, %xmm14",C4 41 08 16 F5 ,0.04%
+,0x14000ee92,"vmovssl (%r10,%r9,4), %xmm13",C4 01 7A 10 2C 8A ,0.01%
+,0x14000eeb4,"mov 0x3E8(%rbp), %rsi",48 8B B5 E8 03 00 00 ,0.02%
+,0x14000eebb,"mov 0x230(%rbp), %rdx",48 8B 95 30 02 00 00 ,0.04%
+,0x14000eec2,"vmovlhps %xmm14, %xmm13, %xmm13",C4 41 10 16 EE ,0.04%
+,0x14000eec7,"mov 0x2B8(%rbp), %r9",4C 8B 8D B8 02 00 00 ,0.01%
+,0x14000eed8,"mov 0x200(%rbp), %r12",4C 8B A5 00 02 00 00 ,0.23%
+,0x14000eedf,"mov 0x220(%rbp), %r11",4C 8B 9D 20 02 00 00 ,0.01%
+,0x14000eeea,"vaddps %ymm13, %ymm5, %ymm5",C4 C1 54 58 ED ,0.36%
+,0x14000eeef,"vmulps %ymm3, %ymm5, %ymm5",C5 D4 59 EB ,0.04%
+,0x14000eef3,"vaddps %ymm5, %ymm2, %ymm2",C5 EC 58 D5 ,0.53%
+,0x14000eef7,"vmulps %ymm4, %ymm2, %ymm2",C5 EC 59 D4 ,0.02%
+,0x14000eefb,"vaddps %ymm2, %ymm1, %ymm1",C5 F4 58 CA ,0.42%
+,0x14000eeff,"vmovups %ymm1, 0x04(%rsi,%rdx,1)",C5 FC 11 4C 16 04 ,0.03%
+,0x14000ef05,"mov 0x2C0(%rbp), %rsi",48 8B B5 C0 02 00 00 ,0.05%
+,0x14000ef0c,"mov 0x228(%rbp), %rdx",48 8B 95 28 02 00 00 ,0.01%
+,0x14000ef13,"vmovssl (%r14,%r11,4), %xmm5",C4 81 7A 10 2C 9E ,0.02%
+,0x14000ef19,"mov 0x2C8(%rbp), %r11",4C 8B 9D C8 02 00 00 ,0.01%
+,0x14000ef26,"mov 0x218(%rbp), %rsi",48 8B B5 18 02 00 00 ,0.01%
+,0x14000ef2d,"vinsertpsl $0x10, (%r14,%r9,4), %xmm1, %xmm1",C4 83 71 21 0C 8E 10 ,0.03%
+,0x14000ef34,"vinsertpsl $0x10, (%r14,%r11,4), %xmm5, %xmm5",C4 83 51 21 2C 9E 10 ,0.03%
+,0x14000ef3b,"vmovssl (%r14,%rsi,4), %xmm2",C4 C1 7A 10 14 B6 ,0.04%
+,0x14000ef41,"vinsertpsl $0x10, (%r14,%r12,4), %xmm2, %xmm2",C4 83 69 21 14 A6 10 ,0.01%
+,0x14000ef48,"mov 0x2C0(%rbp), %r11",4C 8B 9D C0 02 00 00 ,0.01%
+,0x14000ef60,"mov 0x2D0(%rbp), %rdx",48 8B 95 D0 02 00 00 ,0.01%
+,0x14000ef67,"vinsertpsl $0x10, (%r14,%rdx,4), %xmm1, %xmm1",C4 C3 71 21 0C 96 10 ,0.03%
+,0x14000ef6e,"vmovlhps %xmm5, %xmm1, %xmm1",C5 F0 16 CD ,0.06%
+,0x14000ef78,"vmovssl (%r8,%r11,4), %xmm2",C4 81 7A 10 14 98 ,0.01%
+,0x14000ef89,"vinsertpsl $0x10, (%r8,%r9,4), %xmm2, %xmm2",C4 83 69 21 14 88 10 ,0.02%
+,0x14000ef90,"vmovssl (%r8,%r11,4), %xmm5",C4 81 7A 10 2C 98 ,0.04%
+,0x14000ef96,"mov 0x220(%rbp), %r11",4C 8B 9D 20 02 00 00 ,0.02%
+,0x14000ef9d,"vinsertpsl $0x10, (%r8,%r12,4), %xmm5, %xmm5",C4 83 51 21 2C A0 10 ,0.05%
+,0x14000efa4,"vmovssl (%r8,%r11,4), %xmm13",C4 01 7A 10 2C 98 ,0.01%
+,0x14000efbc,"vmovssl (%r8,%rsi,4), %xmm2",C4 C1 7A 10 14 B0 ,0.01%
+,0x14000efc9,"mov 0x290(%rbp), %rax",48 8B 85 90 02 00 00 ,0.02%
+,0x14000efd0,"mov 0x1D8(%rbp), %rdx",48 8B 95 D8 01 00 00 ,0.06%
+,0x14000efe9,"mov 0x2A0(%rbp), %r13",4C 8B AD A0 02 00 00 ,0.02%
+,0x14000eff7,"vmulps %ymm0, %ymm2, %ymm2",C5 EC 59 D0 ,0.01%
+,0x14000effb,"mov 0x2B0(%rbp), %rsi",48 8B B5 B0 02 00 00 ,0.05%
+,0x14000f002,"mov 0x2A8(%rbp), %r11",4C 8B 9D A8 02 00 00 ,0.05%
+,0x14000f00f,"vinsertpsl $0x10, (%r14,%r9,4), %xmm5, %xmm5",C4 83 51 21 2C 8E 10 ,0.01%
+,0x14000f016,"vmovssl (%r14,%r13,4), %xmm13",C4 01 7A 10 2C AE ,0.01%
+,0x14000f01c,"vinsertpsl $0x10, (%r14,%r12,4), %xmm13, %xmm13",C4 03 11 21 2C A6 10 ,0.01%
+,0x14000f023,"vmovssl (%r8,%r13,4), %xmm14",C4 01 7A 10 34 A8 ,0.03%
+,0x14000f029,"vinsertpsl $0x10, (%r8,%r12,4), %xmm14, %xmm14",C4 03 09 21 34 A0 10 ,0.01%
+,0x14000f030,"mov 0x1F0(%rbp), %r13",4C 8B AD F0 01 00 00 ,0.06%
+,0x14000f037,"vaddps %ymm2, %ymm1, %ymm1",C5 F4 58 CA ,0.05%
+,0x14000f041,"vinsertpsl $0x10, (%r14,%rdx,4), %xmm2, %xmm2",C4 C3 69 21 14 96 10 ,0.01%
+,0x14000f048,"vmovlhps %xmm2, %xmm5, %xmm5",C5 D0 16 EA ,0.02%
+,0x14000f059,"vmulps %ymm7, %ymm1, %ymm1",C5 F4 59 CF ,0.02%
+,0x14000f05d,"vmovlhps %xmm13, %xmm2, %xmm2",C4 C1 68 16 D5 ,0.16%
+,0x14000f062,"vmovssl (%r8,%rcx,4), %xmm13",C4 41 7A 10 2C 88 ,0.02%
+,0x14000f06e,"vinsertpsl $0x10, (%r8,%r9,4), %xmm13, %xmm13",C4 03 11 21 2C 88 10 ,0.02%
+,0x14000f075,"vmovssl (%r8,%rax,4), %xmm5",C4 C1 7A 10 2C 80 ,0.01%
+,0x14000f082,"vmulps %ymm6, %ymm2, %ymm2",C5 EC 59 D6 ,0.02%
+,0x14000f086,"mov 0x268(%rbp), %rax",48 8B 85 68 02 00 00 ,0.09%
+,0x14000f08d,"mov 0x1E8(%rbp), %rdx",48 8B 95 E8 01 00 00 ,0.02%
+,0x14000f094,"vmovlhps %xmm5, %xmm13, %xmm13",C5 10 16 ED ,0.02%
+,0x14000f0ac,"vmovlhps %xmm14, %xmm5, %xmm5",C4 C1 50 16 EE ,0.01%
+,0x14000f0b1,"vinsertf128 $0x01, %xmm13, %ymm5, %ymm5",C4 C3 55 18 ED 01 ,0.01%
+,0x14000f0b7,"vmulps %ymm0, %ymm5, %ymm5",C5 D4 59 E8 ,0.05%
+,0x14000f0bb,"vaddps %ymm5, %ymm2, %ymm2",C5 EC 58 D5 ,0.13%
+,0x14000f0bf,"vmovssl (%r14,%r9,4), %xmm5",C4 81 7A 10 2C 8E ,0.05%
+,0x14000f0c5,"vmulps %ymm3, %ymm2, %ymm2",C5 EC 59 D3 ,0.01%
+,0x14000f0c9,"vaddps %ymm2, %ymm1, %ymm1",C5 F4 58 CA ,0.38%
+,0x14000f0cd,"vmovssl (%r14,%rax,4), %xmm2",C4 C1 7A 10 14 86 ,0.01%
+,0x14000f0da,"vinsertpsl $0x10, (%r14,%r13,4), %xmm5, %xmm5",C4 83 51 21 2C AE 10 ,0.02%
+,0x14000f0e8,"mov 0x270(%rbp), %r12",4C 8B A5 70 02 00 00 ,0.01%
+,0x14000f0ef,"mov 0x288(%rbp), %rcx",48 8B 8D 88 02 00 00 ,0.01%
+,0x14000f0fd,"vmovlhps %xmm2, %xmm5, %xmm5",C5 D0 16 EA ,0.07%
+,0x14000f101,"vmulps %ymm8, %ymm1, %ymm1",C4 C1 74 59 C8 ,0.01%
+,0x14000f106,"vmovssl (%r14,%r11,4), %xmm8",C4 01 7A 10 04 9E ,0.41%
+,0x14000f10c,"vmovssl (%r14,%rcx,4), %xmm2",C4 C1 7A 10 14 8E ,0.01%
+,0x14000f119,"vinsertpsl $0x10, (%r14,%rsi,4), %xmm2, %xmm2",C4 C3 69 21 14 B6 10 ,0.01%
+,0x14000f120,"vmovssl (%r8,%r11,4), %xmm13",C4 01 7A 10 2C 98 ,0.01%
+,0x14000f126,"vinsertpsl $0x10, (%r8,%r12,4), %xmm13, %xmm13",C4 03 11 21 2C A0 10 ,0.01%
+,0x14000f139,"vmovssl (%r8,%r9,4), %xmm8",C4 01 7A 10 04 88 ,0.05%
+,0x14000f13f,"vinsertf128 $0x01, %xmm5, %ymm2, %ymm2",C4 E3 6D 18 D5 01 ,0.01%
+,0x14000f145,"vinsertpsl $0x10, (%r8,%r13,4), %xmm8, %xmm8",C4 03 39 21 04 A8 10 ,0.01%
+,0x14000f159,"vmulps %ymm6, %ymm2, %ymm2",C5 EC 59 D6 ,0.01%
+,0x14000f15d,"mov 0x208(%rbp), %rax",48 8B 85 08 02 00 00 ,0.05%
+,0x14000f16b,"vmovlhps %xmm5, %xmm8, %xmm8",C5 38 16 C5 ,0.08%
+,0x14000f18f,"vinsertf128 $0x01, %xmm8, %ymm5, %ymm5",C4 C3 55 18 E8 01 ,0.01%
+,0x14000f195,"mov 0x250(%rbp), %r9",4C 8B 8D 50 02 00 00 ,0.01%
+,0x14000f19c,"mov 0x248(%rbp), %r11",4C 8B 9D 48 02 00 00 ,0.10%
+,0x14000f1a7,"mov 0x258(%rbp), %rsi",48 8B B5 58 02 00 00 ,0.05%
+,0x14000f1b4,"vinsertpsl $0x10, (%r14,%r11,4), %xmm8, %xmm8",C4 03 39 21 04 9E 10 ,0.02%
+,0x14000f1bb,"vaddps %ymm5, %ymm2, %ymm2",C5 EC 58 D5 ,0.03%
+,0x14000f1bf,"vmovssl (%r14,%rax,4), %xmm5",C4 C1 7A 10 2C 86 ,0.01%
+,0x14000f1c5,"vinsertpsl $0x10, (%r14,%rdx,4), %xmm5, %xmm5",C4 C3 51 21 2C 96 10 ,0.01%
+,0x14000f1cc,"vmulps %ymm7, %ymm2, %ymm2",C5 EC 59 D7 ,0.08%
+,0x14000f1d0,"vmovssl (%r14,%r12,4), %xmm7",C4 81 7A 10 3C A6 ,0.15%
+,0x14000f1d6,"vinsertpsl $0x10, (%r14,%r13,4), %xmm7, %xmm7",C4 83 41 21 3C AE 10 ,0.01%
+,0x14000f1ee,"vpaddd 0xE0(%rbp), %ymm11, %ymm11",C5 25 FE 9D E0 00 00 00 ,0.01%
+,0x14000f1f6,"vmovlhps %xmm8, %xmm5, %xmm5",C4 C1 50 16 E8 ,0.01%
+,0x14000f1fb,"vinsertf128 $0x01, %xmm7, %ymm5, %ymm5",C4 E3 55 18 EF 01 ,0.05%
+,0x14000f201,"vmovssl (%r8,%r12,4), %xmm7",C4 81 7A 10 3C A0 ,0.06%
+,0x14000f20e,"vmulps %ymm6, %ymm5, %ymm5",C5 D4 59 EE ,0.01%
+,0x14000f212,"vmovssl (%r8,%rax,4), %xmm6",C4 C1 7A 10 34 80 ,0.07%
+,0x14000f218,"vmovssl (%r8,%r9,4), %xmm8",C4 01 7A 10 04 88 ,0.01%
+,0x14000f21e,"vinsertpsl $0x10, (%r8,%rdx,4), %xmm6, %xmm6",C4 C3 49 21 34 90 10 ,0.01%
+,0x14000f225,"vinsertpsl $0x10, (%r8,%r11,4), %xmm8, %xmm8",C4 03 39 21 04 98 10 ,0.02%
+,0x14000f22c,"mov 0x230(%rbp), %rax",48 8B 85 30 02 00 00 ,0.06%
+,0x14000f233,"vmovlhps %xmm6, %xmm7, %xmm7",C5 C0 16 FE ,0.05%
+,0x14000f237,"vmovssl (%r8,%rcx,4), %xmm6",C4 C1 7A 10 34 88 ,0.01%
+,0x14000f244,"mov 0x3F0(%rbp), %rcx",48 8B 8D F0 03 00 00 ,0.04%
+,0x14000f25a,"vaddps %ymm6, %ymm5, %ymm5",C5 D4 58 EE ,0.18%
+,0x14000f25e,"vmulps %ymm3, %ymm5, %ymm5",C5 D4 59 EB ,0.01%
+,0x14000f262,"vaddps %ymm5, %ymm2, %ymm2",C5 EC 58 D5 ,0.45%
+,0x14000f266,"vmulps %ymm4, %ymm2, %ymm2",C5 EC 59 D4 ,0.01%
+,0x14000f26a,"vaddps %ymm2, %ymm1, %ymm1",C5 F4 58 CA ,0.49%
+,0x14000f26e,"vmovups %ymm1, 0x04(%rcx,%rax,1)",C5 FC 11 4C 01 04 ,0.01%
+,0x14000f274,"add $0x20, %rax",48 83 C0 20 ,0.08%
+,0x14000f278,"mov %rax, 0x230(%rbp)",48 89 85 30 02 00 00 ,0.01%
+,0x14000f286,"jnz 0x000000014000E4E0",0F 85 54 F2 FF FF ,0.01%
+,0x14000f292,"vmovssl 0xD8(%rbp), %xmm15",C5 7A 10 BD D8 00 00 00 ,0.01%
+,0x14000f2a2,"vmovssl 0x440(%rbp), %xmm3",C5 FA 10 9D 40 04 00 00 ,0.01%
+,0x14000f2d1,"vmovdqu -0x10(%rbp), %ymm5",C5 FE 6F 6D F0 ,0.01%
+,0x14000f2db,"cmp %edx, 0xDC(%rbp)",39 95 DC 00 00 00 ,0.01%
+,0x14000fc66,"vmovups 0x300(%rbp), %xmm7",C5 F8 10 BD 00 03 00 00 ,0.01%
+,0x14000fc76,"vmovups 0x320(%rbp), %xmm9",C5 78 10 8D 20 03 00 00 ,0.01%
+,0x14000fc86,"vmovups 0x340(%rbp), %xmm11",C5 78 10 9D 40 03 00 00 ,0.01%
+,0x14000fc8e,"vmovups 0x350(%rbp), %xmm12",C5 78 10 A5 50 03 00 00 ,0.01%
+,0x14000fc9e,"vmovups 0x370(%rbp), %xmm14",C5 78 10 B5 70 03 00 00 ,0.01%
+,0x14000fcb7,"pop %rdi",5F ,0.02%
+,0x14000fcba,"pop %r13",41 5D ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::(anonymous namespace)::advectRow2(float*, float*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)" (Showing only disassembly),,,,20.32%
+,0x14000cee3,"push %r14",41 56 ,0.01%
+,0x14000cee9,"push %rdi",57 ,0.02%
+,0x14000ceea,"push %rsi",56 ,0.01%
+,0x14000ceec,"sub $0x3E8, %rsp",48 81 EC E8 03 00 00 ,0.01%
+,0x14000cf03,"vmovups %xmm7, 0x2D0(%rbp)",C5 F8 11 BD D0 02 00 00 ,0.01%
+,0x14000cf13,"vmovups %xmm9, 0x2F0(%rbp)",C5 78 11 8D F0 02 00 00 ,0.01%
+,0x14000cf23,"vmovups %xmm11, 0x310(%rbp)",C5 78 11 9D 10 03 00 00 ,0.01%
+,0x14000cf33,"vmovups %xmm13, 0x330(%rbp)",C5 78 11 AD 30 03 00 00 ,0.01%
+,0x14000cf3b,"vmovups %xmm14, 0x340(%rbp)",C5 78 11 B5 40 03 00 00 ,0.02%
+,0x14000cf73,"vbroadcastss %xmm3, %ymm2",C4 E2 7D 18 D3 ,0.02%
+,0x14000cfa8,"mov %r9, 0x3C8(%rbp)",4C 89 8D C8 03 00 00 ,0.01%
+,0x14000cfc0,"vxorps %xmm14, %xmm14, %xmm14",C4 41 08 57 F6 ,0.02%
+,0x14000cfd3,"vaddssl 0x00000001400EB6E0, %xmm6, %xmm7",C5 CA 58 3D 05 E7 0D 00 ,0.02%
+,0x14000cfdb,"vcvtsi2ss %edi, %xmm14, %xmm0",C5 8A 2A C7 ,0.06%
+,0x14000d001,"vmovss %xmm7, 0xC4(%rbp)",C5 FA 11 BD C4 00 00 00 ,0.02%
+,0x14000d009,"vbroadcastss %xmm7, %ymm7",C4 E2 7D 18 FF ,0.01%
+,0x14000d00e,"vbroadcastss %xmm15, %ymm0",C4 C2 7D 18 C7 ,0.01%
+,0x14000d01b,"vbroadcastss %xmm6, %ymm6",C4 E2 7D 18 F6 ,0.01%
+,0x14000d020,"cmp $0x06, %eax",83 F8 06 ,0.01%
+,0x14000d04f,"lea 0x04(%r10), %rbx",49 8D 5A 04 ,0.01%
+,0x14000d063,"vmovups %ymm1, 0x190(%rbp)",C5 FC 11 8D 90 01 00 00 ,0.01%
+,0x14000d083,"vpbroadcastd %xmm9, %ymm9",C4 42 7D 58 C9 ,0.01%
+,0x14000d090,"vmovups %ymm4, 0x130(%rbp)",C5 FC 11 A5 30 01 00 00 ,0.01%
+,0x14000d098,"vmovups %ymm0, 0x110(%rbp)",C5 FC 11 85 10 01 00 00 ,0.01%
+,0x14000d0a0,"vmovdqu %ymm8, 0xF0(%rbp)",C5 7E 7F 85 F0 00 00 00 ,0.01%
+,0x14000d0a8,"vmovdqu %ymm9, 0xD0(%rbp)",C5 7E 7F 8D D0 00 00 00 ,0.01%
+,0x14000d0b0,"vmovss %xmm15, 0x1B4(%rbp)",C5 7A 11 BD B4 01 00 00 ,0.02%
+,0x14000d0b8,"vmovups %ymm1, 0xA0(%rbp)",C5 FC 11 8D A0 00 00 00 ,0.03%
+,0x14000d0c0,"vmovups %ymm2, 0x80(%rbp)",C5 FC 11 95 80 00 00 00 ,0.01%
+,0x14000d0c8,"vmovups %ymm6, 0x60(%rbp)",C5 FC 11 75 60 ,0.01%
+,0x14000d0cd,"vmovups %ymm7, 0x40(%rbp)",C5 FC 11 7D 40 ,0.03%
+,0x14000d0d7,"vmovups %ymm0, (%rbp)",C5 FC 11 45 00 ,0.02%
+,0x14000d0dc,"vmovdqu %ymm5, -0x20(%rbp)",C5 FE 7F 6D E0 ,0.01%
+,0x14000d0e1,"vmovdqu %ymm8, -0x40(%rbp)",C5 7E 7F 45 C0 ,0.01%
+,0x14000d0e6,"nop %ax, (%rax,%rax,1)",66 2E 0F 1F 84 00 00 00 00 00 ,0.02%
+,0x14000d0fe,"vcvtdq2ps %ymm13, %ymm1",C4 C1 7C 5B CD ,0.03%
+,0x14000d103,"vmovups 0x110(%rbp), %ymm3",C5 FC 10 9D 10 01 00 00 ,0.01%
+,0x14000d10b,"mov 0x3C8(%rbp), %rcx",48 8B 8D C8 03 00 00 ,0.11%
+,0x14000d118,"vmovups 0x130(%rbp), %ymm5",C5 FC 10 AD 30 01 00 00 ,0.22%
+,0x14000d120,"mov 0x3D0(%rbp), %rsi",48 8B B5 D0 03 00 00 ,0.01%
+,0x14000d133,"vmaxps %ymm1, %ymm12, %ymm1",C5 9C 5F C9 ,0.02%
+,0x14000d137,"vminps %ymm1, %ymm3, %ymm1",C5 E4 5D C9 ,0.07%
+,0x14000d13b,"vmulps 0x04(%rcx,%rax,1), %ymm14, %ymm3",C5 8C 59 5C 01 04 ,0.09%
+,0x14000d141,"vcvttps2dq %ymm1, %ymm4",C5 FE 5B E1 ,0.07%
+,0x14000d145,"vcvtdq2ps %ymm4, %ymm0",C5 FC 5B C4 ,0.08%
+,0x14000d149,"vsubps %ymm0, %ymm1, %ymm1",C5 F4 5C C8 ,0.15%
+,0x14000d14d,"vsubps %ymm3, %ymm5, %ymm3",C5 D4 5C DB ,0.18%
+,0x14000d159,"vsubps %ymm1, %ymm11, %ymm7",C5 A4 5C F9 ,0.02%
+,0x14000d15d,"vmaxps %ymm3, %ymm12, %ymm3",C5 9C 5F DB ,0.20%
+,0x14000d161,"vminps %ymm3, %ymm5, %ymm3",C5 D4 5D DB ,0.03%
+,0x14000d16b,"vcvttps2dq %ymm3, %ymm0",C5 FE 5B C3 ,0.06%
+,0x14000d16f,"vpmulld %ymm10, %ymm0, %ymm2",C4 C2 7D 40 D2 ,0.01%
+,0x14000d174,"vcvtdq2ps %ymm0, %ymm0",C5 FC 5B C0 ,0.06%
+,0x14000d17c,"vmovups 0x190(%rbp), %ymm0",C5 FC 10 85 90 01 00 00 ,0.06%
+,0x14000d184,"vsubps %ymm5, %ymm0, %ymm5",C5 FC 5C ED ,0.04%
+,0x14000d188,"vmovups 0x170(%rbp), %ymm0",C5 FC 10 85 70 01 00 00 ,0.03%
+,0x14000d194,"vpaddd %ymm4, %ymm2, %ymm2",C5 ED FE D4 ,0.11%
+,0x14000d1a0,"vcvttps2dq %ymm5, %ymm8",C5 7E 5B C5 ,0.01%
+,0x14000d1a4,"vpmulld %ymm6, %ymm8, %ymm0",C4 E2 3D 40 C6 ,0.03%
+,0x14000d1a9,"vcvtdq2ps %ymm8, %ymm8",C4 41 7C 5B C0 ,0.11%
+,0x14000d1ae,"vsubps %ymm8, %ymm5, %ymm5",C4 C1 54 5C E8 ,0.01%
+,0x14000d1b3,"vsubps %ymm5, %ymm11, %ymm15",C5 24 5C FD ,0.10%
+,0x14000d1b7,"vpaddd %ymm2, %ymm0, %ymm0",C5 FD FE C2 ,0.20%
+,0x14000d1bf,"vpextrd $0x01, %xmm0, %eax",C4 E3 79 16 C0 01 ,0.01%
+,0x14000d1c5,"vpextrd $0x02, %xmm0, %r12d",C4 C3 79 16 C4 02 ,0.01%
+,0x14000d1cb,"movsxd %edi, %rdx",48 63 D7 ,0.04%
+,0x14000d1ce,"vpaddd %ymm6, %ymm0, %ymm2",C5 FD FE D6 ,0.41%
+,0x14000d1d2,"vpaddd %ymm0, %ymm10, %ymm6",C5 AD FE F0 ,0.02%
+,0x14000d1d9,"mov %rdx, 0x2B0(%rbp)",48 89 95 B0 02 00 00 ,0.10%
+,0x14000d1e0,"movsxd %eax, %rdx",48 63 D0 ,0.01%
+,0x14000d1e3,"vpextrd $0x03, %xmm0, %eax",C4 E3 79 16 C0 03 ,0.05%
+,0x14000d1e9,"vpaddd %ymm2, %ymm10, %ymm4",C5 AD FE E2 ,0.01%
+,0x14000d1ed,"vextracti128 $0x01, %ymm0, %xmm0",C4 E3 7D 39 C0 01 ,0.03%
+,0x14000d1f3,"mov %rsi, 0x2A0(%rbp)",48 89 B5 A0 02 00 00 ,0.01%
+,0x14000d1fd,"vpextrd $0x02, %xmm6, %r9d",C4 C3 79 16 F1 02 ,0.08%
+,0x14000d203,"vpextrd $0x01, %xmm0, %eax",C4 E3 79 16 C0 01 ,0.01%
+,0x14000d209,"vpextrd $0x02, %xmm0, %r15d",C4 C3 79 16 C7 02 ,0.09%
+,0x14000d20f,"vmovd %xmm0, %r14d",C4 C1 79 7E C6 ,0.11%
+,0x14000d214,"mov %rsi, 0x298(%rbp)",48 89 B5 98 02 00 00 ,0.05%
+,0x14000d21e,"movsxd %r15d, %rax",49 63 C7 ,0.39%
+,0x14000d221,"mov %rdx, 0x2A8(%rbp)",48 89 95 A8 02 00 00 ,0.17%
+,0x14000d22b,"mov %rax, 0x290(%rbp)",48 89 85 90 02 00 00 ,0.03%
+,0x14000d238,"movsxd %eax, %rcx",48 63 C8 ,0.01%
+,0x14000d23b,"vmovd %xmm6, %eax",C5 F9 7E F0 ,0.10%
+,0x14000d23f,"movsxd %eax, %r15",4C 63 F8 ,0.03%
+,0x14000d242,"vpextrd $0x01, %xmm6, %eax",C4 E3 79 16 F0 01 ,0.01%
+,0x14000d248,"mov %rcx, 0x288(%rbp)",48 89 8D 88 02 00 00 ,0.01%
+,0x14000d24f,"movsxd %eax, %r11",4C 63 D8 ,0.01%
+,0x14000d252,"movsxd %r9d, %rax",49 63 C1 ,0.11%
+,0x14000d255,"mov %r15, 0x280(%rbp)",4C 89 BD 80 02 00 00 ,0.01%
+,0x14000d25c,"mov %rax, 0x1F8(%rbp)",48 89 85 F8 01 00 00 ,0.04%
+,0x14000d263,"vpextrd $0x03, %xmm6, %eax",C4 E3 79 16 F0 03 ,0.02%
+,0x14000d269,"vextracti128 $0x01, %ymm6, %xmm6",C4 E3 7D 39 F6 01 ,0.03%
+,0x14000d272,"vpextrd $0x01, %xmm6, %eax",C4 E3 79 16 F0 01 ,0.07%
+,0x14000d278,"mov %r11, 0x278(%rbp)",4C 89 9D 78 02 00 00 ,0.02%
+,0x14000d27f,"vmovd %xmm6, %r11d",C4 C1 79 7E F3 ,0.02%
+,0x14000d284,"mov %rsi, 0x270(%rbp)",48 89 B5 70 02 00 00 ,0.01%
+,0x14000d28b,"vpextrd $0x02, %xmm6, %esi",C4 E3 79 16 F6 02 ,0.01%
+,0x14000d291,"movsxd %eax, %rcx",48 63 C8 ,0.04%
+,0x14000d294,"movsxd %r11d, %r11",4D 63 DB ,0.07%
+,0x14000d297,"movsxd %esi, %rax",48 63 C6 ,0.17%
+,0x14000d29a,"mov %rcx, 0x268(%rbp)",48 89 8D 68 02 00 00 ,0.11%
+,0x14000d2a1,"mov %rax, 0x260(%rbp)",48 89 85 60 02 00 00 ,0.01%
+,0x14000d2a8,"vpextrd $0x03, %xmm6, %eax",C4 E3 79 16 F0 03 ,0.02%
+,0x14000d2b1,"vmovd %xmm2, %eax",C5 F9 7E D0 ,0.11%
+,0x14000d2b5,"movsxd %eax, %rcx",48 63 C8 ,0.01%
+,0x14000d2b8,"vpextrd $0x01, %xmm2, %eax",C4 E3 79 16 D0 01 ,0.05%
+,0x14000d2be,"movsxd %eax, %r15",4C 63 F8 ,0.01%
+,0x14000d2c1,"vpextrd $0x02, %xmm2, %eax",C4 E3 79 16 D0 02 ,0.07%
+,0x14000d2ce,"cdqe",48 98 ,0.02%
+,0x14000d2d0,"mov %r15, 0x250(%rbp)",4C 89 BD 50 02 00 00 ,0.06%
+,0x14000d2d7,"mov %rax, 0x248(%rbp)",48 89 85 48 02 00 00 ,0.04%
+,0x14000d2de,"vpextrd $0x03, %xmm2, %eax",C4 E3 79 16 D0 03 ,0.01%
+,0x14000d2e4,"vextracti128 $0x01, %ymm2, %xmm2",C4 E3 7D 39 D2 01 ,0.02%
+,0x14000d2ea,"movsxd %eax, %rcx",48 63 C8 ,0.01%
+,0x14000d2ed,"vpextrd $0x01, %xmm2, %eax",C4 E3 79 16 D0 01 ,0.05%
+,0x14000d2f3,"vmovd %xmm2, %edx",C5 F9 7E D2 ,0.03%
+,0x14000d2f7,"cdqe",48 98 ,0.03%
+,0x14000d2f9,"movsxd %edx, %rdx",48 63 D2 ,0.19%
+,0x14000d2fc,"mov %rcx, 0x240(%rbp)",48 89 8D 40 02 00 00 ,0.06%
+,0x14000d303,"vpextrd $0x02, %xmm2, %ecx",C4 E3 79 16 D1 02 ,0.01%
+,0x14000d309,"mov %rax, 0x238(%rbp)",48 89 85 38 02 00 00 ,0.01%
+,0x14000d310,"vpextrd $0x03, %xmm2, %eax",C4 E3 79 16 D0 03 ,0.03%
+,0x14000d316,"movsxd %ecx, %rcx",48 63 C9 ,0.01%
+,0x14000d319,"movsxd %eax, %r9",4C 63 C8 ,0.08%
+,0x14000d31c,"vmovd %xmm4, %eax",C5 F9 7E E0 ,0.17%
+,0x14000d320,"mov %rdx, 0x1F0(%rbp)",48 89 95 F0 01 00 00 ,0.01%
+,0x14000d327,"cdqe",48 98 ,0.01%
+,0x14000d329,"mov %rax, 0x230(%rbp)",48 89 85 30 02 00 00 ,0.05%
+,0x14000d339,"vpextrd $0x02, %xmm4, %eax",C4 E3 79 16 E0 02 ,0.11%
+,0x14000d33f,"movsxd %eax, %rdx",48 63 D0 ,0.03%
+,0x14000d342,"vpextrd $0x03, %xmm4, %eax",C4 E3 79 16 E0 03 ,0.06%
+,0x14000d357,"vpextrd $0x03, %xmm4, %esi",C4 E3 79 16 E6 03 ,0.06%
+,0x14000d35d,"mov %rdx, 0x220(%rbp)",48 89 95 20 02 00 00 ,0.02%
+,0x14000d364,"vmovssl (%r10,%r14,4), %xmm2",C4 81 7A 10 14 B2 ,0.01%
+,0x14000d36a,"mov %rax, 0x218(%rbp)",48 89 85 18 02 00 00 ,0.01%
+,0x14000d371,"vmovd %xmm4, %eax",C5 F9 7E E0 ,0.01%
+,0x14000d378,"vinsertpsl $0x10, (%r10,%rdi,4), %xmm2, %xmm2",C4 C3 69 21 14 BA 10 ,0.06%
+,0x14000d37f,"movsxd %eax, %r15",4C 63 F8 ,0.04%
+,0x14000d382,"vpextrd $0x01, %xmm4, %eax",C4 E3 79 16 E0 01 ,0.04%
+,0x14000d388,"mov 0x2A0(%rbp), %rsi",48 8B B5 A0 02 00 00 ,0.01%
+,0x14000d38f,"mov %rdx, 0x200(%rbp)",48 89 95 00 02 00 00 ,0.01%
+,0x14000d396,"cdqe",48 98 ,0.01%
+,0x14000d398,"mov %r15, 0x210(%rbp)",4C 89 BD 10 02 00 00 ,0.01%
+,0x14000d39f,"mov 0x288(%rbp), %r15",4C 8B BD 88 02 00 00 ,0.02%
+,0x14000d3a6,"mov %rax, 0x1E8(%rbp)",48 89 85 E8 01 00 00 ,0.04%
+,0x14000d3ad,"vpextrd $0x02, %xmm4, %eax",C4 E3 79 16 E0 02 ,0.07%
+,0x14000d3b3,"mov 0x2B0(%rbp), %rdx",48 8B 95 B0 02 00 00 ,0.02%
+,0x14000d3ba,"cdqe",48 98 ,0.01%
+,0x14000d3bc,"vmovssl (%r10,%rsi,4), %xmm4",C4 C1 7A 10 24 B2 ,0.02%
+,0x14000d3c2,"mov 0x298(%rbp), %rsi",48 8B B5 98 02 00 00 ,0.01%
+,0x14000d3c9,"mov %rdi, 0x1E0(%rbp)",48 89 BD E0 01 00 00 ,0.02%
+,0x14000d3d0,"mov %rax, 0x208(%rbp)",48 89 85 08 02 00 00 ,0.02%
+,0x14000d3d7,"mov 0x290(%rbp), %rax",48 8B 85 90 02 00 00 ,0.02%
+,0x14000d3de,"vinsertpsl $0x10, (%r10,%rsi,4), %xmm4, %xmm4",C4 C3 59 21 24 B2 10 ,0.01%
+,0x14000d3e5,"vmovssl (%r10,%rax,4), %xmm0",C4 C1 7A 10 04 82 ,0.05%
+,0x14000d3eb,"vinsertpsl $0x10, (%r10,%r15,4), %xmm0, %xmm0",C4 83 79 21 04 BA 10 ,0.03%
+,0x14000d3f2,"vmovlhps %xmm0, %xmm2, %xmm2",C5 E8 16 D0 ,0.07%
+,0x14000d3f6,"vmovssl (%r10,%rdx,4), %xmm0",C4 C1 7A 10 04 92 ,0.02%
+,0x14000d3fc,"mov 0x2A8(%rbp), %rdx",48 8B 95 A8 02 00 00 ,0.02%
+,0x14000d403,"vinsertpsl $0x10, (%r10,%rdx,4), %xmm0, %xmm0",C4 C3 79 21 04 92 10 ,0.03%
+,0x14000d40a,"vmovlhps %xmm4, %xmm0, %xmm0",C5 F8 16 C4 ,0.04%
+,0x14000d40e,"vmovssl (%rbx,%r14,4), %xmm4",C4 A1 7A 10 24 B3 ,0.01%
+,0x14000d414,"vinsertf128 $0x01, %xmm2, %ymm0, %ymm0",C4 E3 7D 18 C2 01 ,0.01%
+,0x14000d41a,"vinsertpsl $0x10, (%rbx,%rdi,4), %xmm4, %xmm4",C4 E3 59 21 24 BB 10 ,0.06%
+,0x14000d421,"vmovssl (%rbx,%rax,4), %xmm2",C5 FA 10 14 83 ,0.01%
+,0x14000d426,"mov 0x2A0(%rbp), %rdi",48 8B BD A0 02 00 00 ,0.01%
+,0x14000d42d,"vmulps %ymm7, %ymm0, %ymm0",C5 FC 59 C7 ,0.01%
+,0x14000d431,"vinsertpsl $0x10, (%rbx,%r15,4), %xmm2, %xmm2",C4 A3 69 21 14 BB 10 ,0.63%
+,0x14000d438,"mov 0x2B0(%rbp), %r15",4C 8B BD B0 02 00 00 ,0.01%
+,0x14000d44b,"vmovlhps %xmm2, %xmm4, %xmm4",C5 D8 16 E2 ,0.01%
+,0x14000d44f,"vmovssl (%rbx,%r15,4), %xmm2",C4 A1 7A 10 14 BB ,0.02%
+,0x14000d455,"vinsertpsl $0x10, (%rbx,%rdx,4), %xmm2, %xmm2",C4 E3 69 21 14 93 10 ,0.01%
+,0x14000d45c,"mov 0x260(%rbp), %rax",48 8B 85 60 02 00 00 ,0.03%
+,0x14000d463,"vmovlhps %xmm6, %xmm2, %xmm2",C5 E8 16 D6 ,0.06%
+,0x14000d467,"vinsertf128 $0x01, %xmm4, %ymm2, %ymm2",C4 E3 6D 18 D4 01 ,0.03%
+,0x14000d46d,"vmulps %ymm1, %ymm2, %ymm2",C5 EC 59 D1 ,0.04%
+,0x14000d471,"vaddps %ymm2, %ymm0, %ymm0",C5 FC 58 C2 ,0.27%
+,0x14000d475,"vmovssl (%r10,%rax,4), %xmm2",C4 C1 7A 10 14 82 ,0.01%
+,0x14000d47b,"vmovssl (%r10,%r11,4), %xmm4",C4 81 7A 10 24 9A ,0.01%
+,0x14000d481,"mov %r12, 0x1D8(%rbp)",4C 89 A5 D8 01 00 00 ,0.01%
+,0x14000d48f,"mov 0x1F8(%rbp), %rdi",48 8B BD F8 01 00 00 ,0.03%
+,0x14000d496,"vinsertpsl $0x10, (%r10,%r12,4), %xmm2, %xmm2",C4 83 69 21 14 A2 10 ,0.02%
+,0x14000d49d,"mov 0x280(%rbp), %r15",4C 8B BD 80 02 00 00 ,0.03%
+,0x14000d4a4,"mov 0x278(%rbp), %rdx",48 8B 95 78 02 00 00 ,0.07%
+,0x14000d4ab,"vmovssl (%r10,%rdi,4), %xmm6",C4 C1 7A 10 34 BA ,0.01%
+,0x14000d4b1,"vmulps %ymm9, %ymm0, %ymm0",C4 C1 7C 59 C1 ,0.02%
+,0x14000d4b6,"mov 0x270(%rbp), %rdi",48 8B BD 70 02 00 00 ,0.33%
+,0x14000d4bd,"vinsertpsl $0x10, (%r10,%rsi,4), %xmm4, %xmm4",C4 C3 59 21 24 B2 10 ,0.01%
+,0x14000d4c4,"vinsertpsl $0x10, (%r10,%rdi,4), %xmm6, %xmm6",C4 C3 49 21 34 BA 10 ,0.03%
+,0x14000d4cb,"vmovlhps %xmm2, %xmm4, %xmm4",C5 D8 16 E2 ,0.01%
+,0x14000d4cf,"vmovssl (%r10,%r15,4), %xmm2",C4 81 7A 10 14 BA ,0.01%
+,0x14000d4d5,"vinsertpsl $0x10, (%r10,%rdx,4), %xmm2, %xmm2",C4 C3 69 21 14 92 10 ,0.01%
+,0x14000d4dc,"vmovlhps %xmm6, %xmm2, %xmm2",C5 E8 16 D6 ,0.01%
+,0x14000d4e0,"vmovssl (%rbx,%r11,4), %xmm6",C4 A1 7A 10 34 9B ,0.03%
+,0x14000d4e6,"vinsertf128 $0x01, %xmm4, %ymm2, %ymm2",C4 E3 6D 18 D4 01 ,0.05%
+,0x14000d4ec,"vinsertpsl $0x10, (%rbx,%rsi,4), %xmm6, %xmm6",C4 E3 49 21 34 B3 10 ,0.04%
+,0x14000d4f3,"vmovssl (%rbx,%rax,4), %xmm4",C5 FA 10 24 83 ,0.01%
+,0x14000d4f8,"vmulps %ymm7, %ymm2, %ymm2",C5 EC 59 D7 ,0.01%
+,0x14000d4fc,"vinsertpsl $0x10, (%rbx,%r12,4), %xmm4, %xmm4",C4 A3 59 21 24 A3 10 ,0.18%
+,0x14000d503,"mov 0x1F8(%rbp), %r12",4C 8B A5 F8 01 00 00 ,0.01%
+,0x14000d515,"vmovssl (%rbx,%r15,4), %xmm4",C4 A1 7A 10 24 BB ,0.04%
+,0x14000d51b,"vinsertpsl $0x10, (%rbx,%rdx,4), %xmm4, %xmm4",C4 E3 59 21 24 93 10 ,0.01%
+,0x14000d522,"vmovssl (%rbx,%r12,4), %xmm8",C4 21 7A 10 04 A3 ,0.02%
+,0x14000d528,"vinsertpsl $0x10, (%rbx,%rdi,4), %xmm8, %xmm8",C4 63 39 21 04 BB 10 ,0.01%
+,0x14000d52f,"mov 0x1F0(%rbp), %rdx",48 8B 95 F0 01 00 00 ,0.05%
+,0x14000d53d,"vmovlhps %xmm8, %xmm4, %xmm4",C4 C1 58 16 E0 ,0.01%
+,0x14000d542,"vinsertf128 $0x01, %xmm6, %ymm4, %ymm4",C4 E3 5D 18 E6 01 ,0.02%
+,0x14000d548,"vmulps %ymm1, %ymm4, %ymm4",C5 DC 59 E1 ,0.05%
+,0x14000d54c,"vaddps %ymm4, %ymm2, %ymm2",C5 EC 58 D4 ,0.16%
+,0x14000d550,"vmovssl (%r10,%rdx,4), %xmm4",C4 C1 7A 10 24 92 ,0.02%
+,0x14000d556,"mov 0x248(%rbp), %rdx",48 8B 95 48 02 00 00 ,0.10%
+,0x14000d55d,"vinsertpsl $0x10, (%r10,%rsi,4), %xmm4, %xmm4",C4 C3 59 21 24 B2 10 ,0.01%
+,0x14000d564,"vmovssl (%r10,%rdx,4), %xmm6",C4 C1 7A 10 34 92 ,0.04%
+,0x14000d56a,"vmulps %ymm3, %ymm2, %ymm2",C5 EC 59 D3 ,0.04%
+,0x14000d56e,"vaddps %ymm2, %ymm0, %ymm0",C5 FC 58 C2 ,0.42%
+,0x14000d572,"vmovssl (%r10,%rcx,4), %xmm2",C4 C1 7A 10 14 8A ,0.01%
+,0x14000d578,"vinsertpsl $0x10, (%r10,%r9,4), %xmm2, %xmm2",C4 83 69 21 14 8A 10 ,0.02%
+,0x14000d57f,"vinsertpsl $0x10, (%r10,%rdi,4), %xmm6, %xmm6",C4 C3 49 21 34 BA 10 ,0.05%
+,0x14000d586,"mov 0x258(%rbp), %r12",4C 8B A5 58 02 00 00 ,0.02%
+,0x14000d58d,"mov %r9, 0x1D0(%rbp)",4C 89 8D D0 01 00 00 ,0.01%
+,0x14000d59f,"vmovssl (%rbx,%rdx,4), %xmm8",C5 7A 10 04 93 ,0.07%
+,0x14000d5a4,"vmovssl (%r10,%r12,4), %xmm2",C4 81 7A 10 14 A2 ,0.05%
+,0x14000d5aa,"mov 0x208(%rbp), %rax",48 8B 85 08 02 00 00 ,0.01%
+,0x14000d5b6,"vinsertpsl $0x10, (%r10,%r15,4), %xmm2, %xmm2",C4 83 69 21 14 BA 10 ,0.37%
+,0x14000d5da,"vinsertpsl $0x10, (%rbx,%r9,4), %xmm4, %xmm4",C4 A3 59 21 24 8B 10 ,0.01%
+,0x14000d5e1,"mov 0x1F0(%rbp), %r9",4C 8B 8D F0 01 00 00 ,0.06%
+,0x14000d5e8,"vmulps %ymm7, %ymm2, %ymm2",C5 EC 59 D7 ,0.09%
+,0x14000d5ec,"vmovssl (%rbx,%r9,4), %xmm6",C4 A1 7A 10 34 8B ,0.06%
+,0x14000d5f2,"vinsertpsl $0x10, (%rbx,%rsi,4), %xmm6, %xmm6",C4 E3 49 21 34 B3 10 ,0.02%
+,0x14000d5f9,"mov 0x1E8(%rbp), %r9",4C 8B 8D E8 01 00 00 ,0.01%
+,0x14000d618,"mov 0x210(%rbp), %r15",4C 8B BD 10 02 00 00 ,0.07%
+,0x14000d61f,"mov 0x228(%rbp), %r12",4C 8B A5 28 02 00 00 ,0.01%
+,0x14000d631,"vmulps %ymm1, %ymm4, %ymm4",C5 DC 59 E1 ,0.03%
+,0x14000d635,"vmovssl (%r10,%r15,4), %xmm6",C4 81 7A 10 34 BA ,0.11%
+,0x14000d63b,"vinsertpsl $0x10, (%r10,%r9,4), %xmm6, %xmm6",C4 83 49 21 34 8A 10 ,0.05%
+,0x14000d642,"mov 0x220(%rbp), %r9",4C 8B 8D 20 02 00 00 ,0.05%
+,0x14000d649,"vmovssl (%r10,%r9,4), %xmm8",C4 01 7A 10 04 8A ,0.06%
+,0x14000d64f,"mov 0x230(%rbp), %r9",4C 8B 8D 30 02 00 00 ,0.02%
+,0x14000d65d,"vaddps %ymm4, %ymm2, %ymm2",C5 EC 58 D4 ,0.01%
+,0x14000d661,"vmovssl (%r10,%rax,4), %xmm4",C4 C1 7A 10 24 82 ,0.02%
+,0x14000d667,"vinsertpsl $0x10, (%r10,%rsi,4), %xmm4, %xmm4",C4 C3 59 21 24 B2 10 ,0.03%
+,0x14000d66e,"vmovlhps %xmm4, %xmm6, %xmm6",C5 C8 16 F4 ,0.06%
+,0x14000d672,"vmovssl (%r10,%r9,4), %xmm4",C4 81 7A 10 24 8A ,0.01%
+,0x14000d678,"vinsertpsl $0x10, (%r10,%r12,4), %xmm4, %xmm4",C4 83 59 21 24 A2 10 ,0.09%
+,0x14000d67f,"vmulps %ymm9, %ymm2, %ymm2",C4 C1 6C 59 D1 ,0.01%
+,0x14000d684,"vmovlhps %xmm8, %xmm4, %xmm4",C4 C1 58 16 E0 ,0.35%
+,0x14000d68f,"vmovssl (%rbx,%rax,4), %xmm6",C5 FA 10 34 83 ,0.03%
+,0x14000d694,"vinsertpsl $0x10, (%rbx,%rsi,4), %xmm6, %xmm6",C4 E3 49 21 34 B3 10 ,0.01%
+,0x14000d69b,"vmovssl (%rbx,%r15,4), %xmm8",C4 21 7A 10 04 BB ,0.08%
+,0x14000d6a8,"vmulps %ymm7, %ymm4, %ymm4",C5 DC 59 E7 ,0.02%
+,0x14000d6ac,"mov 0x3B0(%rbp), %rsi",48 8B B5 B0 03 00 00 ,0.19%
+,0x14000d6b3,"mov 0x2B8(%rbp), %rdx",48 8B 95 B8 02 00 00 ,0.04%
+,0x14000d6c1,"mov 0x220(%rbp), %r15",4C 8B BD 20 02 00 00 ,0.03%
+,0x14000d6cc,"vmovups %xmm6, 0x1C0(%rbp)",C5 F8 11 B5 C0 01 00 00 ,0.01%
+,0x14000d6d4,"vmovssl (%rbx,%r15,4), %xmm6",C4 A1 7A 10 34 BB ,0.02%
+,0x14000d6da,"vinsertpsl $0x10, (%rbx,%rdi,4), %xmm6, %xmm8",C4 63 49 21 04 BB 10 ,0.03%
+,0x14000d6e1,"vmovssl (%rbx,%r9,4), %xmm6",C4 A1 7A 10 34 8B ,0.07%
+,0x14000d6e7,"vinsertpsl $0x10, (%rbx,%r12,4), %xmm6, %xmm6",C4 A3 49 21 34 A3 10 ,0.02%
+,0x14000d6ee,"mov 0x288(%rbp), %r15",4C 8B BD 88 02 00 00 ,0.01%
+,0x14000d701,"mov 0x1E0(%rbp), %rdi",48 8B BD E0 01 00 00 ,0.01%
+,0x14000d712,"vmulps %ymm1, %ymm6, %ymm6",C5 CC 59 F1 ,0.25%
+,0x14000d716,"vaddps %ymm6, %ymm4, %ymm4",C5 DC 58 E6 ,0.40%
+,0x14000d71a,"vmulps %ymm3, %ymm4, %ymm4",C5 DC 59 E3 ,0.04%
+,0x14000d71e,"vaddps %ymm4, %ymm2, %ymm2",C5 EC 58 D4 ,0.62%
+,0x14000d722,"vmulps %ymm5, %ymm2, %ymm2",C5 EC 59 D5 ,0.01%
+,0x14000d726,"vaddps %ymm2, %ymm0, %ymm0",C5 FC 58 C2 ,0.54%
+,0x14000d72a,"vmovups %ymm0, 0x04(%rsi,%rdx,1)",C5 FC 11 44 16 04 ,0.03%
+,0x14000d730,"mov 0x2B0(%rbp), %rdx",48 8B 95 B0 02 00 00 ,0.08%
+,0x14000d73e,"vmovssl (%r13,%r14,4), %xmm2",C4 81 7A 10 54 B5 00 ,0.02%
+,0x14000d74d,"vinsertpsl $0x10, (%r13,%rdi,4), %xmm2, %xmm2",C4 C3 69 21 54 BD 00 10 ,0.02%
+,0x14000d75c,"vmovlhps %xmm0, %xmm2, %xmm2",C5 E8 16 D0 ,0.01%
+,0x14000d760,"vmovssl (%r13,%rdi,4), %xmm4",C4 C1 7A 10 64 BD 00 ,0.01%
+,0x14000d767,"vmovssl (%r13,%rdx,4), %xmm0",C4 C1 7A 10 44 95 00 ,0.07%
+,0x14000d784,"vinsertpsl $0x10, (%r13,%rdx,4), %xmm0, %xmm0",C4 C3 79 21 44 95 00 10 ,0.02%
+,0x14000d790,"vmovssl (%r8,%r14,4), %xmm4",C4 81 7A 10 24 B0 ,0.02%
+,0x14000d796,"vinsertf128 $0x01, %xmm2, %ymm0, %ymm0",C4 E3 7D 18 C2 01 ,0.04%
+,0x14000d79c,"vmovssl (%r8,%r12,4), %xmm2",C4 81 7A 10 14 A0 ,0.04%
+,0x14000d7a2,"vmulps %ymm7, %ymm0, %ymm0",C5 FC 59 C7 ,0.01%
+,0x14000d7a6,"vinsertpsl $0x10, (%r8,%r15,4), %xmm2, %xmm2",C4 83 69 21 14 B8 10 ,0.06%
+,0x14000d7c2,"vinsertpsl $0x10, (%r8,%r14,4), %xmm4, %xmm4",C4 83 59 21 24 B0 10 ,0.01%
+,0x14000d7c9,"mov 0x268(%rbp), %r15",4C 8B BD 68 02 00 00 ,0.03%
+,0x14000d7d0,"vmovssl (%r8,%rdi,4), %xmm6",C4 C1 7A 10 34 B8 ,0.07%
+,0x14000d7d6,"mov 0x298(%rbp), %rdi",48 8B BD 98 02 00 00 ,0.01%
+,0x14000d7dd,"vmovlhps %xmm2, %xmm4, %xmm4",C5 D8 16 E2 ,0.01%
+,0x14000d7e1,"mov 0x1D8(%rbp), %r14",4C 8B B5 D8 01 00 00 ,0.01%
+,0x14000d7ef,"vinsertpsl $0x10, (%r8,%rdi,4), %xmm6, %xmm6",C4 C3 49 21 34 B8 10 ,0.01%
+,0x14000d7f6,"mov 0x2B0(%rbp), %rdi",48 8B BD B0 02 00 00 ,0.02%
+,0x14000d7fd,"mov 0x270(%rbp), %r12",4C 8B A5 70 02 00 00 ,0.02%
+,0x14000d804,"vmovssl (%r8,%rax,4), %xmm8",C4 41 7A 10 04 80 ,0.07%
+,0x14000d80a,"vmovssl (%r8,%rdi,4), %xmm2",C4 C1 7A 10 14 B8 ,0.01%
+,0x14000d810,"vinsertpsl $0x10, (%r8,%rdx,4), %xmm2, %xmm2",C4 C3 69 21 14 90 10 ,0.01%
+,0x14000d817,"mov 0x280(%rbp), %rdi",48 8B BD 80 02 00 00 ,0.02%
+,0x14000d81e,"vinsertpsl $0x10, (%r8,%r12,4), %xmm8, %xmm8",C4 03 39 21 04 A0 10 ,0.01%
+,0x14000d825,"vmovlhps %xmm6, %xmm2, %xmm2",C5 E8 16 D6 ,0.02%
+,0x14000d829,"vinsertf128 $0x01, %xmm4, %ymm2, %ymm2",C4 E3 6D 18 D4 01 ,0.01%
+,0x14000d82f,"vmovssl (%r13,%r11,4), %xmm4",C4 81 7A 10 64 9D 00 ,0.06%
+,0x14000d836,"vinsertpsl $0x10, (%r13,%r15,4), %xmm4, %xmm4",C4 83 59 21 64 BD 00 10 ,0.06%
+,0x14000d842,"vmovssl (%r13,%rax,4), %xmm6",C4 C1 7A 10 74 85 00 ,0.06%
+,0x14000d851,"vaddps %ymm2, %ymm0, %ymm0",C5 FC 58 C2 ,0.01%
+,0x14000d85c,"vinsertpsl $0x10, (%r13,%r14,4), %xmm2, %xmm2",C4 83 69 21 54 B5 00 10 ,0.01%
+,0x14000d864,"mov 0x278(%rbp), %r14",4C 8B B5 78 02 00 00 ,0.03%
+,0x14000d86b,"vmovlhps %xmm2, %xmm4, %xmm4",C5 D8 16 E2 ,0.05%
+,0x14000d876,"vmulps %ymm9, %ymm0, %ymm0",C4 C1 7C 59 C1 ,0.01%
+,0x14000d87b,"vinsertpsl $0x10, (%r13,%r14,4), %xmm2, %xmm2",C4 83 69 21 54 B5 00 10 ,0.12%
+,0x14000d883,"vmovlhps %xmm6, %xmm2, %xmm2",C5 E8 16 D6 ,0.01%
+,0x14000d887,"vinsertf128 $0x01, %xmm4, %ymm2, %ymm2",C4 E3 6D 18 D4 01 ,0.01%
+,0x14000d88d,"vmovssl (%r8,%rsi,4), %xmm4",C4 C1 7A 10 24 B0 ,0.02%
+,0x14000d893,"mov 0x1D8(%rbp), %rsi",48 8B B5 D8 01 00 00 ,0.02%
+,0x14000d89a,"vmovssl (%r8,%r11,4), %xmm6",C4 81 7A 10 34 98 ,0.05%
+,0x14000d8ab,"vinsertpsl $0x10, (%r8,%rsi,4), %xmm4, %xmm4",C4 C3 59 21 24 B0 10 ,0.10%
+,0x14000d8bc,"vinsertpsl $0x10, (%r8,%r14,4), %xmm4, %xmm4",C4 83 59 21 24 B0 10 ,0.01%
+,0x14000d8c3,"mov 0x1D0(%rbp), %r15",4C 8B BD D0 01 00 00 ,0.04%
+,0x14000d8ca,"mov 0x1F0(%rbp), %rdx",48 8B 95 F0 01 00 00 ,0.04%
+,0x14000d8d1,"vmovlhps %xmm8, %xmm4, %xmm4",C4 C1 58 16 E0 ,0.01%
+,0x14000d8d6,"vinsertf128 $0x01, %xmm6, %ymm4, %ymm4",C4 E3 5D 18 E6 01 ,0.01%
+,0x14000d8dc,"mov 0x238(%rbp), %r14",4C 8B B5 38 02 00 00 ,0.05%
+,0x14000d8ea,"vmulps %ymm1, %ymm4, %ymm4",C5 DC 59 E1 ,0.01%
+,0x14000d8ee,"mov 0x258(%rbp), %rsi",48 8B B5 58 02 00 00 ,0.16%
+,0x14000d8f5,"mov 0x248(%rbp), %r9",4C 8B 8D 48 02 00 00 ,0.02%
+,0x14000d8fc,"mov 0x250(%rbp), %rdi",48 8B BD 50 02 00 00 ,0.03%
+,0x14000d903,"mov 0x208(%rbp), %rax",48 8B 85 08 02 00 00 ,0.01%
+,0x14000d911,"vinsertpsl $0x10, (%r13,%r11,4), %xmm6, %xmm6",C4 83 49 21 74 9D 00 10 ,0.09%
+,0x14000d919,"vmovssl (%r8,%r9,4), %xmm8",C4 01 7A 10 04 88 ,0.03%
+,0x14000d926,"vaddps %ymm4, %ymm2, %ymm2",C5 EC 58 D4 ,0.07%
+,0x14000d92a,"vmovssl (%r13,%rdx,4), %xmm4",C4 C1 7A 10 64 95 00 ,0.01%
+,0x14000d931,"vinsertpsl $0x10, (%r13,%r14,4), %xmm4, %xmm4",C4 83 59 21 64 B5 00 10 ,0.04%
+,0x14000d939,"vmulps %ymm3, %ymm2, %ymm2",C5 EC 59 D3 ,0.03%
+,0x14000d93d,"vaddps %ymm2, %ymm0, %ymm0",C5 FC 58 C2 ,0.29%
+,0x14000d941,"vmovssl (%r13,%rcx,4), %xmm2",C4 C1 7A 10 54 8D 00 ,0.03%
+,0x14000d948,"vinsertpsl $0x10, (%r13,%r15,4), %xmm2, %xmm2",C4 83 69 21 54 BD 00 10 ,0.01%
+,0x14000d950,"vmovlhps %xmm2, %xmm4, %xmm4",C5 D8 16 E2 ,0.03%
+,0x14000d954,"vmovssl (%r13,%rsi,4), %xmm2",C4 C1 7A 10 54 B5 00 ,0.02%
+,0x14000d95b,"vinsertpsl $0x10, (%r13,%rdi,4), %xmm2, %xmm2",C4 C3 69 21 54 BD 00 10 ,0.02%
+,0x14000d963,"vmulps %ymm15, %ymm0, %ymm0",C4 C1 7C 59 C7 ,0.02%
+,0x14000d968,"vmovlhps %xmm6, %xmm2, %xmm2",C5 E8 16 D6 ,0.53%
+,0x14000d96c,"vmovssl (%r8,%rdx,4), %xmm6",C4 C1 7A 10 34 90 ,0.01%
+,0x14000d978,"vinsertpsl $0x10, (%r8,%r14,4), %xmm6, %xmm6",C4 83 49 21 34 B0 10 ,0.01%
+,0x14000d98c,"vmulps %ymm7, %ymm2, %ymm2",C5 EC 59 D7 ,0.03%
+,0x14000d990,"mov 0x200(%rbp), %rdx",48 8B 95 00 02 00 00 ,0.06%
+,0x14000d997,"mov 0x210(%rbp), %r14",4C 8B B5 10 02 00 00 ,0.09%
+,0x14000d9a2,"vmovssl (%r8,%rsi,4), %xmm4",C4 C1 7A 10 24 B0 ,0.01%
+,0x14000d9b6,"vmovlhps %xmm8, %xmm4, %xmm4",C4 C1 58 16 E0 ,0.01%
+,0x14000d9bb,"vinsertf128 $0x01, %xmm6, %ymm4, %ymm4",C4 E3 5D 18 E6 01 ,0.01%
+,0x14000d9c1,"vmovssl (%r13,%r14,4), %xmm6",C4 81 7A 10 74 B5 00 ,0.06%
+,0x14000d9c8,"vmulps %ymm1, %ymm4, %ymm4",C5 DC 59 E1 ,0.15%
+,0x14000d9cc,"vinsertpsl $0x10, (%r13,%r15,4), %xmm6, %xmm6",C4 83 49 21 74 BD 00 10 ,0.09%
+,0x14000d9d4,"vaddps %ymm4, %ymm2, %ymm2",C5 EC 58 D4 ,0.02%
+,0x14000d9df,"vinsertpsl $0x10, (%r13,%rdx,4), %xmm4, %xmm4",C4 C3 59 21 64 95 00 10 ,0.01%
+,0x14000d9e7,"mov 0x220(%rbp), %rdi",48 8B BD 20 02 00 00 ,0.08%
+,0x14000d9fc,"mov 0x228(%rbp), %rsi",48 8B B5 28 02 00 00 ,0.08%
+,0x14000da03,"vmovlhps %xmm4, %xmm6, %xmm6",C5 C8 16 F4 ,0.02%
+,0x14000da07,"vmovssl (%r13,%rdi,4), %xmm8",C4 41 7A 10 44 BD 00 ,0.01%
+,0x14000da0e,"vmovssl (%r13,%rcx,4), %xmm4",C4 C1 7A 10 64 8D 00 ,0.01%
+,0x14000da15,"vmulps %ymm9, %ymm2, %ymm2",C4 C1 6C 59 D1 ,0.01%
+,0x14000da1a,"vinsertpsl $0x10, (%r13,%r11,4), %xmm8, %xmm8",C4 03 39 21 44 9D 00 10 ,0.22%
+,0x14000da22,"vinsertpsl $0x10, (%r13,%rsi,4), %xmm4, %xmm4",C4 C3 59 21 64 B5 00 10 ,0.01%
+,0x14000da2a,"vpaddd 0xD0(%rbp), %ymm13, %ymm13",C5 15 FE AD D0 00 00 00 ,0.01%
+,0x14000da32,"vmovlhps %xmm8, %xmm4, %xmm4",C4 C1 58 16 E0 ,0.04%
+,0x14000da37,"vinsertf128 $0x01, %xmm6, %ymm4, %ymm4",C4 E3 5D 18 E6 01 ,0.01%
+,0x14000da3d,"vmovssl (%r8,%rax,4), %xmm6",C4 C1 7A 10 34 80 ,0.04%
+,0x14000da43,"vinsertpsl $0x10, (%r8,%rdx,4), %xmm6, %xmm6",C4 C3 49 21 34 90 10 ,0.01%
+,0x14000da4a,"vmulps %ymm7, %ymm4, %ymm4",C5 DC 59 E7 ,0.06%
+,0x14000da4e,"vmovssl (%r8,%r14,4), %xmm7",C4 81 7A 10 3C B0 ,0.24%
+,0x14000da54,"vinsertpsl $0x10, (%r8,%r15,4), %xmm7, %xmm7",C4 83 41 21 3C B8 10 ,0.01%
+,0x14000da5b,"vmovssl (%r8,%rdi,4), %xmm8",C4 41 7A 10 04 B8 ,0.01%
+,0x14000da61,"vinsertpsl $0x10, (%r8,%r11,4), %xmm8, %xmm8",C4 03 39 21 04 98 10 ,0.02%
+,0x14000da79,"mov 0x2B8(%rbp), %rax",48 8B 85 B8 02 00 00 ,0.02%
+,0x14000da80,"mov 0x3B8(%rbp), %rcx",48 8B 8D B8 03 00 00 ,0.09%
+,0x14000da8c,"vinsertf128 $0x01, %xmm7, %ymm6, %ymm6",C4 E3 4D 18 F7 01 ,0.01%
+,0x14000da92,"vmulps %ymm1, %ymm6, %ymm6",C5 CC 59 F1 ,0.02%
+,0x14000da96,"vaddps %ymm6, %ymm4, %ymm4",C5 DC 58 E6 ,0.23%
+,0x14000da9a,"vmulps %ymm3, %ymm4, %ymm4",C5 DC 59 E3 ,0.01%
+,0x14000da9e,"vaddps %ymm4, %ymm2, %ymm2",C5 EC 58 D4 ,0.55%
+,0x14000daa2,"vmulps %ymm5, %ymm2, %ymm2",C5 EC 59 D5 ,0.01%
+,0x14000daa6,"vaddps %ymm2, %ymm0, %ymm0",C5 FC 58 C2 ,0.54%
+,0x14000daaa,"vmovups %ymm0, 0x04(%rcx,%rax,1)",C5 FC 11 44 01 04 ,0.02%
+,0x14000dab0,"add $0x20, %rax",48 83 C0 20 ,0.08%
+,0x14000dab4,"mov %rax, 0x2B8(%rbp)",48 89 85 B8 02 00 00 ,0.01%
+,0x14000dac2,"jnz 0x000000014000D0F0",0F 85 28 F6 FF FF ,0.01%
+,0x14000dae4,"shl $0x03, %edx",C1 E2 03 ,0.03%
+,0x14000db0b,"vmovdqu -0x20(%rbp), %ymm5",C5 FE 6F 6D E0 ,0.01%
+,0x14000db10,"vmovdqu -0x40(%rbp), %ymm8",C5 7E 6F 45 C0 ,0.01%
+,0x14000e25f,"vmovups 0x2F0(%rbp), %xmm9",C5 78 10 8D F0 02 00 00 ,0.01%
+,0x14000e26f,"vmovups 0x310(%rbp), %xmm11",C5 78 10 9D 10 03 00 00 ,0.02%
+,0x14000e287,"vmovups 0x340(%rbp), %xmm14",C5 78 10 B5 40 03 00 00 ,0.01%
+,0x14000e2a0,"pop %rdi",5F ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)" (Showing only disassembly),,,,7.69%
+,0x140007758,"mov %rax, %rdi",48 89 C7 ,0.01%
+,0x1400077c8,"mov $0x01, %esi",BE 01 00 00 00 ,0.01%
+,0x1400077e9,"imul %r13, %rdx",49 0F AF D5 ,0.01%
+,0x140007800,"movssl 0x04(%rdx), %xmm1",F3 0F 10 4A 04 ,0.01%
+,0x140007805,"add $0x01, %r8d",41 83 C0 01 ,1.62%
+,0x140007809,"mulss %xmm0, %xmm1",F3 0F 59 C8 ,0.10%
+,0x14000780d,"movss %xmm1, (%rdx)",F3 0F 11 0A ,0.31%
+,0x140007811,"movssl (%rdx,%r9,4), %xmm1",F3 42 0F 10 0C 8A ,0.08%
+,0x140007817,"mulss %xmm0, %xmm1",F3 0F 59 C8 ,2.82%
+,0x14000781b,"movss %xmm1, 0x04(%rdx,%r9,4)",F3 42 0F 11 4C 8A 04 ,0.55%
+,0x140007822,"add %rbx, %rdx",48 01 DA ,0.05%
+,0x140007825,"cmp %r10d, %r8d",45 39 D0 ,0.03%
+,0x140007828,"jnz 0x0000000140007800",75 D6 ,0.02%
+,0x140007831,"jnz 0x00000001400077E0",75 AD ,0.01%
+,0x140007865,"shufps $0x00, %xmm1, %xmm1",0F C6 C9 00 ,0.01%
+,0x14000792c,"lea (,%r8,4), %rcx",4A 8D 0C 85 00 00 00 00 ,0.01%
+,0x14000796c,"jbe 0x0000000140007E3B",0F 86 C9 04 00 00 ,0.01%
+,0x1400079b5,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.01%
+,0x1400079c4,"mulps %xmm1, %xmm0",0F 59 C1 ,0.30%
+,0x1400079c7,"movups %xmm0, (%r9,%rax,1)",41 0F 11 04 01 ,0.11%
+,0x1400079cc,"movups (%rcx,%rax,1), %xmm0",0F 10 04 01 ,0.12%
+,0x1400079d0,"mulps %xmm1, %xmm0",0F 59 C1 ,0.37%
+,0x1400079d3,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.17%
+,0x1400079d8,"add $0x10, %rax",48 83 C0 10 ,0.09%
+,0x1400079f4,"cmp $-0x01, %ebx",83 FB FF ,0.01%
+,0x140007a07,"lea (%r10,%rax,1), %r11",4D 8D 1C 02 ,0.01%
+,0x140007a0b,"mulps %xmm4, %xmm0",0F 59 C4 ,0.01%
+,0x140007a13,"lea (%r8,%rax,1), %r11",4D 8D 1C 00 ,0.01%
+,0x140007a17,"add %r13, %rax",4C 01 E8 ,0.01%
+,0x140007a84,"lea (%r10,%r14,1), %r8",4F 8D 04 32 ,0.01%
+,0x140007a8c,"jmp 0x000000014000792C",E9 9B FE FF FF ,0.01%
+,0x140007ae4,"cmp -0x38(%rbp), %r12",4C 3B 65 C8 ,0.01%
+,0x140007aed,"mov -0x4C(%rbp), %eax",8B 45 B4 ,0.01%
+,0x140007b01,"lea 0x02(%rcx), %edi",8D 79 02 ,0.01%
+,0x140007bbe,"lea (%rax,%r10,1), %r13",4E 8D 2C 10 ,0.01%
+,0x140007bd9,"lea (,%r10,4), %r11",4E 8D 1C 95 00 00 00 00 ,0.01%
+,0x140007bf0,"jz 0x0000000140007D18",0F 84 22 01 00 00 ,0.01%
+,0x140007c04,"jbe 0x0000000140007E2B",0F 86 21 02 00 00 ,0.01%
+,0x140007c16,"lea (%rdx,%r13,4), %rcx",4A 8D 0C AA ,0.01%
+,0x140007c35,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.01%
+,0x140007c44,"mulps %xmm1, %xmm0",0F 59 C1 ,0.14%
+,0x140007c47,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.04%
+,0x140007c4c,"movups (%r9,%rax,1), %xmm0",41 0F 10 04 01 ,0.19%
+,0x140007c51,"mulps %xmm1, %xmm0",0F 59 C1 ,0.09%
+,0x140007c54,"movups %xmm0, (%rcx,%rax,1)",0F 11 04 01 ,0.12%
+,0x140007c58,"add $0x10, %rax",48 83 C0 10 ,0.14%
+,0x140007c5c,"cmp %rsi, %rax",48 39 F0 ,0.01%
+,0x140007c87,"lea (%rax,%r10,1), %r11",4E 8D 1C 10 ,0.01%
+,0x140007c93,"lea (%rax,%r8,1), %r11",4E 8D 1C 00 ,0.03%
+,0x140007ca0,"mulps %xmm2, %xmm0",0F 59 C2 ,0.01%
+,0x140007ca3,"movlps %xmm0, (%rdx,%rax,4)",0F 13 04 82 ,0.01%
+,0x140007ca7,"mov %r9d, %eax",44 89 C8 ,0.01%
+,0x140007d04,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.01%
+,0x140007d79,"pop %rbx",5B ,0.01%
+,0x140007d7e,"pop %r13",41 5D ,0.01%
+,0x140007e08,"jnz 0x0000000140007CF4",0F 85 E6 FE FF FF ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::(anonymous namespace)::vorticityRow(float*, float*, float*, float*, float const*, float const*, float const*, int, long long, long long)" (Showing only disassembly),,,,4.26%
+,0x140010180,"push %rbp",55 ,0.05%
+,0x140010181,"push %r15",41 57 ,0.02%
+,0x140010183,"push %r14",41 56 ,0.02%
+,0x140010185,"push %r13",41 55 ,0.03%
+,0x140010187,"push %r12",41 54 ,0.05%
+,0x140010189,"push %rdi",57 ,0.02%
+,0x14001018a,"push %rsi",56 ,0.06%
+,0x14001018b,"push %rbx",53 ,0.09%
+,0x14001018c,"sub $0x58, %rsp",48 83 EC 58 ,0.01%
+,0x140010190,"lea 0x20(%rsp), %rbp",48 8D 6C 24 20 ,0.01%
+,0x14001019a,"vmovups %xmm7, 0x10(%rbp)",C5 F8 11 7D 10 ,0.04%
+,0x1400101a4,"mov 0xB8(%rbp), %eax",8B 85 B8 00 00 00 ,0.03%
+,0x1400101b7,"mov %r9, %r14",4D 89 CE ,0.03%
+,0x1400101c8,"test %eax, %eax",85 C0 ,0.01%
+,0x1400101d9,"mov 0xB8(%rbp), %eax",8B 85 B8 00 00 00 ,0.01%
+,0x1400101e5,"jbe 0x00000001400106C3",0F 86 D8 04 00 00 ,0.01%
+,0x1400101fc,"lea 0x04(,%rax,4), %r9",4C 8D 0C 85 04 00 00 00 ,0.01%
+,0x14001020a,"lea 0x04(,%rax,4), %r8",4C 8D 04 85 04 00 00 00 ,0.01%
+,0x140010215,"lea (%rcx,%r9,1), %r15",4E 8D 3C 09 ,0.01%
+,0x140010233,"mov 0xC8(%rbp), %rax",48 8B 85 C8 00 00 00 ,0.01%
+,0x14001023e,"lea 0x04(,%rax,4), %rsi",48 8D 34 85 04 00 00 00 ,0.03%
+,0x140010246,"neg %rax",48 F7 D8 ,0.01%
+,0x140010255,"xor %eax, %eax",31 C0 ,0.01%
+,0x140010274,"vmovups (%r15,%rax,1), %ymm0",C4 C1 7C 10 04 07 ,0.02%
+,0x14001027a,"vmovups (%r13,%rax,1), %ymm2",C4 C1 7C 10 54 05 00 ,0.12%
+,0x140010281,"vsubps (%r12,%rax,1), %ymm2, %ymm2",C4 C1 6C 5C 14 04 ,0.07%
+,0x140010287,"vsubps (%r8,%rax,1), %ymm0, %ymm0",C4 C1 7C 5C 04 00 ,0.05%
+,0x14001028d,"vmovups 0x08(%rcx,%rax,1), %ymm4",C5 FC 10 64 01 08 ,0.14%
+,0x140010293,"vsubps (%rcx,%rax,1), %ymm4, %ymm4",C5 DC 5C 24 01 ,0.01%
+,0x140010298,"mov -0x10(%rbp), %r8",4C 8B 45 F0 ,0.22%
+,0x14001029c,"vmovups 0x08(%rdx,%rax,1), %ymm5",C5 FC 10 6C 02 08 ,0.01%
+,0x1400102a2,"vsubps (%rdx,%rax,1), %ymm5, %ymm6",C5 D4 5C 34 02 ,0.04%
+,0x1400102a7,"vsubps %ymm2, %ymm0, %ymm0",C5 FC 5C C2 ,0.08%
+,0x1400102ab,"vmovups (%rsi,%rax,1), %ymm2",C5 FC 10 14 06 ,0.02%
+,0x1400102b0,"vsubps (%rbx,%rax,1), %ymm2, %ymm2",C5 EC 5C 14 03 ,0.26%
+,0x1400102b5,"vsubps %ymm4, %ymm2, %ymm2",C5 EC 5C D4 ,0.08%
+,0x1400102b9,"vmovups (%r9,%rax,1), %ymm4",C4 C1 7C 10 24 01 ,0.01%
+,0x1400102bf,"vsubps (%r8,%rax,1), %ymm4, %ymm4",C4 C1 5C 5C 24 00 ,0.01%
+,0x1400102c5,"vmulps %ymm3, %ymm0, %ymm0",C5 FC 59 C3 ,0.04%
+,0x1400102c9,"mov 0x90(%rbp), %r8",4C 8B 85 90 00 00 00 ,0.03%
+,0x1400102d0,"vmulps %ymm3, %ymm2, %ymm2",C5 EC 59 D3 ,0.01%
+,0x1400102d4,"vsubps %ymm4, %ymm6, %ymm5",C5 CC 5C EC ,0.03%
+,0x1400102d8,"vmovups %ymm0, 0x04(%r11,%rax,1)",C4 C1 7C 11 44 03 04 ,0.05%
+,0x1400102df,"vmulps %ymm0, %ymm0, %ymm0",C5 FC 59 C0 ,0.32%
+,0x1400102e3,"vmulps %ymm3, %ymm5, %ymm7",C5 D4 59 FB ,0.01%
+,0x1400102e7,"vmovups %ymm2, 0x04(%r10,%rax,1)",C4 C1 7C 11 54 02 04 ,0.06%
+,0x1400102ee,"vmulps %ymm2, %ymm2, %ymm2",C5 EC 59 D2 ,0.40%
+,0x1400102f2,"vmulps %ymm7, %ymm7, %ymm6",C5 C4 59 F7 ,0.05%
+,0x1400102f6,"vmovups %ymm7, 0x04(%r8,%rax,1)",C4 C1 7C 11 7C 00 04 ,0.03%
+,0x1400102fd,"vaddps %ymm2, %ymm0, %ymm0",C5 FC 58 C2 ,0.32%
+,0x140010301,"vaddps %ymm6, %ymm0, %ymm0",C5 FC 58 C6 ,0.01%
+,0x140010305,"vsqrtps %ymm0, %ymm0",C5 FC 51 C0 ,0.09%
+,0x140010309,"vmovups %ymm0, 0x04(%r14,%rax,1)",C4 C1 7C 11 44 06 04 ,0.67%
+,0x140010310,"add $0x20, %rax",48 83 C0 20 ,0.47%
+,0x140010329,"jz 0x00000001400106A0",0F 84 71 03 00 00 ,0.01%
+,0x1400106a8,"vmovups 0x10(%rbp), %xmm7",C5 F8 10 7D 10 ,0.01%
+,0x1400106b8,"pop %rdi",5F ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::(anonymous namespace)::confinementRow(float*, float*, float*, float const*, float const*, float const*, float const*, int, float, long long, long long)" (Showing only disassembly),,,,3.29%
+,0x1400106d1,"push %r15",41 57 ,0.01%
+,0x1400106d3,"push %r14",41 56 ,0.01%
+,0x1400106d5,"push %r13",41 55 ,0.01%
+,0x1400106d9,"push %rdi",57 ,0.01%
+,0x1400106da,"push %rsi",56 ,0.02%
+,0x1400106db,"push %rbx",53 ,0.01%
+,0x1400106dc,"sub $0xD8, %rsp",48 81 EC D8 00 00 00 ,0.03%
+,0x1400106ed,"vmovups %xmm7, 0x10(%rbp)",C5 F8 11 7D 10 ,0.04%
+,0x1400106f7,"vmovups %xmm9, 0x30(%rbp)",C5 78 11 4D 30 ,0.01%
+,0x1400106fc,"vmovups %xmm10, 0x40(%rbp)",C5 78 11 55 40 ,0.01%
+,0x140010701,"vmovups %xmm11, 0x50(%rbp)",C5 78 11 5D 50 ,0.01%
+,0x140010706,"vmovups %xmm12, 0x60(%rbp)",C5 78 11 65 60 ,0.01%
+,0x14001070b,"vmovups %xmm13, 0x70(%rbp)",C5 78 11 6D 70 ,0.01%
+,0x140010718,"vmovups %xmm15, 0x90(%rbp)",C5 78 11 BD 90 00 00 00 ,0.03%
+,0x140010773,"lea -0x01(%rdi), %ebx",8D 5F FF ,0.01%
+,0x140010779,"jbe 0x0000000140010DB4",0F 86 35 06 00 00 ,0.01%
+,0x140010781,"vmovaps %ymm8, %ymm7",C5 7C 29 C7 ,0.01%
+,0x14001078a,"lea 0x04(%r9,%r15,4), %r12",4F 8D 64 B9 04 ,0.01%
+,0x140010794,"shr $0x03, %esi",C1 EE 03 ,0.02%
+,0x1400107b8,"lea 0x04(%r9,%rdi,4), %r14",4D 8D 74 B9 04 ,0.02%
+,0x1400107c0,"lea 0x04(%r9,%rbx,4), %r13",4D 8D 6C 99 04 ,0.01%
+,0x1400107d0,"xor %ebx, %ebx",31 DB ,0.01%
+,0x1400107e7,"vmovups (%r14,%rbx,1), %ymm3",C4 C1 7C 10 1C 1E ,0.01%
+,0x1400107f3,"vsubps (%r13,%rbx,1), %ymm3, %ymm3",C4 C1 64 5C 5C 1D 00 ,0.02%
+,0x1400107fa,"vmovups (%r12,%rbx,1), %ymm1",C4 C1 7C 10 0C 1C ,0.01%
+,0x140010800,"vsubps (%rdi,%rbx,1), %ymm1, %ymm1",C5 F4 5C 0C 1F ,0.11%
+,0x140010805,"vmovups 0x04(%r10,%rbx,1), %ymm10",C4 41 7C 10 54 1A 04 ,0.07%
+,0x14001080c,"vmulps %ymm7, %ymm0, %ymm0",C5 FC 59 C7 ,0.14%
+,0x140010810,"vmulps %ymm7, %ymm3, %ymm3",C5 E4 59 DF ,0.01%
+,0x140010814,"vmulps %ymm7, %ymm1, %ymm1",C5 F4 59 CF ,0.01%
+,0x140010818,"vmulps %ymm0, %ymm0, %ymm2",C5 FC 59 D0 ,0.01%
+,0x14001081c,"vmulps %ymm3, %ymm3, %ymm6",C5 E4 59 F3 ,0.04%
+,0x140010820,"vmulps %ymm1, %ymm10, %ymm11",C5 2C 59 D9 ,0.01%
+,0x140010824,"vaddps %ymm2, %ymm6, %ymm6",C5 CC 58 F2 ,0.04%
+,0x140010828,"vmulps %ymm1, %ymm1, %ymm2",C5 F4 59 D1 ,0.07%
+,0x14001082c,"vaddps %ymm2, %ymm6, %ymm6",C5 CC 58 F2 ,0.01%
+,0x140010830,"vsqrtps %ymm6, %ymm6",C5 FC 51 F6 ,0.02%
+,0x140010834,"vcmpps $0x01, %ymm6, %ymm8, %ymm4",C5 BC C2 E6 01 ,0.32%
+,0x14001083d,"vpandn %ymm9, %ymm4, %ymm5",C4 C1 5D DF E9 ,0.09%
+,0x140010846,"vmulps %ymm6, %ymm2, %ymm2",C5 EC 59 D6 ,0.08%
+,0x14001084a,"vcvtdq2ps %ymm5, %ymm5",C5 FC 5B ED ,0.24%
+,0x140010854,"vmulps %ymm3, %ymm6, %ymm4",C5 CC 59 E3 ,0.13%
+,0x140010858,"vmulps %ymm6, %ymm0, %ymm6",C5 FC 59 F6 ,0.02%
+,0x14001086c,"vmulps %ymm1, %ymm5, %ymm1",C5 D4 59 C9 ,0.10%
+,0x140010870,"vsubps %ymm11, %ymm4, %ymm4",C4 C1 5C 5C E3 ,0.03%
+,0x140010875,"vdivps %ymm2, %ymm12, %ymm2",C5 9C 5E D2 ,0.01%
+,0x140010879,"vmulps %ymm3, %ymm5, %ymm5",C5 D4 59 EB ,0.77%
+,0x14001087d,"vsubps %ymm6, %ymm1, %ymm1",C5 F4 5C CE ,0.01%
+,0x140010889,"vmulps %ymm2, %ymm1, %ymm1",C5 F4 59 CA ,0.24%
+,0x14001088d,"vaddps 0x04(%rcx,%rbx,1), %ymm4, %ymm4",C5 DC 58 64 19 04 ,0.03%
+,0x140010893,"vmulps %ymm2, %ymm0, %ymm0",C5 FC 59 C2 ,0.02%
+,0x140010897,"vaddps 0x04(%rax,%rbx,1), %ymm1, %ymm1",C5 F4 58 4C 18 04 ,0.04%
+,0x14001089d,"vaddps 0x04(%r8,%rbx,1), %ymm0, %ymm0",C4 C1 7C 58 44 18 04 ,0.07%
+,0x1400108a4,"vmovups %ymm4, 0x04(%rcx,%rbx,1)",C5 FC 11 64 19 04 ,0.05%
+,0x1400108aa,"vmovups %ymm1, 0x04(%rax,%rbx,1)",C5 FC 11 4C 18 04 ,0.04%
+,0x1400108b0,"vmovups %ymm0, 0x04(%r8,%rbx,1)",C4 C1 7C 11 44 18 04 ,0.07%
+,0x1400108b7,"add $0x20, %rbx",48 83 C3 20 ,0.09%
+,0x1400108cf,"vmovaps %ymm15, %ymm10",C4 41 7C 28 D7 ,0.01%
+,0x140010d86,"vmovups 0x60(%rbp), %xmm12",C5 78 10 65 60 ,0.01%
+,0x140010d8b,"vmovups 0x70(%rbp), %xmm13",C5 78 10 6D 70 ,0.01%
+,0x140010daa,"pop %r12",41 5C ,0.01%
+,0x140010dac,"pop %r13",41 5D ,0.01%
+,0x140010db0,"pop %r15",41 5F ,0.01%
+,0x140010db3,"ret",C3 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke::serial::SlabRange)" (Showing only disassembly),,,,2.17%
+,0x140006852,"lea (%rax,%rdx,1), %rbx",48 8D 1C 10 ,0.01%
+,0x140006856,"mov -0x58(%rbp), %rax",48 8B 45 A8 ,0.01%
+,0x14000685a,"lea (%rax,%rdx,1), %r11",4C 8D 1C 10 ,0.01%
+,0x140006884,"movups (%rsi,%rax,1), %xmm0",0F 10 04 06 ,0.04%
+,0x140006888,"movups (%rbx,%rax,1), %xmm4",0F 10 24 03 ,0.28%
+,0x14000688c,"subps %xmm5, %xmm0",0F 5C C5 ,0.35%
+,0x14000688f,"movups (%r11,%rax,1), %xmm5",41 0F 10 2C 03 ,0.01%
+,0x140006894,"addps %xmm4, %xmm0",0F 58 C4 ,0.15%
+,0x140006897,"movups (%r10,%rax,1), %xmm4",41 0F 10 24 02 ,0.05%
+,0x14000689c,"subps %xmm5, %xmm0",0F 5C C5 ,0.30%
+,0x14000689f,"movups (%r9,%rax,1), %xmm5",41 0F 10 2C 01 ,0.03%
+,0x1400068a4,"addps %xmm4, %xmm0",0F 58 C4 ,0.03%
+,0x1400068a7,"subps %xmm5, %xmm0",0F 5C C5 ,0.04%
+,0x1400068aa,"mulps %xmm1, %xmm0",0F 59 C1 ,0.11%
+,0x1400068ad,"movups %xmm0, (%r8,%rax,1)",41 0F 11 04 00 ,0.44%
+,0x1400068b2,"add $0x10, %rax",48 83 C0 10 ,0.24%
+,0x1400068b6,"cmp %rax, %r13",49 39 C5 ,0.06%
+,0x1400068b9,"jnz 0x0000000140006880",75 C5 ,0.01%
+,0x1400068c1,"cmp -0x20(%rbp), %eax",3B 45 E0 ,0.01%
+,0x1400069df,"add %r14, %rdi",4C 01 F7 ,0.01%
+,0x1400069e2,"cmp -0x40(%rbp), %r12d",44 3B 65 C0 ,0.01%
+,0x1400069e6,"jnz 0x0000000140006830",0F 85 44 FE FF FF ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke::serial::SlabRange)" (Showing only disassembly),,,,2.15%
+,0x140006b51,"push %r15",41 57 ,0.01%
+,0x140006d38,"mov -0x80(%rbp), %rax",48 8B 45 80 ,0.01%
+,0x140006d52,"lea (%rax,%r10,1), %rcx",4A 8D 0C 10 ,0.01%
+,0x140006d62,"lea (%rax,%r10,1), %rsi",4A 8D 34 10 ,0.01%
+,0x140006d66,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.02%
+,0x140006d6e,"mov -0x30(%rbp), %rax",48 8B 45 D0 ,0.01%
+,0x140006d7a,"lea (%rax,%r10,1), %r11",4E 8D 1C 10 ,0.01%
+,0x140006d85,"movups (%r12,%rax,1), %xmm0",41 0F 10 04 04 ,0.03%
+,0x140006d8a,"movups (%r8,%rax,1), %xmm1",41 0F 10 0C 00 ,0.05%
+,0x140006d8f,"subps %xmm5, %xmm0",0F 5C C5 ,0.18%
+,0x140006d92,"movups (%rsi,%rax,1), %xmm5",0F 10 2C 06 ,0.07%
+,0x140006d96,"mulps %xmm2, %xmm0",0F 59 C2 ,0.05%
+,0x140006d99,"subps %xmm0, %xmm1",0F 5C C8 ,0.21%
+,0x140006d9c,"movups (%rdi,%rax,1), %xmm0",0F 10 04 07 ,0.07%
+,0x140006da0,"subps %xmm5, %xmm0",0F 5C C5 ,0.03%
+,0x140006da3,"movups (%r11,%rax,1), %xmm5",41 0F 10 2C 03 ,0.07%
+,0x140006da8,"movups %xmm1, (%r8,%rax,1)",41 0F 11 0C 00 ,0.06%
+,0x140006dad,"movups (%rcx,%rax,1), %xmm1",0F 10 0C 01 ,0.08%
+,0x140006db1,"mulps %xmm2, %xmm0",0F 59 C2 ,0.26%
+,0x140006db4,"subps %xmm0, %xmm1",0F 5C C8 ,0.10%
+,0x140006db7,"movups (%rbx,%rax,1), %xmm0",0F 10 04 03 ,0.11%
+,0x140006dbb,"subps %xmm5, %xmm0",0F 5C C5 ,0.04%
+,0x140006dbe,"movups %xmm1, (%rcx,%rax,1)",0F 11 0C 01 ,0.01%
+,0x140006dc2,"movups (%rdx,%rax,1), %xmm1",0F 10 0C 02 ,0.09%
+,0x140006dc6,"mulps %xmm2, %xmm0",0F 59 C2 ,0.24%
+,0x140006dc9,"subps %xmm0, %xmm1",0F 5C C8 ,0.13%
+,0x140006dcc,"movups %xmm1, (%rdx,%rax,1)",0F 11 0C 02 ,0.10%
+,0x140006dd0,"add $0x10, %rax",48 83 C0 10 ,0.08%
+,0x140006dd4,"cmp %rax, %r15",49 39 C7 ,0.02%
+,0x140006dd7,"jnz 0x0000000140006D80",75 A7 ,0.02%
+,0x140006fb0,"add -0x28(%rbp), %r14",4C 03 75 D8 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)" (Showing only disassembly),,,,1.33%
+,0x140002766,"mov -0x80(%rbp), %rax",48 8B 45 80 ,0.01%
+,0x140002794,"mov -0x40(%rbp), %r11",4C 8B 5D C0 ,0.02%
+,0x1400027a4,"imul %r10, %r11",4D 0F AF DA ,0.01%
+,0x1400027d9,"cmp $0x08, %r8",49 83 F8 08 ,0.01%
+,0x1400027eb,"sub %r9, %r8",4D 29 C8 ,0.01%
+,0x140002802,"mov -0x50(%rbp), %ecx",8B 4D B0 ,0.01%
+,0x14000280e,"movaps %xmm13, %xmm5",41 0F 28 ED ,0.01%
+,0x140002845,"movups (%r9,%rax,1), %xmm1",41 0F 10 0C 01 ,0.16%
+,0x14000284a,"subps %xmm5, %xmm0",0F 5C C5 ,0.22%
+,0x14000284d,"mulps %xmm2, %xmm1",0F 59 CA ,0.02%
+,0x140002850,"mulps %xmm4, %xmm0",0F 59 C4 ,0.19%
+,0x140002853,"addps %xmm1, %xmm0",0F 58 C1 ,0.10%
+,0x140002856,"movups (%rdx,%rax,1), %xmm1",0F 10 0C 02 ,0.18%
+,0x14000285a,"mulps %xmm3, %xmm0",0F 59 C3 ,0.10%
+,0x14000285d,"addps %xmm1, %xmm0",0F 58 C1 ,0.16%
+,0x140002860,"movups %xmm0, (%rdx,%rax,1)",0F 11 04 02 ,0.03%
+,0x140002864,"add $0x10, %rax",48 83 C0 10 ,0.12%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::Field3D::fill(float)" (Showing only disassembly),,,,1.04%
+,0x1400017c4,"test %rax, %rax",48 85 C0 ,0.01%
+,0x140001823,"add $0x20, %rax",48 83 C0 20 ,0.21%
+,0x14000182b,"cmp %rcx, %rax",48 39 C8 ,0.82%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::advectSlabAvx2(float* const*, float const* const*, int, float const*, float const*, float const*, smoke::GridSize, int, int, float, long long, long long)" (Showing only disassembly),,,,0.25%
+,0x14000fce0,"push %rbp",55 ,0.01%
+,0x14000fce1,"push %r15",41 57 ,0.01%
+,0x14000feb4,"add $0x108, %rsp",48 81 C4 08 01 00 00 ,0.01%
+,0x14000ff24,"mov %rcx, -0x40(%rbp)",48 89 4D C0 ,0.01%
+,0x14000ff53,"mov 0xD8(%rbp), %rax",48 8B 85 D8 00 00 00 ,0.01%
+,0x14000ff5a,"vcvtsi2ss %edi, %xmm6, %xmm0",C5 CA 2A C7 ,0.01%
+,0x14000ff63,"add $0x01, %edi",83 C7 01 ,0.01%
+,0x14000ff81,"vmovss %xmm7, 0x50(%rsp)",C5 FA 11 7C 24 50 ,0.01%
+,0x14000ff8a,"mov %rax, 0x58(%rsp)",48 89 44 24 58 ,0.01%
+,0x14000ff8f,"mov -0x28(%rbp), %rax",48 8B 45 D8 ,0.01%
+,0x14000ffab,"mov 0x08(%r12), %r8",4D 8B 44 24 08 ,0.01%
+,0x14000ffcc,"add %rbx, %r8",49 01 D8 ,0.01%
+,0x14000ffd4,"lea (%rax,%rbx,1), %r8",4C 8D 04 18 ,0.01%
+,0x14000ffd8,"call 0x000000014000CEE0",E8 03 CF FF FF ,0.01%
+,0x14000ffdd,"add -0x30(%rbp), %rbx",48 03 5D D0 ,0.01%
+,0x14000ffe1,"cmp -0x34(%rbp), %edi",3B 7D CC ,0.01%
+,0x14000fff0,"mov -0x40(%rbp), %rcx",48 8B 4D C0 ,0.01%
+,0x14000fffb,"add $0x01, %edx",83 C2 01 ,0.01%
+,0x140010074,"mov %rcx, -0x40(%rbp)",48 89 4D C0 ,0.01%
+,0x1400100a3,"mov 0xD8(%rbp), %rax",48 8B 85 D8 00 00 00 ,0.02%
+,0x1400100ae,"lea (%r13,%rbx,1), %rcx",49 8D 4C 1D 00 ,0.01%
+,0x1400100b3,"add $0x01, %esi",83 C6 01 ,0.02%
+,0x1400100be,"mov %edx, -0x18(%rbp)",89 55 E8 ,0.01%
+,0x1400100d1,"vmovss %xmm7, 0x60(%rsp)",C5 FA 11 7C 24 60 ,0.01%
+,0x1400100e9,"mov %rax, 0x48(%rsp)",48 89 44 24 48 ,0.01%
+,0x1400100fb,"mov 0x10(%r12), %r8",4D 8B 44 24 10 ,0.01%
+,0x140010113,"mov %r8, 0x38(%rsp)",4C 89 44 24 38 ,0.01%
+,0x14001011f,"add %rbx, %r8",49 01 D8 ,0.01%
+,0x140010122,"mov %r8, 0x28(%rsp)",4C 89 44 24 28 ,0.01%
+,0x14001012e,"add %rbx, %r8",49 01 D8 ,0.01%
+,0x140010131,"mov %r8, 0x20(%rsp)",4C 89 44 24 20 ,0.01%
+,0x14001013a,"add %rbx, %r8",49 01 D8 ,0.01%
+,0x140010142,"add -0x30(%rbp), %rbx",48 03 5D D0 ,0.02%
+,0x140010146,"cmp -0x34(%rbp), %esi",3B 75 CC ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::vorticitySlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, long long, long long)" (Showing only disassembly),,,,0.20%
+,0x140010edd,"mov %rsi, %rdx",48 89 F2 ,0.01%
+,0x140010ee5,"mov %r12, %rcx",4C 89 E1 ,0.03%
+,0x140010ee8,"add $0x01, %edi",83 C7 01 ,0.01%
+,0x140010ef3,"add %rbx, %rsi",48 01 DE ,0.01%
+,0x140010f08,"mov %r15, 0x20(%rsp)",4C 89 7C 24 20 ,0.01%
+,0x140010f0d,"add %rbx, %r15",49 01 DF ,0.02%
+,0x140010f15,"mov 0x88(%rbp), %eax",8B 85 88 00 00 00 ,0.02%
+,0x140010f1f,"mov %eax, 0x38(%rsp)",89 44 24 38 ,0.03%
+,0x140010f23,"mov %r10, -0x08(%rbp)",4C 89 55 F8 ,0.02%
+,0x140010f27,"call 0x0000000140010180",E8 54 F2 FF FF ,0.04%
+,0x140010f34,"add %rbx, %r10",49 01 DA ,0.01%
+,0x140010f37,"add %rbx, %r11",49 01 DB ,0.02%
+,0x140010f40,"jnl 0x0000000140010ED0",7D 8E ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::confinementSlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, float, long long, long long)" (Showing only disassembly),,,,0.06%
+,0x14001108e,"mov %r15, %rsi",4C 89 FE ,0.01%
+,0x1400110b5,"add %rbx, %r14",49 01 DE ,0.01%
+,0x1400110b8,"add %rbx, %rsi",48 01 DE ,0.01%
+,0x1400110bb,"add %rbx, %r12",49 01 DC ,0.01%
+,0x1400110dd,"mov %r13, 0x20(%rsp)",4C 89 6C 24 20 ,0.01%
+,0x1400110f7,"add %rbx, %r8",49 01 D8 ,0.01%
+,0x1400110fa,"cmp %edi, 0xA0(%rbp)",39 BD A0 00 00 00 ,0.01%
+,0x140011100,"jnl 0x00000001400110A0",7D 9E ,0.01%
+,0x14001110c,"add 0xC8(%rbp), %r11",4C 03 9D C8 00 00 00 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)" (Showing only disassembly),,,,0.04%
+,0x1400018c3,"movssl 0x00000001400EB4B0, %xmm0",F3 0F 10 05 E5 9B 0E 00 ,0.01%
+,0x140001a7c,"mulss %xmm0, %xmm0",F3 0F 59 C0 ,0.01%
+,0x140001a80,"addss %xmm1, %xmm0",F3 0F 58 C1 ,0.01%
+,0x140001aad,"addss %xmm6, %xmm0",F3 0F 58 C6 ,0.01%
+,0x140001ad7,"addss %xmm2, %xmm0",F3 0F 58 C2 ,0.01%
+,0x140001ae1,"add $0x01, %rax",48 83 C0 01 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::avx2Supported()" (Showing only disassembly),,,,0.01%
+,0x14000afe4,"movzxb 0x0D(%rax), %eax",0F B6 40 0D ,0.01%
+,0x14000afe8,"shr $0x02, %al",C0 E8 02 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke::serial::SlabRange, smoke::serial::KernelIsa)" (Showing only disassembly),,,,0.01%
+,0x140002ab4,"add $0x128, %rsp",48 81 C4 28 01 00 00 ,0.01%
+,0x140002e01,"mov %r13d, 0x38(%rsp)",44 89 6C 24 38 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"(anonymous namespace)::wholeStep(smoke::SmokeState&, smoke::SmokeParams const&, smoke::serial::SlabRange, smoke::ObstacleLists const*) (.constprop.0)" (Showing only disassembly),,,,0.01%
+,0x140001501,"jz 0x00000001400015C8",0F 84 C1 00 00 00 ,0.01%
+,0x140001604,"movups (%rbp), %xmm6",0F 10 75 00 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::project(smoke::SmokeState&, smoke::SmokeParams const&, smoke::serial::SlabRange, double*, smoke::ObstacleLists const*)" (Showing only disassembly),,,,0.01%
+,0x140007584,"jnl 0x00000001400076E0",0F 8D 56 01 00 00 ,0.01%
+,0x140007644,"punpcklqdq %xmm2, %xmm1",66 0F 6C CA ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"ntdll.dll!0x1800e0c50" (DEBUG INFO NOT FOUND),,,,0.01%
+,0x1800e0c50,"mov 0x000000007FFE0300, %rax",48 8B 04 25 00 03 FE 7F ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"main" (Showing only disassembly),,,,0.01%
+,0x1400e38ea,"add $0x01, %rbx",48 83 C3 01 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke_prof.exe!0x1400c6ec4" (DEBUG INFO NOT FOUND),,,,0.01%
+,0x1400c6ec4,"mov 0x00000001400F1E80, %rcx",48 8B 0D B5 AF 02 00 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::advectVelocity(smoke::SmokeState&, float, smoke::serial::SlabRange)" (Showing only disassembly),,,,0.01%
+,0x140005a41,"push %r15",41 57 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke_prof.exe!0x1400e55c6" (DEBUG INFO NOT FOUND),,,,0.01%
+,0x1400e55c6,"test %eax, %eax",85 C0 ,0.01%
+

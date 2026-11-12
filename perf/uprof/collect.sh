@@ -9,6 +9,12 @@
 #            which uProf refuses while Hyper-V / WSL2 is enabled ("Only timer-based profiling (TBP) is available").
 #   seconds  measured time per workload (default: 20)
 #
+# Optional environment variables:
+#   OBSTACLE=sphere|blanket   put an obstacle into the box (smoke_prof --obstacle; only the stage "all" has
+#                             obstacles, so STAGES is then forced to "all")
+#   STAGES="all jacobi"       which stages to collect (default: all jacobi advect forces)
+#   GRIDS="64"                which grids to collect (default: 64 128)
+#
 # For every grid (64, 128) and stage (all, jacobi, advect, forces) it writes into <folder>/g<grid>_<stage>/:
 #   workload.txt  what smoke_prof printed (iterations, ms per iteration)
 #   report.csv    function table                (AMDuProfCLI report --cutoff 0)
@@ -27,6 +33,10 @@ UPROF="${UPROF:-/c/Program Files/AMD/AMDuProf/bin/AMDuProfCLI.exe}"
 PROF="Solver/build-prof/smoke_prof.exe"
 BENCH="Solver/build-prof/smoke_bench.exe"
 OUT="perf/uprof/$(date +%Y-%m-%d)_${LABEL}"
+OBSTACLE="${OBSTACLE:-none}"
+STAGES="${STAGES:-all jacobi advect forces}"
+GRIDS="${GRIDS:-64 128}"
+[ "$OBSTACLE" = "none" ] || STAGES="all"
 
 [ -x "$UPROF" ] || { echo "AMDuProfCLI not found: $UPROF" >&2; exit 1; }
 [ -x "$PROF" ] || { echo "build the profile build first: $PROF" >&2; exit 1; }
@@ -41,20 +51,22 @@ mkdir -p "$OUT"
     echo "  $("$UPROF" --version 2>&1 | tr -d '\r')"
     echo "  collect_config: $CONFIG"
     echo "  seconds_per_workload: $SECONDS_PER_RUN"
+    echo "  obstacle: $OBSTACLE"
     echo "  date: $(date '+%Y-%m-%d %H:%M')"
 } > "$OUT/session_info.txt" 2>&1
 
-for GRID in 64 128; do
+for GRID in $GRIDS; do
     # smoke_prof first develops the flow for 100 whole steps; sampling starts after that (--start-delay).
     # The delays are longer than the develop phase took in a trial run (64^3: under 1 s, 128^3: about 10 s).
     if [ "$GRID" -ge 128 ]; then DELAY=14; else DELAY=2; fi
-    for STAGE in all jacobi advect forces; do
+    for STAGE in $STAGES; do
         SESSION="$OUT/g${GRID}_${STAGE}"
         rm -rf "$SESSION"
         echo "== $SESSION ($CONFIG, ${SECONDS_PER_RUN}s, start delay ${DELAY}s)"
         RUN_SECONDS=$((SECONDS_PER_RUN + DELAY))
         "$UPROF" collect --config "$CONFIG" --start-delay "$DELAY" -o "$(cygpath -w "$SESSION")" \
             "$(cygpath -w "$PWD/$PROF")" --grid "$GRID" --seconds "$RUN_SECONDS" --stage "$STAGE" \
+            --obstacle "$OBSTACLE" \
             > "$OUT/collect_g${GRID}_${STAGE}.log" 2>&1
         if [ ! -d "$SESSION" ]; then
             echo "   collection FAILED, see $OUT/collect_g${GRID}_${STAGE}.log" >&2

@@ -184,7 +184,7 @@ endif()
 if(SMOKE_BUILD_PROF)
   add_executable(smoke_prof apps/smoke_prof/main.cpp)
   target_link_libraries(smoke_prof PRIVATE smoke_solver)
-  target_include_directories(smoke_prof PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  target_include_directories(smoke_prof PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/apps/common)
   smoke_set_warnings(smoke_prof)
   if(MINGW)
     # Static C++ runtime: the profiler may start the program from a shell without MSYS2 on PATH.
@@ -220,7 +220,7 @@ if(SMOKE_BUILD_BENCH)
   add_executable(smoke_bench bench/bench_main.cpp)
   target_link_libraries(smoke_bench PRIVATE smoke_solver)
   # --convergence reads the pressure and divergence fields, so it needs the internal headers.
-  target_include_directories(smoke_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  target_include_directories(smoke_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/apps/common)
   target_compile_definitions(smoke_bench PRIVATE
     SMOKE_BENCH_BUILD_TYPE="$<CONFIG>"
     SMOKE_BENCH_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"

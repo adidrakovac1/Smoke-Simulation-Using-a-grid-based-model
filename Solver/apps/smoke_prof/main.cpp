@@ -9,11 +9,16 @@
 //   --stage advect   both advections of one step (3 velocity fields, then density + temperature)
 //   --stage forces   buoyancy + vorticity confinement
 //
+//   --obstacle sphere|blanket   (only with --stage all) puts an obstacle into the box, the same scenarios as
+//                               smoke_bench --obstacle (apps/common/ObstacleScenarios.h)
+//
 // It uses the internal stage functions directly (like the tests and smoke_lab), so it measures the same code
 // the solver runs. Text is ASCII only (decision D7).
 
+#include "ObstacleScenarios.h"
 #include "SmokeState.h"
 #include "smoke/SolverConfig.h"
+#include "stages/ObstacleLists.h"
 #include "stages/Stages.h"
 
 #include <chrono>
@@ -34,18 +39,20 @@ struct Options {
     int grid = 64;
     double seconds = 10.0;
     std::string stage = "all";
+    std::string obstacle = "none";  // only with stage "all"
     int develop = 100;     // whole steps run before the measured part (the reference scenario also runs 100)
     int resetEvery = 300;  // --stage all: start again from an empty box after this many steps (see runAll)
 };
 
 void printUsage() {
     std::cout << "Koriscenje: smoke_prof [--grid N] [--seconds S] [--stage all|jacobi|advect|forces]\n"
-                 "                       [--develop N] [--reset-every N]\n"
+                 "                       [--develop N] [--reset-every N] [--obstacle none|sphere|blanket]\n"
                  "  --grid N         kubna mreza N^3 (zadano 64)\n"
                  "  --seconds S      koliko dugo se ponavlja izabrani posao (zadano 10)\n"
                  "  --stage X        all = cijeli korak; jacobi, advect, forces = samo ta faza (zadano all)\n"
                  "  --develop N      cijelih koraka prije mjerenog dijela, da polja budu stvarna (zadano 100)\n"
-                 "  --reset-every N  samo za 'all': poslije N koraka kreni od prazne kutije (zadano 300)\n";
+                 "  --reset-every N  samo za 'all': poslije N koraka kreni od prazne kutije (zadano 300)\n"
+                 "  --obstacle X     samo za 'all': prepreka u kutiji, kao smoke_bench --obstacle (zadano none)\n";
 }
 
 bool parseInt(const char* text, int& out, int minValue) {
@@ -76,6 +83,9 @@ bool parseArgs(int argc, char** argv, Options& options) {
             if (options.stage != "all" && options.stage != "jacobi" && options.stage != "advect" &&
                 options.stage != "forces")
                 return false;
+        } else if (arg == "--obstacle") {
+            options.obstacle = value;
+            if (!scenarios::isObstacleScenario(options.obstacle)) return false;
         } else if (arg == "--develop") {
             if (!parseInt(value, options.develop, 0)) return false;
         } else if (arg == "--reset-every") {
@@ -84,16 +94,33 @@ bool parseArgs(int argc, char** argv, Options& options) {
             return false;
         }
     }
-    return true;
+    // The single-stage loops call the kernels directly, and the kernels know nothing about obstacles.
+    return options.obstacle == "none" || options.stage == "all";
 }
 
-// One whole step, the same calls in the same order as SmokeSolver::step (Solver/src/SmokeSolver.cpp).
-void wholeStep(SmokeState& state, const SmokeParams& params, SlabRange all) {
-    addSources(state, params, params.dt, all);
-    applyForces(state, params, params.dt, all);
-    advectVelocity(state, params.dt, all);
-    project(state, params, all);
-    advectScalars(state, params.dt, all);
+// One whole step, the same calls in the same order as SmokeSolver::step (Solver/src/SmokeSolver.cpp),
+// including the obstacle calls (obstacles == nullptr: no obstacles, the path taken before they existed).
+void wholeStep(SmokeState& state, const SmokeParams& params, SlabRange all, const ObstacleLists* obstacles) {
+    const float dt = params.dt;
+    addSources(state, params, dt, all);
+    if (obstacles) clearSolidScalars(state, params.ambientTemp, *obstacles);
+    applyForces(state, params, dt, all);
+    if (obstacles) {
+        applyPorousDrag(state, dt, *obstacles);
+        enforceSolidVelocity(state, *obstacles);
+    }
+    advectVelocity(state, dt, all);
+    if (obstacles) enforceSolidVelocity(state, *obstacles);
+    project(state, params, all, nullptr, obstacles);
+    if (obstacles) {
+        extendIntoSolids(state.density, *obstacles);
+        extendIntoSolids(state.temperature, *obstacles);
+    }
+    advectScalars(state, dt, all);
+    if (obstacles) {
+        clearSolidScalars(state, params.ambientTemp, *obstacles);
+        applyPorousFilter(state, dt, *obstacles);
+    }
 }
 
 double secondsSince(Clock::time_point start) {
@@ -103,7 +130,8 @@ double secondsSince(Clock::time_point start) {
 // Whole steps. The box is closed and the source never stops, so after many steps the smoke fills the box and
 // the flow no longer looks like the scenario we tuned and tested (300 steps: the plume reaches the top,
 // docs/plan/MATH.md, section 3). Therefore the simulation restarts from an empty box every resetEvery steps.
-long long runAll(SmokeState& state, const SmokeParams& params, SlabRange all, const Options& options) {
+long long runAll(SmokeState& state, const SmokeParams& params, SlabRange all, const Options& options,
+                 const ObstacleLists* obstacles) {
     long long iterations = 0;
     int stepsSinceReset = options.develop;
     const auto start = Clock::now();
@@ -112,7 +140,7 @@ long long runAll(SmokeState& state, const SmokeParams& params, SlabRange all, co
             state.clear();
             stepsSinceReset = 0;
         }
-        wholeStep(state, params, all);
+        wholeStep(state, params, all, obstacles);
         ++stepsSinceReset;
         ++iterations;
     }
@@ -193,11 +221,19 @@ int main(int argc, char** argv) {
     state.resize(config.grid);
     const SlabRange all = wholeInterior(config.grid);
 
-    for (int step = 0; step < options.develop; ++step) wholeStep(state, params, all);
+    // Obstacle lists are built once, as in SmokeSolver::setObstacles. An all-Fluid grid gives no lists at all.
+    ObstacleLists lists;
+    const ObstacleLists* obstacles = nullptr;
+    if (options.obstacle != "none") {
+        lists = buildObstacleLists(scenarios::makeObstacleScenario(options.obstacle, config.grid), state.density);
+        if (!lists.empty()) obstacles = &lists;
+    }
+
+    for (int step = 0; step < options.develop; ++step) wholeStep(state, params, all, obstacles);
 
     const auto start = Clock::now();
     long long iterations = 0;
-    if (options.stage == "all") iterations = runAll(state, params, all, options);
+    if (options.stage == "all") iterations = runAll(state, params, all, options, obstacles);
     else if (options.stage == "jacobi") iterations = runJacobi(state, params, all, options);
     else if (options.stage == "advect") iterations = runAdvect(state, params, all, options);
     else iterations = runForces(state, params, all, options);
@@ -209,7 +245,8 @@ int main(int argc, char** argv) {
                            state.pressure.at(mid, mid, mid) + state.u0.at(mid, mid, mid);
 
     std::cout << "smoke_prof: faza=" << options.stage << " mreza=" << options.grid << "^3"
-              << " razvoj_koraka=" << options.develop << " K=" << params.jacobiIterations << '\n'
+              << " razvoj_koraka=" << options.develop << " K=" << params.jacobiIterations
+              << " prepreka=" << options.obstacle << '\n'
               << std::fixed << std::setprecision(3) << "  trajanje_s: " << seconds << '\n'
               << "  ponavljanja: " << iterations << '\n'
               << std::setprecision(6) << "  ms_po_ponavljanju: " << (iterations ? seconds * 1000.0 / iterations : 0.0)

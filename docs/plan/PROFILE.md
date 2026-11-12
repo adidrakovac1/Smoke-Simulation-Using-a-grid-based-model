@@ -4,7 +4,7 @@ Ovaj dokument odgovara na pitanje **gdje procesor troši vrijeme i zašto** (ke�
 a ne koliko je nešto brže. Zaključci o brzini ostaju na S i Δ iz [PERF_LOG.md](PERF_LOG.md) (protokol D10).
 Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 i P1.
 
-Stanje (2026-11-11): P0 i P1 su urađeni, prvo s **vremenskim uzorkovanjem (TBP)**, a poslije isključenja WSL2 i
+Stanje (2026-11-12): dodan profil s preprekama (odjeljak 6). Stanje (2026-11-11): P0 i P1 su urađeni, prvo s **vremenskim uzorkovanjem (TBP)**, a poslije isključenja WSL2 i
 s **hardverskim brojačima (EBP)**. IBS nije dostupan (odjeljak 3.3). Odgovori na hipoteze su u odjeljku 4.3;
 H2 ostaje otvorena. HTML izvještaj sa svim sesijama: `perf/uprof/report.html`.
 
@@ -375,3 +375,111 @@ Tabela ostaje kao spisak kandidata za kasnije.
 
 **Šta još nedostaje.** H2 nije razdvojena (treba eksperiment ili IBS). Trošak čitanja preko granice linije nije
 izmjeren. Nijedan kandidat nema izmjereno ubrzanje: to se mjeri tek kad se izmjena napravi, po protokolu D10.
+
+---
+
+## 6. Profil s preprekama (2026-11-12, P5)
+
+Isti postupak kao u odjeljku 3, ali cijeli korak (`--stage all`) s preprekom u kutiji. Pitanje: **gdje u koraku
+ide vrijeme koje prepreke dodaju, i mijenjaju li prepreke ponašanje ostalih jezgara?** Koliko je korak sporiji
+mjeri se drugačije (protokol D10) i piše u [PERF_LOG.md](PERF_LOG.md), odjeljak 9.
+
+### 6.1 Kako je mjereno
+
+- `smoke_prof --obstacle sphere|blanket` (samo uz `--stage all`). Cijeli korak u `smoke_prof` zove iste funkcije
+  istim redom kao `SmokeSolver::step`, uključujući pozive za prepreke. Scenariji su isti kao u
+  `smoke_bench --obstacle` (zajednički header `Solver/apps/common/ObstacleScenarios.h`): kugla poluprečnika 0.15
+  kutije u sredini, odnosno porozni sloj debeo dvije ćelije na visini 0.45 sa σ = 20 1/s.
+- Šest sesija, sve istog dana i iz iste profilne gradnje, 20 s svaka, 64³ i 128³:
+
+```
+OBSTACLE=none    STAGES=all perf/uprof/collect.sh obs_none_tbp    tbp        20
+OBSTACLE=sphere  STAGES=all perf/uprof/collect.sh obs_sphere_tbp  tbp        20
+OBSTACLE=blanket STAGES=all perf/uprof/collect.sh obs_blanket_tbp tbp        20
+(isto s "assess_ext" umjesto "tbp" i oznakom *_ebp)
+```
+
+- Sesija bez prepreke je ponovljena istog dana da poređenje ne zavisi od stanja računara 2026-11-11.
+- Provjera prije mjerenja: profilna i obična gradnja daju `--verify` bit po bit isto; 58/58 testova.
+- U `tools/uprof_report.py` dodana je faza **Prepreke** (funkcije iz `Solver/src/stages/Obstacles.cpp`).
+  Svih 36 sesija je u `perf/uprof/report.html`.
+
+### 6.2 Udio faza u cijelom koraku (vremensko uzorkovanje)
+
+| Faza | 64³ bez | 64³ kugla | 64³ deka | 128³ bez | 128³ kugla | 128³ deka |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Jacobi | 34.8% | 35.2% | 35.4% | 51.9% | 51.9% | 51.2% |
+| Advekcija | 42.9% | 39.4% | 42.0% | 24.1% | 23.7% | 25.6% |
+| Sile | 9.1% | 8.8% | 9.1% | 9.2% | 9.1% | 9.8% |
+| Rubni uslovi (`setBoundary`) | 7.7% | 8.9% | 7.9% | 9.8% | 8.0% | 8.2% |
+| Projekcija bez Jacobija | 4.3% | 4.5% | 4.4% | 4.3% | 4.1% | 4.4% |
+| **Prepreke** | 0 | **2.2%** | **0.1%** | 0 | **2.5%** | **0.1%** |
+| Kopiranje i punjenje | 1.0% | 0.9% | 1.0% | 0.7% | 0.6% | 0.7% |
+
+Sesija bez prepreke daje istu sliku kao 2026-11-11 (odjeljak 4.1: 64³ Jacobi 35.2%, advekcija 43.4%; 128³ Jacobi
+49.4%, advekcija 27.0%), na dva do tri procentna poena.
+
+### 6.3 Prepreke po funkcijama (kugla, udio cijelog koraka)
+
+| Funkcija | Šta radi | Koliko puta po koraku | 64³ | 128³ |
+| :--- | :--- | :--- | ---: | ---: |
+| `extendIntoSolids` | granična čvrsta ćelija = srednja vrijednost fluidnih susjeda (pritisak, gustina, temperatura) | 42 (40 puta za pritisak, poslije svake Jacobi iteracije; 2 puta prije advekcije skalara) | 1.37% | 1.73% |
+| `reflectVelocityIntoSolids` | brzina u čvrstim ćelijama: nula, pa odbijanje na površini | 3 (poslije sila, advekcije brzine i projekcije) | 0.71% | 0.63% |
+| `clearSolidScalars` | dim i temperatura u čvrstim ćelijama na 0 | 2 | 0.14% | 0.12% |
+
+Kod deke gotovo sve otpada na `applyPorousDrag` (0.07% koraka na obje mreže).
+
+**Najveći dio troška prepreka je prenos pritiska poslije svake Jacobi iteracije.** To se slaže s mjerenjem po
+D10: tamo je jedina faza s presudom "sporije" (osim izvora) bila Jacobi iteracija s kuglom na 64³, 3.75% sporija;
+ovdje je `extendIntoSolids` 1.37% koraka, što je 3.9% vremena Jacobija (1.37 / 35.2). Dva nezavisna mjerenja daju
+isti red veličine.
+
+### 6.4 Brojači za funkcije prepreka (`assess_ext`, kugla, 64³ / 128³)
+
+| Funkcija | CPI | Grananja (PTI) | Pogrešno predviđena | Punjenja L1 iz L2 (PTI) | iz L3 (PTI) | iz RAM-a (PTI) |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `extendIntoSolids` | 0.45 / 1.81 | 128 / 143 | 1.36% / 2.86% | 6.7 / 6.1 | 19.4 / 9.8 | 1.0 / 11.7 |
+| `reflectVelocityIntoSolids` | 0.55 / 1.42 | 169 / 184 | 0.82% / 0.75% | 18.3 / 11.1 | 15.5 / 8.7 | 2.1 / 8.5 |
+| `clearSolidScalars` | 0.60 / 1.31 | 183 / 223 | 0.00% / 0.33% | 12.5 / 13.1 | 34.2 / 2.2 | 9.2 / 10.9 |
+| `jacobiSlabAvx2` (poređenje) | 0.57 / 1.52 | 86 / 85 | 0.16% / 0.13% | 26.7 / 35.1 | 1.1 / 0.9 | 0.02 / 1.84 |
+
+Šta se vidi:
+
+- **Petlje po listama su kod s mnogo grananja** (128 do 223 grananja na 1000 instrukcija; Jacobi 85). Razlog je
+  unutrašnja petlja po susjedima, koja ima 1 do 3 prolaza po ćeliji. Zato `extendIntoSolids` pogrešno predvidi
+  1.4 do 2.9% grananja, deset do dvadeset puta češće nego Jacobi.
+- **Na 128³ i ove petlje čekaju memoriju.** CPI raste tri do četiri puta (0.45 na 1.81), a punjenja L1 iz RAM-a
+  s 1.0 na 11.7 PTI. Lista skače po mreži (ćelije površine kugle nisu susjedne u memoriji), pa prefetcher ne
+  pomaže, isto kao kod ploha `x` u `setBoundary` (odjeljak 4.5).
+- Uzoraka je malo (`clearSolidScalars`: 72 i 180 uzoraka ciklusa; `extendIntoSolids`: 697 i 2034), pa su brojevi
+  za male funkcije grubi.
+
+### 6.5 Mijenjaju li prepreke ostala jezgra?
+
+Ne, u okviru onoga što brojači pokazuju. CPI glavnih jezgara, 64³ / 128³:
+
+| Funkcija | Bez prepreke | Kugla | Deka |
+| :--- | ---: | ---: | ---: |
+| `jacobiSlabAvx2` | 0.56 / 1.57 | 0.57 / 1.52 | 0.57 / 1.49 |
+| `advectRow3` | 0.38 / 0.38 | 0.38 / 0.40 | 0.38 / 0.39 |
+| `advectRow2` | 0.45 / 0.42 | 0.46 / 0.42 | 0.45 / 0.43 |
+| `setBoundary` | 0.81 / 2.51 | 0.77 / 2.45 | 0.81 / 2.46 |
+
+Razlike su u drugoj decimali. To je ono što D16 tvrdi: vektorizirana jezgra ne znaju za prepreke i rade isto.
+
+`setBoundary` u sesijama cijelog koraka ima CPI 0.8 (64³), više nego 0.51 u sesiji `jacobi` iz odjeljka 4.5, jer
+ovdje radi i nad brzinom, gustinom i temperaturom, a ne samo nad pritiskom.
+
+### 6.6 Zaključak i kandidati
+
+- Prepreke dodaju novu fazu od oko **2.2 do 2.5% koraka za kuglu** i **0.1% za deku**. Ostale faze se ne mijenjaju.
+- Od toga je oko 60% `extendIntoSolids`, i to gotovo sve za pritisak, jer se za njega zove 40 puta po koraku.
+- Udjeli su iz uzoraka, ne iz mjerenja vremena: ne smiju se čitati kao "korak je 2.2% sporiji" (za to vrijedi
+  PERF_LOG.md, odjeljak 9, gdje je trošak cijelog koraka ispod šuma).
+- **Kandidat za kasnije (nije implementiran, nije odobren):** petlja po susjedima u `extendIntoSolids` bez
+  unutrašnje petlje promjenljive dužine (npr. fiksno 6 mjesta s težinom 0 za susjede koji nisu fluid), da nestanu
+  pogrešna grananja. Dokaz: 1.4 do 2.9% pogrešnih grananja. Očekivani domet: najviše dio od 1.4 do 1.7% koraka;
+  **nije izmjereno**. Mijenja li rezultat: zavisi od redoslijeda sabiranja, pa bi tražio provjeru hash-a s
+  preprekama. Ide u tabelu iz odjeljka 5 kao kandidat 7, s najmanjim očekivanim dobitkom od svih.
+- **Nije mjereno:** veće prepreke, prepreke uz zid kutije (tada se poslije njih osvježava i ghost sloj),
+  `inst_access` (frontend) s preprekama.

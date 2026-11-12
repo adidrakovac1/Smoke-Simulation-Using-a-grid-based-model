@@ -198,6 +198,17 @@ Razrada: EXECUTION_PLAN.md, faza P4; objašnjenja u `docs/plan/OBSTACLES.md`.
 (kugla na 330 i 700 koraka, kocka i deka na 700). Dugmad panela nisu kliknuta rukom; scenariji su pokrenuti
 automatski (`SMOKE_AUTOSHOT_OBSTACLE`).
 
+**Tačka G3 (2026-11-12, Ermin): "možeš nastaviti".** Rad ide na P5. Ermin nije posebno komentarisao dva
+odstupanja od plana (odbijanje brzine u čvrstim ćelijama; crtanje mesha bez Assimpa), pa ostaju kako su urađena;
+ako ih želi drugačije, to je izmjena poslije G3. Demo rukom još nije pregledan.
+
+### P5: zatvaranje (EXECUTION_PLAN.md)
+- [x] Profil s preprekama (uProf, isti postupak kao P1), poređenje u HTML izvještaju.
+      (2026-11-12: PROFILE.md, odjeljak 6. Prepreke su nova faza od 2.2 do 2.5% koraka za kuglu i 0.1% za deku;
+      ostala jezgra se ne mijenjaju.)
+- [ ] M4c: pregled koda i očišćeni TODO-ovi, nacrt izvještaja, provjera `SlabRange` (stavke su gore, pod M4c).
+- [ ] Označeni milestone-ovi; `CLAUDE.md` i `README.md` usklađeni sa stanjem.
+
 ---
 
 ## 3. Odluke (donesene u M0)
