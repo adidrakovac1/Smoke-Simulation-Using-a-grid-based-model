@@ -43,12 +43,12 @@ Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
    OBSTACLES.md, odjeljak 7. Treba potvrda ili zahtjev da se ipak ide kroz Assimp.
 3. **Pregled demoa rukom** (u panelu: Kugla, Kocka, Deka; kamera mišem; po želji vlastiti `.obj`). Do sada je sve
    provjereno samo automatskim pokretanjem.
+4. **Da li ponoviti mjerenje troška na tihom računaru.** Mjerenje od 2026-11-12 je rađeno dok je računar bio u
+   upotrebi; trošak prepreka je ispao ispod šuma (procjena za kuglu na 64³ oko 3.6%, šum 6 do 7%).
 5. **Pregled novog HTML izvještaja** (`perf/uprof/report.html`, otvoriti dvoklikom). Popis dodatnih prikaza nije
    bio dogovoren, pa je uzet prijedlog iz ovog fajla: Sažetak, Hotspots, Mikroarhitektura, Keš i memorija,
    Instrukcije, Poređenje. Ako treba još nešto, dva prikaza traže novi rad s uProf-om: **flame graph / stablo
    poziva** (novo skupljanje sa stekom poziva) i **linije izvornog koda** (novi izvoz bez `--disasm-only`).
-4. **Da li ponoviti mjerenje troška na tihom računaru.** Mjerenje od 2026-11-12 je rađeno dok je računar bio u
-   upotrebi; trošak prepreka je ispao ispod šuma (procjena za kuglu na 64³ oko 3.6%, šum 6 do 7%).
 
 ## Blokada Windows Smart App Control: prošla
 
