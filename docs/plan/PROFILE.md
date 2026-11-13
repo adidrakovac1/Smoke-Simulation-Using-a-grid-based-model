@@ -192,7 +192,7 @@ iteracija 0.080 ms, advekcija 3.5 ms, sile 0.88 ms (uključuje `memcpy`); to su 
 perf/uprof/collect.sh tbp                 # 64³ i 128³, faze all / jacobi / advect / forces, po 20 s
 perf/uprof/collect.sh ebp assess_ext      # isto, s hardverskim brojačima
 perf/uprof/collect.sh inst inst_access 10 # keš instrukcija i ITLB (frontend), po 10 s
-python tools/uprof_report.py perf/uprof/2026-11-11_tbp perf/uprof/2026-11-11_ebp perf/uprof/2026-11-11_inst -o perf/uprof/report.html
+python tools/uprof_report.py perf/uprof/2026-11-11_tbp perf/uprof/2026-11-11_ebp perf/uprof/2026-11-11_inst     perf/uprof/2026-11-12_obs_none_tbp perf/uprof/2026-11-12_obs_none_ebp     perf/uprof/2026-11-12_obs_sphere_tbp perf/uprof/2026-11-12_obs_sphere_ebp     perf/uprof/2026-11-12_obs_blanket_tbp perf/uprof/2026-11-12_obs_blanket_ebp -o perf/uprof/report.html
 python tools/uprof_report.py perf/uprof/2026-11-11_ebp --summary    # tekst: faze, brojači i instrukcije po funkciji
 ```
 
@@ -200,11 +200,31 @@ python tools/uprof_report.py perf/uprof/2026-11-11_ebp --summary    # tekst: faz
   strujanja), pa pravi `report.csv` (tabela funkcija) i `detail.csv` (uzorci po instrukciji). U
   `session_info.txt` upisuje ispis `smoke_bench --hwinfo`, module RAM-a i verziju profilera.
 - `tools/uprof_report.py` (samo standardna biblioteka Pythona) čita te CSV fajlove i pravi **jedan samostalan
-  HTML**: hardver i sesije, udio faza po sesiji, sortabilna i filtrirana tabela funkcija, najvrelije
-  instrukcije izabrane funkcije s podjelom po vrsti instrukcije, i poređenje dvije sesije s delta stupcem.
-  Funkcije su fazama pridružene po imenu (tabela `PHASES` u skripti). Kolone metrika čita po imenu, pa iste
-  funkcije obrađuju TBP i sesije s brojačima; kod brojača prikazuje i formulu svake izvedene kolone (iz odjeljka
-  `DERIVED METRICS` u CSV-u) i brojače po instrukciji.
+  HTML**. Funkcije su fazama pridružene po imenu (tabela `PHASES` u skripti). Kolone metrika čita po imenu, pa
+  iste funkcije obrađuju TBP i sesije s brojačima.
+- **Izgled izvještaja (od 2026-11-13, po uzoru na Intel VTune).** Sesije istog posla snimljene različitim
+  konfiguracijama (folderi koji se razlikuju samo po završetku `_tbp`, `_ebp`, `_inst`) spajaju se u jedno
+  **mjerenje**, koje se bira u listi na vrhu. Kartice:
+
+  | Kartica | Šta pokazuje | VTune prikaz kojem odgovara |
+  | :--- | :--- | :--- |
+  | Sažetak | CPU vrijeme, CPI, pogrešna grananja, L1 promašaji, punjenja iz RAM-a za cijelu sesiju; najvrelije funkcije; udio faza | Summary |
+  | Hotspots | mapa faza → funkcija i tabela funkcija s trakama; grupisanje po fazi ili modulu; osnova je vrijeme ili ciklusi | Hotspots (Bottom-up) |
+  | Mikroarhitektura | po funkciji: CPI, grananja, pogrešna predviđanja, L1 promašaji, čitanja preko linije keša, STLI, i frontend (op cache, keš instrukcija, ITLB) iz `inst_access` | Microarchitecture Exploration |
+  | Keš i memorija | veličina polja prema L1 / L2 / L3; po funkciji: L1 promašaji, punjenja L1 iz L2 / L3 / RAM-a i udio funkcije u svim punjenjima | Memory Access |
+  | Instrukcije | instrukcije funkcije po adresi, toplotna skala po udjelu ili po izabranom brojaču, oznake petlji i preskočenih dijelova | Assembly |
+  | Poređenje | dva mjerenja: delta udjela po fazama i funkcijama, CPI i punjenja iz RAM-a jedno pored drugog | Compare |
+  | Sve sesije, O mjerenju | popis sesija, značenje kolona, hardver, tabela "šta od VTune-a imamo, a šta ne" | |
+
+  Boje ćelija su relativne (najveća vrijednost u koloni je najtamnija); pragova "dobro / loše" nema jer ih nismo
+  mjerili. Vrijednosti za cijelu sesiju ili fazu se računaju iz tabele funkcija: omjer svake funkcije se ponderiše
+  svojim nazivnikom (PTI brojem instrukcija, postotak pogrešnih grananja brojem grananja, L1 promašaji brojem
+  pristupa memoriji). Stanje prikaza je u adresi (npr. `report.html#w=1&tab=cache`), pa se prikaz može poslati.
+- **Šta izvještaj nema, jer podataka nema** (isto piše u kartici "O mjerenju"): stablo poziva i flame graph
+  (`Call Stack Sampling: False`), VTune-ovu podjelu ciklusa na Front-End / Bad Speculation / Back-End / Retiring
+  (nema brojača mikro operacija), prikaz po objektima memorije (nema IBS-a ni L3 brojača), linije izvornog koda
+  (izvještaji su pravljeni s `--disasm-only`) i vremensku osu. Stablo poziva i linije koda bi tražili novo
+  skupljanje, odnosno novi izvoz iz uProf-a; nije urađeno.
 - Sirovi fajlovi uProf-a (`.prd`, `.db`) se ne commituju (`.gitignore`); CSV, `workload.txt` i HTML da.
 
 **Oprez pri čitanju instrukcija ("skid").** Uzorak se često pripiše instrukciji *poslije* one koja je stvarno

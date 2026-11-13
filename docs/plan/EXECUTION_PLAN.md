@@ -177,6 +177,9 @@ dogovara se s Erminom kad dođe na red; do tada se izvještaj ne dotjeruje.
 **Dogovor 2026-11-12 (Ermin):** ostaje HTML, s prikazima kakve ima VTune: hotness (gdje ide vrijeme), cache misses
 i ostali njegovi prikazi. Radi se u narednoj sesiji; razrada i ograničenja podataka su u
 [TODO/MOBS_HANDOFF.md](TODO/MOBS_HANDOFF.md), "Sljedeći koraci", tačka 1.
+**Urađeno 2026-11-13:** izvještaj ima kartice Sažetak, Hotspots, Mikroarhitektura, Keš i memorija, Instrukcije i
+Poređenje (PROFILE.md, odjeljak 3.4). Koje dodatne prikaze uzeti Ermin nije precizirao ("i šta već ne"), pa je
+uzet popis iz handoff fajla; čeka njegov pregled.
 
 ---
 

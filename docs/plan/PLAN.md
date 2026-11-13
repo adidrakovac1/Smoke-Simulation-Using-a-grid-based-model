@@ -154,9 +154,12 @@ Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 do P2. Još uvijek s
       **Tačka G0 (Ermin): zasad se ništa ne optimizira**, ide se na M-VIZ; kandidati ostaju u PROFILE.md, odjeljak 5.)
 - [x] P2: tabela ostatak/divergencija naspram K (32³, 64³, 128³) u MATH.md; odluka D15 o rješavaču.
       (2026-11-11: tabela je izmjerena, `smoke_bench --convergence`, MATH.md odjeljak 5. G1: Jacobi ostaje.)
-- [ ] **Zadnja stavka, tek kad je sve ostalo gotovo (zadnji korak prije paralelizacije; Ermin, 2026-11-11):**
+- [x] **Zadnja stavka, tek kad je sve ostalo gotovo (zadnji korak prije paralelizacije; Ermin, 2026-11-11):**
       prepraviti HTML izvještaj profila (`tools/uprof_report.py`) da ima ljepši i jednostavniji grafički prikaz,
       po uzoru na Intel VTune. Do tada se izvještaj ne dotjeruje.
+      (2026-11-13: urađeno iz postojećih 36 sesija, bez novog skupljanja. Kartice Sažetak, Hotspots,
+      Mikroarhitektura, Keš i memorija, Instrukcije, Poređenje; opis i šta nedostaje jer podataka nema:
+      PROFILE.md, odjeljak 3.4. Čeka Erminov pregled.)
 
 **Kriterij:** postoji HTML izvještaj s hardverskim brojačima i PROFILE.md; Jacobi je potvrđen ili je red-black
 eksperiment odobren.

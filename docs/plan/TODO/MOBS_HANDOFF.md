@@ -1,4 +1,4 @@
-# MOBS_HANDOFF: gdje smo stali (ažurirano 2026-11-12)
+# MOBS_HANDOFF: gdje smo stali (ažurirano 2026-11-13)
 
 Privremeni fajl. Kad prođe tačka G3, obrisati ga (sadržaj tada živi u OBSTACLES.md, PERF_LOG.md i PLAN.md).
 
@@ -13,8 +13,9 @@ U novoj sesiji reci Claudeu: **"Pročitaj docs/plan/TODO/MOBS_HANDOFF.md i nasta
 - **P4 je cijeli urađen** (2026-11-12 dovršen P4.4). **G3 je prošla 2026-11-12** (Ermin: "možeš nastaviti").
 - **P5 je urađen u dijelu koji može uraditi izvršitelj** (2026-11-12): profil s preprekama, automatski pregled
   koda, test za `SlabRange` (62 testa), nacrt izvještaja (`docs/plan/REPORT_DRAFT.md`), usklađeni README fajlovi.
-- Od plana ostaje samo **zadnja stavka**: HTML izvještaj profila po uzoru na VTune. **Dogovoreno 2026-11-12,
-  radi se u narednoj sesiji** (prvi korak u "Sljedeći koraci" dolje).
+- **Zadnja stavka plana je urađena 2026-11-13**: HTML izvještaj profila po uzoru na VTune
+  (`tools/uprof_report.py`, `perf/uprof/report.html`; opis u PROFILE.md, odjeljak 3.4). Čeka Erminov pregled.
+- **Cijeli `EXECUTION_PLAN.md` je time izvršen.** Ostaju samo stvari koje čekaju Ermina ili tim (dolje).
 
 Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
 `docs/execution-plan` → `feature/m4d-profiling` → `feature/mviz` → `feature/obstacles`.
@@ -30,7 +31,7 @@ Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
 | P5a: profil s preprekama (uProf, 6 sesija, HTML, PROFILE.md odjeljak 6) | gotovo 2026-11-12 | `6fd9d21` |
 | P5b: test za `SlabRange`, pregled koda (automatski dio) | gotovo 2026-11-12 | `5c90943` |
 | P5c: nacrt izvještaja, README fajlovi, PLAN | gotovo 2026-11-12 | commit poslije `5c90943` |
-| Zadnja stavka: HTML izvještaj profila s prikazima kao VTune | **sljedeće (naredna sesija); opseg dogovoren 2026-11-12** | |
+| Zadnja stavka: HTML izvještaj profila s prikazima kao VTune | gotovo 2026-11-13; čeka Erminov pregled | commit poslije `1b19cf9` |
 
 ## Otvoreno za Ermina (ne blokira rad)
 
@@ -42,6 +43,10 @@ Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
    OBSTACLES.md, odjeljak 7. Treba potvrda ili zahtjev da se ipak ide kroz Assimp.
 3. **Pregled demoa rukom** (u panelu: Kugla, Kocka, Deka; kamera mišem; po želji vlastiti `.obj`). Do sada je sve
    provjereno samo automatskim pokretanjem.
+5. **Pregled novog HTML izvještaja** (`perf/uprof/report.html`, otvoriti dvoklikom). Popis dodatnih prikaza nije
+   bio dogovoren, pa je uzet prijedlog iz ovog fajla: Sažetak, Hotspots, Mikroarhitektura, Keš i memorija,
+   Instrukcije, Poređenje. Ako treba još nešto, dva prikaza traže novi rad s uProf-om: **flame graph / stablo
+   poziva** (novo skupljanje sa stekom poziva) i **linije izvornog koda** (novi izvoz bez `--disasm-only`).
 4. **Da li ponoviti mjerenje troška na tihom računaru.** Mjerenje od 2026-11-12 je rađeno dok je računar bio u
    upotrebi; trošak prepreka je ispao ispod šuma (procjena za kuglu na 64³ oko 3.6%, šum 6 do 7%).
 
@@ -94,25 +99,18 @@ build\test-app\TestApp.exe
 
 ## Sljedeći koraci, redom
 
-1. **URADITI U NAREDNOJ SESIJI: HTML izvještaj profila s prikazima kao Intel VTune.**
-   Erminove riječi (2026-11-12): "može HTML, ali želim prikaze kao što VTune ima, dakle cache misses, hotness,
-   i šta već ne."
-   - **Dogovoreno:** ostaje HTML (jedan samostalan fajl, bez interneta, kao sada). Traženi prikazi: **hotness**
-     (gdje ide vrijeme: najvrelije funkcije i instrukcije) i **cache misses** (promašaji keša po funkciji), plus
-     ostali prikazi koje VTune ima.
-   - **Nije precizirano** ("i šta već ne"): koji još VTune prikazi. Prijedlog izvršitelja, potvrditi s Erminom na
-     početku sesije kratkim popisom prije pisanja koda: Summary (ukupno vrijeme, CPI, top hotspots), Hotspots /
-     Bottom-up tabela s trakama, Microarchitecture prikaz (CPI, pogrešna grananja, punjenja L1 iz L2 / L3 / RAM-a
-     po funkciji), prikaz instrukcija izabrane funkcije s toplotnom skalom, poređenje dvije sesije.
-   - **Ograničenja podataka koja treba reći Erminu:** nemamo L3 ni memorijske brojače (`L3 PMC`, `UMC PMC` nisu
-     dostupni) ni IBS, pa "cache misses" znači `%L1_DC_MISSES` i punjenja L1 iz L2 / L3 / RAM-a iz konfiguracije
-     `assess_ext` (PROFILE.md, odjeljci 3.3 i 4.5). VTune-ov "Top-down" (frontend / backend / bad speculation /
-     retiring) se iz ovih brojača ne može izračunati; ne izmišljati ga.
-   - **Polazna tačka:** `tools/uprof_report.py` (čita `report.csv`, `detail.csv`, `workload.txt`,
-     `session_info.txt`; samo standardna biblioteka Pythona), sadašnji izlaz `perf/uprof/report.html` (36 sesija
-     iz `perf/uprof/2026-11-11_*` i `2026-11-12_obs_*`). Novo skupljanje podataka nije potrebno.
-   - Bez novih biblioteka bez pitanja (pravilo iz CLAUDE.md). Poslije izrade otvoriti izvještaj i pokazati Erminu;
-     označiti stavku u PLAN.md (M4d, zadnja stavka) i ažurirati PROFILE.md, odjeljak 3.4.
+1. ~~HTML izvještaj profila s prikazima kao Intel VTune.~~ **Urađeno 2026-11-13.**
+   - Erminove riječi (2026-11-12): "može HTML, ali želim prikaze kao što VTune ima, dakle cache misses, hotness,
+     i šta već ne."
+   - Urađeno iz postojećih 36 sesija (bez novog skupljanja, bez novih biblioteka): sesije istog posla spojene u
+     14 "mjerenja"; kartice Sažetak, Hotspots (mapa faza → funkcija, grupisanje), Mikroarhitektura (CPI, grananja,
+     frontend), Keš i memorija (L1 promašaji, punjenja L1 iz L2 / L3 / RAM-a, udio funkcije u svim punjenjima),
+     Instrukcije (po adresi, toplotna skala po udjelu ili brojaču), Poređenje.
+   - Nije urađeno jer podataka nema: stablo poziva i flame graph, Top-down podjela ciklusa, prikaz po objektima
+     memorije, linije izvornog koda, vremenska osa. Isto piše u kartici "O mjerenju" i u PROFILE.md, odjeljak 3.4.
+   - Provjera: sve kartice otvorene u headless Chromeu bez JS grešaka; brojevi u karticama se slažu s tabelama u
+     PROFILE.md 4.5 (npr. Jacobi CPI 0.54 / 1.45, `setBoundary` punjenja iz RAM-a 52.7 PTI na 128³).
+   - Fajl je 4.9 MiB (prije 2.6 MiB) jer sada nosi sve instrukcije s uzorcima, ne samo 40 najvrelijih po funkciji.
 2. Ermin: pregled demoa rukom i potvrda dva odstupanja (lista "Otvoreno za Ermina" gore).
 3. Tim: pregled koda među članovima i mjesta **[DOPUNITI]** u `docs/plan/REPORT_DRAFT.md`.
 4. Push i merge u `main` samo kad Ermin zatraži. Lanac grana:
