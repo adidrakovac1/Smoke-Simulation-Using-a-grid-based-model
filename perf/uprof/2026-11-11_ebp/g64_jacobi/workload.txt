@@ -1,0 +1,5 @@
+smoke_prof: faza=jacobi mreza=64^3 razvoj_koraka=100 K=40
+  trajanje_s: 22.003
+  ponavljanja: 190880
+  ms_po_ponavljanju: 0.115270
+  kontrolna_vrijednost: 0.254645

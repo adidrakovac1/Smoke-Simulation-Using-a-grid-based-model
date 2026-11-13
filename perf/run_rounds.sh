@@ -4,6 +4,10 @@
 # Usage:
 #   perf/run_rounds.sh OUTDIR ROUNDS label1=path/to/smoke_bench label2=path/to/smoke_bench ... [-- bench args]
 #
+# A variant may carry its own extra arguments after the path, separated by commas (no spaces), e.g.
+#   sphere=Solver/build/smoke_bench.exe,--obstacle,sphere
+# so one program can be measured in several modes.
+#
 # Every round runs every variant once; the order is rotated each round, so warm-up, background load and
 # thermal effects hit all variants equally. Each run writes OUTDIR/<label>_r<round>.csv (smoke_bench CSV:
 # grid,stage,median_ms,min_ms,max_ms,steps). Default bench args: --steps 100 --warmup 10 (all grids).
@@ -16,9 +20,12 @@ if [ "$#" -lt 3 ]; then
 fi
 outdir=$1; rounds=$2; shift 2
 
-labels=(); exes=()
+labels=(); exes=(); extras=()
 while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do
-    labels+=("${1%%=*}"); exes+=("${1#*=}"); shift
+    spec=${1#*=}
+    labels+=("${1%%=*}"); exes+=("${spec%%,*}")
+    if [ "$spec" = "${spec#*,}" ]; then extras+=(""); else extras+=("${spec#*,}"); fi
+    shift
 done
 [ "${1:-}" = "--" ] && shift
 benchArgs=("$@")
@@ -30,6 +37,8 @@ for ((r = 1; r <= rounds; ++r)); do
     for ((v = 0; v < n; ++v)); do
         idx=$(( (v + r - 1) % n ))
         echo "round $r/$rounds: ${labels[$idx]}"
-        "${exes[$idx]}" "${benchArgs[@]}" --output "$outdir/${labels[$idx]}_r$r.csv"
+        extra=()
+        if [ -n "${extras[$idx]}" ]; then IFS=, read -r -a extra <<< "${extras[$idx]}"; fi
+        "${exes[$idx]}" "${benchArgs[@]}" ${extra[@]+"${extra[@]}"} --output "$outdir/${labels[$idx]}_r$r.csv"
     done
 done

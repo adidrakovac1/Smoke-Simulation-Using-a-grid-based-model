@@ -21,6 +21,7 @@ Linux / macOS: isto, bez `-G "MinGW Makefiles"`.
 | `smoke_cli` | konzolni program: pokreće simulaciju i ispisuje vrijeme po fazi (`../docs/plan/CLI_OUTPUT.md`) |
 | `smoke_tests` | provjere tačnosti (`../docs/plan/VERIFICATION.md`) |
 | `smoke_bench` | CSV benchmark, referentni rezultat i kalibracija računara |
+| `smoke_prof` | ustaljeno opterećenje za profiler (AMD uProf): `--grid N --seconds S --stage all\|jacobi\|advect\|forces`; profilna gradnja je `-DSMOKE_PROFILE_BUILD=ON` u `Solver/build-prof` (`../docs/plan/PROFILE.md`, odjeljak 3) |
 | `smoke_lab` | poređenje verzija jednog jezgra jednu do druge (M3 bez vektorizacije, ručno odmotavanje, AoS/SoA, auto, restrict, AVX2, fuzija), s vremenom, ubrzanjem i provjerom tačnosti, kao primjer iz laba; za demonstraciju |
 | `smoke_demo` | **program za prezentaciju**: cijela simulacija u tri verzije (Neoptimizirana M3, M3 + auto-vektorizacija, Optimizirana M4), ukupno vrijeme, ms po koraku, koraka u sekundi, vrijeme po fazi, ubrzanje S i provjera tačnosti; zatim tablice `smoke_lab` i spisak izmijenjenih funkcija i tehnika |
 
@@ -36,7 +37,9 @@ odluka D10), je u `../docs/plan/PERF_LOG.md`.
 
 Primjeri: `smoke_cli --grid 128 --steps 200`, `smoke_cli --nx 64 --ny 128 --nz 64 --quiet`.
 Benchmark: `Solver/build/smoke_bench --steps 100 --warmup 10 --output perf.csv`;
-kalibracija: `Solver/build/smoke_bench --calibrate`;
+kalibracija: `Solver/build/smoke_bench --calibrate`; hardver i opcije gradnje: `Solver/build/smoke_bench --hwinfo`;
+konvergencija Jacobija (divergencija i ostatak za K = 10 do 1000): `Solver/build/smoke_bench --convergence`
+(`../docs/plan/MATH.md`, odjeljak 5);
 referenca: `Solver/build/smoke_bench --reference Solver/reference/serial_64_100steps_<racunar>.bin`;
 poređenje s referencom: `Solver/build/smoke_bench --verify Solver/reference/serial_64_100steps_pc2.bin`
 (referenca zavisi od računara i kompajlera, vidi `../docs/plan/VERIFICATION.md`, odjeljak 3).
@@ -57,8 +60,11 @@ bench/           mjerenje
 reference/       referentni rezultati (kasnije)
 ```
 
-## Stanje (M3)
+## Stanje (2026-11-12)
 
-Radi cijeli korak s opcionim vorticity confinementom; dijagnostika i mjerenje po fazi (uključujući
-Jacobi iteraciju); `smoke_bench` s CSV, kalibracijom i serijskom referencom; testovi T1 do T10.
+Radi cijeli korak s opcionim vorticity confinementom, serijski optimiziran u M4 (vektorizacija, AVX2 po fajlu,
+fuzija jezgara u advekciji); rezultat je bit po bit isti kao referenca snimljena prije optimizacije.
+Prepreke (`SmokeSolver::setObstacles`, `ObstacleGrid`, `voxelize`, `loadObj`) su opisane u
+`../docs/plan/OBSTACLES.md`. 62 testa: T1 do T10, prepreke i raspon slojeva (`SlabRange`).
+Mjerenje s preprekom: `smoke_bench --obstacle sphere|blanket`; opterećenje za profiler: `smoke_prof`.
 Zadani confinement `ε = 5` vizualno je podešen na 64³; `smoke_cli --vorticity-eps 0` ga isključuje.

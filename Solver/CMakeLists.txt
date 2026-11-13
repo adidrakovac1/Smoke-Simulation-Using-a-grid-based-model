@@ -20,6 +20,24 @@ option(SMOKE_BUILD_TESTS "Build the tests (smoke_tests)"       ON)
 option(SMOKE_BUILD_BENCH "Build the benchmark (smoke_bench)"   ON)
 option(SMOKE_BUILD_LAB   "Build smoke_lab (side-by-side kernel versions)" ON)
 option(SMOKE_DISABLE_VECTORIZATION "Build the B0 scalar baseline" OFF)
+option(SMOKE_BUILD_PROF  "Build smoke_prof (steady workload for a sampling profiler)" ON)
+option(SMOKE_PROFILE_BUILD "Add debug symbols and frame pointers for profiling (use a separate build folder)" OFF)
+
+# Profile build (docs/plan/EXECUTION_PLAN.md, P1): the Release options plus
+#   -g                       debug symbols, so the profiler can show function names and source lines;
+#   -fno-omit-frame-pointer  keeps RBP as the frame pointer, so the profiler can walk the call stack.
+# -g alone does not change the generated code; keeping the frame pointer takes one register away, so this
+# build is only for FINDING hot spots. Speedups (S, delta) are always measured on the normal Release build.
+#   cmake -S Solver -B Solver/build-prof -G "MinGW Makefiles" -DSMOKE_PROFILE_BUILD=ON
+if(SMOKE_PROFILE_BUILD)
+  if(MSVC)
+    add_compile_options(/Zi /Oy-)
+    add_link_options(/DEBUG)
+  else()
+    add_compile_options(-g -fno-omit-frame-pointer)
+  endif()
+  message(STATUS "smoke_solver: PROFILE build (-g -fno-omit-frame-pointer); do not use for S/delta measurements")
+endif()
 
 # Reference build rules (docs/plan/ARCHITECTURE.md, section 5):
 #   - no -ffast-math  (changes results)
@@ -41,6 +59,9 @@ add_library(smoke_solver STATIC
   src/stages/Advection.cpp
   src/stages/Projection.cpp
   src/stages/Boundary.cpp
+  src/stages/Obstacles.cpp
+  src/Voxelizer.cpp
+  src/ObjLoader.cpp
   src/CpuFeatures.cpp
 )
 
@@ -75,6 +96,26 @@ message(STATUS "smoke_solver: ${SMOKE_AVX2_STATE}")
 # Only the force kernels get it.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set_property(SOURCE src/stages/Forces.cpp src/stages/Forces_avx2.cpp APPEND PROPERTY COMPILE_OPTIONS "-fno-math-errno")
+endif()
+
+# Text for "smoke_bench --hwinfo": the per-file options above, read back from the source properties so the
+# printed text cannot drift from what is really used.
+set(SMOKE_PER_FILE_FLAGS "")
+foreach(SMOKE_FLAGGED_SOURCE src/stages/Projection_avx2.cpp src/stages/Advection_avx2.cpp
+                             src/stages/Forces_avx2.cpp src/stages/Forces.cpp)
+  get_source_file_property(SMOKE_SOURCE_FLAGS ${SMOKE_FLAGGED_SOURCE} COMPILE_OPTIONS)
+  list(FIND SMOKE_AVX2_SOURCES ${SMOKE_FLAGGED_SOURCE} SMOKE_SOURCE_IS_AVX2)
+  if(SMOKE_SOURCE_FLAGS AND (SMOKE_SOURCE_IS_AVX2 GREATER -1 OR SMOKE_FLAGGED_SOURCE STREQUAL "src/stages/Forces.cpp"))
+    get_filename_component(SMOKE_SOURCE_NAME ${SMOKE_FLAGGED_SOURCE} NAME)
+    string(REPLACE ";" " " SMOKE_SOURCE_FLAGS "${SMOKE_SOURCE_FLAGS}")
+    if(SMOKE_PER_FILE_FLAGS)
+      string(APPEND SMOKE_PER_FILE_FLAGS ", ")   # not ";": that is the CMake list separator
+    endif()
+    string(APPEND SMOKE_PER_FILE_FLAGS "${SMOKE_SOURCE_NAME}: ${SMOKE_SOURCE_FLAGS}")
+  endif()
+endforeach()
+if(NOT SMOKE_PER_FILE_FLAGS)
+  set(SMOKE_PER_FILE_FLAGS "none")
 endif()
 target_include_directories(smoke_solver
   PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -116,6 +157,8 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/test_vorticity.cpp
     tests/test_projection.cpp
     tests/test_stability.cpp
+    tests/test_obstacles.cpp
+    tests/test_slab_range.cpp
     tests/demo_advect.cpp                              # M1 demo, started by "smoke_cli --demo advect"
   )
   target_link_libraries(smoke_selftest PUBLIC smoke_solver)
@@ -135,6 +178,19 @@ if(SMOKE_BUILD_CLI)
   target_include_directories(smoke_cli PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/apps/common)
   target_compile_definitions(smoke_cli PRIVATE SMOKE_BUILD_TYPE="$<CONFIG>")
   smoke_set_warnings(smoke_cli)
+endif()
+
+# smoke_prof: repeats one stage (or whole steps) for a fixed time, for AMD uProf (EXECUTION_PLAN.md, P1).
+# It calls the internal stage functions, so it needs the private src folder, like the tests and smoke_lab.
+if(SMOKE_BUILD_PROF)
+  add_executable(smoke_prof apps/smoke_prof/main.cpp)
+  target_link_libraries(smoke_prof PRIVATE smoke_solver)
+  target_include_directories(smoke_prof PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/apps/common)
+  smoke_set_warnings(smoke_prof)
+  if(MINGW)
+    # Static C++ runtime: the profiler may start the program from a shell without MSYS2 on PATH.
+    target_link_options(smoke_prof PRIVATE -static)
+  endif()
 endif()
 
 # The commit id (for smoke_bench and smoke_lab output) is read when CMake CONFIGURES, not on every build.
@@ -164,6 +220,8 @@ endif()
 if(SMOKE_BUILD_BENCH)
   add_executable(smoke_bench bench/bench_main.cpp)
   target_link_libraries(smoke_bench PRIVATE smoke_solver)
+  # --convergence reads the pressure and divergence fields, so it needs the internal headers.
+  target_include_directories(smoke_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/apps/common)
   target_compile_definitions(smoke_bench PRIVATE
     SMOKE_BENCH_BUILD_TYPE="$<CONFIG>"
     SMOKE_BENCH_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"
@@ -171,6 +229,8 @@ if(SMOKE_BUILD_BENCH)
     SMOKE_BENCH_VARIANT="${SMOKE_BENCH_VARIANT}"
     SMOKE_BENCH_FLAGS="${CMAKE_CXX_FLAGS_RELEASE} ${SMOKE_BASELINE_FLAGS}"
     SMOKE_BENCH_COMMIT="${SMOKE_COMMIT}"
+    SMOKE_BENCH_AVX2_KERNELS="${SMOKE_AVX2_STATE}"
+    SMOKE_BENCH_PER_FILE_FLAGS="${SMOKE_PER_FILE_FLAGS}"
   )
   smoke_set_warnings(smoke_bench)
 endif()

@@ -92,14 +92,19 @@ Smoke-Simulation-Using-a-grid-based-model/
 │   ├── bench/                     smoke_bench: CSV po fazama, kalibracija, reference
 │   └── reference/                 spremljeni referentni rezultati za poređenje verzija
 │
-└── Integration/               TEK U ZADNJEM MILESTONE-U (M-VIZ): spoj Solvera i Renderera
-    ├── CMakeLists.txt
-    ├── include/ i src/
+└── Integration/               M-VIZ: spoj Solvera i Renderera (urađeno 2026-11-11, vidi Integration/README.md)
+    ├── CMakeLists.txt         gradi se iz Renderer/test-app, nije samostalan
+    ├── README.md              objašnjenje dijelova, prenosa gustine i ray marchinga
+    ├── include/smokeviz/ i src/
     │   ├── SmokeScene.*           Scene koja drži SmokeSolver
     │   ├── Texture3D.*            GL 3D tekstura (Renderer je nema)
     │   ├── VolumeRaymarchPass.*   crtanje dima
-    │   └── SmokeUI.*              ImGui kontrole
-    └── shaders/volume_raymarch.{vert,frag}
+    │   ├── BoxOutline.*           ivice kutije kao linije
+    │   ├── ObstacleObject.*       .obj predmet: isti trouglovi za crtanje i za voxelizaciju (M-OBS)
+    │   ├── SmokeUI.*              ImGui kontrole
+    │   └── Screenshot.*           snimanje prozora u PNG
+    ├── assets/                test meshevi: cube.obj, sphere.obj, blanket.obj (pravi ih tools/make_test_meshes.py)
+    └── shaders/               volume_raymarch, box_outline, obstacle_mesh (.vert i .frag)
 ```
 
 ---
@@ -220,7 +225,12 @@ struct DensityView {
 ```
 Time `Integration` može poslati u GPU samo unutrašnji dio (OpenGL ima parametre
 `GL_UNPACK_ROW_LENGTH` i `GL_UNPACK_IMAGE_HEIGHT` upravo za preskakanje redova), ili prvo
-kopirati unutrašnjost u kompaktan bafer. Odluka je u zadnjem milestone-u (M-VIZ).
+kopirati unutrašnjost u kompaktan bafer.
+
+**Odluka (M-VIZ, 2026-11-11): direktan prenos, bez međukopije.** `Texture3D::Upload` postavlja
+`GL_UNPACK_ROW_LENGTH = strideJ` i `GL_UNPACK_IMAGE_HEIGHT = strideK / strideJ`, zove `glTexSubImage3D` nad
+solverovim nizom i vraća postavke na 0. Kopiranje u zbijen bafer ostaje kao rezervni put ako raspored nema
+cijeli broj redova po ravni. Format teksture je `GL_R32F`. Objašnjenje: `Integration/README.md`.
 
 ### Redoslijed unutar `step(dt)`
 
@@ -245,6 +255,15 @@ sad paraleliziramo, nego da ne ugrađujemo prepreke:
 1. **Svaka faza je slobodna funkcija** u `namespace smoke::serial`, koja prima polja i
    `SlabRange{k0, k1}` (raspon slojeva po z). Serijska verzija zove s punim rasponom. OpenMP
    kasnije podijeli raspon među nitima, a nijedan algoritam se ne mijenja.
+   **Pregled u M4c (2026-11-12): gdje se raspon smije dijeliti.** Dijeliti se smiju **jezgra**: `addSources`,
+   `applyBuoyancy`, `advectScalar` / `advectFields`, `computeDivergence`, `jacobiIteration`,
+   `subtractPressureGradient`. Test `test_slab_range.cpp` ih zove u komadima i traži bit po bit isti rezultat.
+   **Ne smiju** se zvati po komadima složene funkcije faza: `applyVorticityConfinement` (dva prolaza i
+   `setBoundary` između njih; drugi prolaz čita |ω| iz susjednih slojeva), `advectVelocity` i `advectScalars`
+   (zamjena bafera), `project` (`p = 0`, zamjene bafera, `setBoundary` poslije svake iteracije). One se zovu
+   jednom po koraku s cijelim rasponom, a buduća paralelna verzija dijeli raspon **unutar** njih, oko poziva
+   jezgra. `setBoundary` i petlje po listama prepreka (`Obstacles.cpp`) uopšte ne primaju raspon: rade nad
+   cijelim poljem i u paralelnoj verziji ostaju serijski dio ili traže vlastitu podjelu.
 2. **Dvostruko baferovanje.** Advekcija i Jacobi čitaju iz starog polja, a pišu u novo. Tako
    nema trke podataka (jedan od ciljeva projekta). Zamjena polja je zamjena pokazivača.
 3. **Bez skrivenog stanja.** Nema `static` pomoćnih nizova unutar funkcija, nema globalnih
@@ -280,12 +299,37 @@ Renderer već ima ono što nam treba za crtanje dima:
 - **Čitljiv depth buffer.** `HdrFramebuffer` ima depth kao renderbuffer, koji se ne može
   uzorkovati u shaderu. Posljedica: dim ne može biti zaklonjen objektima scene. Za demo u
   praznoj sceni to ne smeta. Ako zatreba, dvije su opcije (promjena depth-a u teksturu ili
-  kopiranje depth-a nakon crtanja), i obje diraju Renderer. Zasad **ne radimo**.
+  kopiranje depth-a nakon crtanja), i obje diraju Renderer. Odluka D13 (2026-11-11): radi se u M-OBS, promjenom depth-a u teksturu.
 
 **Dozvoljene izmjene u `Renderer/` (cijeli popis):**
 1. `Renderer/test-app/CMakeLists.txt`: dodati `add_subdirectory(../../Solver ...)`,
    `add_subdirectory(../../Integration ...)` i povezati `SmokeIntegration` s `TestApp`.
+   **Urađeno 2026-11-11.** Iz Solvera se tu gradi samo biblioteka (`SMOKE_BUILD_CLI/TESTS/BENCH/LAB/PROF = OFF`).
 2. `Renderer/test-app/src/main.cpp`: napraviti `SmokeScene` i dodati je u listu scena.
+   **Urađeno 2026-11-11.** Scena dima je dodana na kraj liste (postojeće scene zadržavaju svoje tipke) i otvara se prva.
+
+**Šta smo naučili o Rendereru pri spajanju (M-VIZ), bez izmjene njegovog koda:**
+- "Gore" je +Y, isto kao uzgon u solveru.
+- `ShaderProgram` sam dodaje liniju `#version` (najviše 4.10), pa je naši shaderi nemaju.
+- Shadere i `config/settings.json` traži relativno od radnog foldera, pa se program pokreće iz `Renderer/`.
+  Naše shadere zato ne stavljamo u `Renderer/assets`, nego ih čitamo iz `Integration/shaders` (putanja upisana pri gradnji).
+- Neprozirni objekti se crtaju s odbacivanjem zadnjih strana; prednja strana je ona čiji su vrhovi u smjeru
+  suprotnom od kazaljke na satu.
+- `Scene::OnPostRender` se zove s vezanim HDR baferom i viewportom veličine tog bafera.
+- CMake pri svakom konfigurisanju osvježava `stb` s grane `master`; na PC-2 to pada na git konfliktu. Zaobilazi
+  se opcijom `-DFETCHCONTENT_FULLY_DISCONNECTED=ON` u build folderu (koristi već preuzete biblioteke).
+
+3. (D13, M-OBS) `Renderer/src/opengl/core/HdrFramebuffer.cpp` i pripadni header: depth iz renderbuffera u teksturu koja se
+   može uzorkovati, da volumni prolaz ograniči zraku na dubinu scene. Prije i poslije provjeriti barem dvije postojeće scene.
+   **Urađeno 2026-11-11.** Format je ostao `GL_DEPTH24_STENCIL8`, promijenjen je samo nosač (tekstura umjesto
+   renderbuffera) i dodan `GetDepthTexture()`. Volumni prolaz teksturu ne traži od Renderera, nego pita OpenGL koja
+   je vezana na trenutni framebuffer, pa se Rendererov interfejs ne mijenja. Provjera: scene Terrain, Capture:
+   Baseline i Capture: Material Sweep snimljene prije i poslije (1280×720); razlikuje se samo 16 piksela brojača
+   FPS-a u gornjoj traci.
+3a. (M-OBS) `Renderer/test-app/src/main.cpp`: režim za provjeru bez ruku. Uz `SMOKE_SCENE_SHOT_INDEX=n` i
+   `SMOKE_SCENE_SHOT_FILE=slika.png` program prikaže scenu `n` 90 frejmova, snimi prozor i izađe. Služi za
+   poređenje postojećih scena prije i poslije izmjene u Rendereru.
+4. Dalje izmjene u `Renderer/` samo uz upis u ovaj popis (šta i zašto).
 
 Sve ostalo ostaje netaknuto. Ako se pojavi potreba za većom izmjenom, prvo se dogovara u timu
 i upisuje u ovaj odjeljak.
@@ -299,7 +343,7 @@ i upisuje u ovaj odjeljak.
 | Solver je odvojena biblioteka bez OpenGL-a | **Donesena** | odjeljak 1 |
 | Veličina mreže se mijenja u toku rada, zadano 64³ | **Donesena** | po zahtjevu tima |
 | Ghost sloj i Stamova konvencija | **Donesena** (D2) | literatura koristi isto |
-| Spajanje preko `Integration/` (+ 2 izmjene u test-app) | Preporuka, potvrditi prije M-VIZ (zadnji milestone) | najmanje diranje Renderera |
+| Spajanje preko `Integration/` (+ 2 izmjene u test-app) | **Urađeno** (M-VIZ, 2026-11-11; plan odobren kroz EXECUTION_PLAN.md) | najmanje diranje Renderera |
 | Solver se gradi i pokreće potpuno bez Renderera | **Donesena** | `cmake -S Solver ...`, bez OpenGL-a i bez preuzimanja biblioteka |
 | Alat za testove: doctest, header zapakovan u `Solver/third_party/doctest/` | **Donesena** (D5) | jedan header, brz; bez `FetchContent`, pa gradnja ne treba internet |
 | Optimizacija u ovoj fazi samo sekvencijalna; paralelizacija nije milestone | **Donesena** (D8) | PLAN.md, M4 |

@@ -1,0 +1,151 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 128 --seconds 24 --stage forces "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config inst_access --start-delay 14 -o perf\uprof\2026-11-11_inst\g128_forces C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 128 --seconds 24 --stage forces"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-11_inst\g128_forces --cutoff 0 --report-output perf\uprof\2026-11-11_inst\g128_forces\report.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Investigate Instruction Access"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Wed Nov 11 21:35:22 2026"
+Profile End Time:,"Wed Nov 11 21:36:03 2026"
+Profile Duration:,"40.815 seconds"
+Start Delay:,"14 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-11_inst\g128_forces"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Instruction Cache"
+
+MONITORED EVENTS
+PMC Events:,Name,Interval,Unitmask,Countmask,Invert Countmask,User,OS,Description
+,"CYCLES_NOT_IN_HALT (PMCx076)",250000,0x00,0x00,False,True,False,"The number of cpu cycles when the thread is not in halt state."
+,"L1_ITLB_MISSES_L2_HITS (PMCx084)",25000,0x00,0x00,False,True,False,"The instruction fetches that Misses in the L1 Instruction Translation Lookaside Buffer (ITLB) but hit in the L2-ITLB."
+,"RETIRED_INST (PMCx0C0)",250000,0x00,0x00,False,True,False,"The number of instructions retired from execution. This count includes exceptions and interrupts. Each exception or interrupt is counted as one instruction."
+,"L2_CACHE_MISS_FROM_L1_IC_MISS (PMCx064)",25000,0x01,0x00,False,True,False,"Count all the Instruction cache fill requests that misses in L2 cache."
+,"OP_CACHE_MISS (PMCx28F)",25000,0x04,0x00,False,True,False,"Op Cache Miss"
+,"L2_ITLB_MISSES (PMCx085)",25000,0x07,0x00,False,True,False,"The ITLB reloads originating from page table walker. The table walk requests are made for L1-ITLB Miss and L2-ITLB Misses."
+,"BpL1TlbFetchHit.IF1G.IF2M.IF4K (PMCx094)",25000,0x07,0x00,False,True,False,"The number of instruction fetches that hit in the L1 ITLB. "
+,"OP_CACHE_ALL_ACCESS (PMCx28F)",25000,0x07,0x00,False,True,False,"All OP Cache Accesses"
+,"L2_CACHE_ACCESS_FROM_L1_IC_MISS (PMCx060)",25000,0x10,0x00,False,True,False,"The L2 cache access requests due to L1 instruction cache misses."
+,"IC_TAG_IC_MISS (PMCx18E)",25000,0x18,0x00,False,True,False,"IC Tag Instruction Cache Miss"
+,"IC_TAG_ALL_IC_ACCESS (PMCx18E)",25000,0x1F,0x00,False,True,False,"IC Tag All Instruction Cache Access"
+
+
+DERIVED METRICS
+Metric Name,Expression,Description
+"CPI","CYCLES_NOT_IN_HALT / RETIRED_INST","The average number of CPU cycles consumed to retire an instruction. This metric is computed as the ratio of CYCLES_NOT_IN_HALT to RETIRED_INST event. The higher values means the application consumes more CPU cycles to retire an instruction due to high cache misses, branch mispredictions, pipeline stalls, I/O or any other bottlenecks. If the CPI values exceeds a threshold value, it will be highlighted in pink."
+"OP_CACHE_64B_FETCH_MISS_RATIO","OP_CACHE_MISS / OP_CACHE_ALL_ACCESS","Op Cache micro-tag miss ratio"
+"IC_MISS_RATIO","IC_TAG_IC_MISS / IC_TAG_ALL_IC_ACCESS","IC Miss Ratio"
+"IC_MISSES (PTI)","(IC_TAG_IC_MISS * 1000) / RETIRED_INST","The number of L1 instruction cache misses, per thousand retired instructions."
+"L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","( L2_CACHE_ACCESS_FROM_L1_IC_MISS * 1000 ) / RETIRED_INST","The number of L2 cache access requests due to L1 instruction cache misses, per thousand retired instructions. This L2 cache access requests also includes the prefetches."
+"L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","( L2_CACHE_MISS_FROM_L1_IC_MISS * 1000 ) / RETIRED_INST","The number of L2 cache misses from L1 Instruction cache misses, per thousand retired instructions."
+"L1_ITLB_REQUESTS (PTI)","((L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES + BpL1TlbFetchHit.IF1G.IF2M.IF4K) * 1000) / RETIRED_INST","The number of L1 ITLB Requests, per thousand retired instructions."
+"L1_ITLB_MISSES (PTI)","((L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES) * 1000) / RETIRED_INST","The number of L1 ITLB Misses, per thousand retired instructions."
+"L2_ITLB_MISSES (PTI)","(L2_ITLB_MISSES * 1000) / RETIRED_INST","The number of L2 ITLB Misses, per thousand retired instructions."
+"L1_ITLB_MISS_RATE","(L1_ITLB_MISSES_L2_HITS + L2_ITLB_MISSES) / RETIRED_INST","The ITLB L1 Miss rate is the number of ITLB L1_Miss_L2_Hits and L1_Miss_L2_Miss divided by the total number of retired instructions."
+"L2_ITLB_MISS_RATE","L2_ITLB_MISSES / RETIRED_INST","The ITLB L2 Miss rate is the number of ITLB L2 Miss divided by the total number of retired instructions."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CYCLES_NOT_IN_HALT)"
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE",Module
+"smoke::serial::(anonymous namespace)::vorticityRow(float*, float*, float*, float*, float const*, float const*, float const*, int, long long, long long)",29526.0000,16989.0000,1.7379,0.0241,0.1524,0.5651,0.3885,2.2014,151.0095,0.0118,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::confinementRow(float*, float*, float*, float const*, float const*, float const*, float const*, int, float, long long, long long)",25407.0000,22377.0000,1.1354,0.0187,0.1498,0.3977,0.2637,0.8267,134.4282,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",8304.0000,10917.0000,0.7606,0.0130,0.1489,0.1924,0.1832,0.9435,137.8034,0.0092,0.0092,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",6243.0000,1990.0000,3.1372,0.0132,0.2698,0.8543,0.4020,23.3668,155.6784,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee606",5504.0000,1419.0000,3.8788,0.0089,0.0968,0.2114,0.0000,1.3390,182.8753,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5e3",2256.0000,517.0000,4.3636,0.0181,0.0000,0.0000,0.1934,1.3540,177.3694,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee616",2196.0000,538.0000,4.0818,0.0071,0.1250,0.3717,0.1859,1.6729,168.4015,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5d9",1931.0000,478.0000,4.0397,0.0171,0.2857,0.8368,0.0000,0.4184,164.6444,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5fe",1813.0000,332.0000,5.4608,0.0076,0.8571,1.8072,0.0000,1.5060,181.6265,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5d4",1765.0000,389.0000,4.5373,0.0104,0.0000,0.0000,0.2571,0.5141,147.0437,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",999.0000,472.0000,2.1165,0.0045,0.2500,0.4237,0.4237,1.0593,111.6525,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::vorticitySlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, long long, long long)",771.0000,443.0000,1.7404,0.0182,0.2632,1.1287,0.4515,2.2573,146.5011,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::confinementSlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, float, long long, long long)",210.0000,196.0000,1.0714,0.0215,0.5000,1.0204,0.0000,1.5306,131.1224,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee5f6",201.0000,48.0000,4.1875,0.0000,0.0000,0.0000,0.0000,2.0833,152.0833,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke::serial::(anonymous namespace)::advectRow2(float*, float*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)",198.0000,367.0000,0.5395,0.1225,0.0238,0.2725,0.2725,2.1798,105.7221,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::advectRow3(float*, float*, float*, float const*, float const*, float const*, float const*, float const*, float const*, smoke::GridSize, float, float, float, long long, long long)",187.0000,353.0000,0.5297,0.1651,0.0690,1.1331,0.0000,1.6997,76.4873,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee5ec",134.0000,22.0000,6.0909,0.0000,0.0000,0.0000,0.0000,4.5455,227.2727,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee626",130.0000,23.0000,5.6522,0.0000,1.0000,4.3478,0.0000,0.0000,165.2174,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee636",128.0000,19.0000,6.7368,0.0000,0.0000,0.0000,0.0000,5.2632,247.3684,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee61e",111.0000,30.0000,3.7000,0.0000,0.0000,0.0000,0.0000,0.0000,193.3333,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5e7",91.0000,17.0000,5.3529,0.0400,0.0000,0.0000,0.0000,0.0000,141.1765,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5de",65.0000,14.0000,4.6429,0.0000,0.0000,0.0000,0.0000,0.0000,85.7143,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5f1",47.0000,10.0000,4.7000,0.0000,0.0000,0.0000,0.0000,0.0000,210.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke::serial::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke::serial::SlabRange)",46.0000,51.0000,0.9020,0.0000,0.0000,0.0000,0.0000,0.0000,105.8824,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee62e",45.0000,9.0000,5.0000,0.0000,0.0000,0.0000,11.1111,11.1111,144.4444,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee60e",41.0000,7.0000,5.8571,0.0000,0.0000,0.0000,0.0000,0.0000,142.8571,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke::serial::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke::serial::SlabRange)",20.0000,19.0000,1.0526,0.0000,0.0000,0.0000,0.0000,0.0000,152.6316,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee652",15.0000,3.0000,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,166.6667,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"main",11.0000,1.0000,11.0000,0.0000,0.0000,100.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee63d",11.0000,1.0000,11.0000,0.0000,0.0000,0.0000,0.0000,0.0000,400.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke::serial::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke::serial::SlabRange, smoke::serial::KernelIsa)",7.0000,4.0000,1.7500,0.5000,0.5000,25.0000,25.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::avx2Supported()",5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee64b",4.0000,1.0000,4.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee644",4.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee66f",4.0000,0.0000,0.0000,0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee2d0",4.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke_prof.exe!0x1400e1446",3.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c58",3.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ucrtbase.dll!0x1800ee458",3.0000,0.0000,0.0000,0.0000,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke_prof.exe!0x1400c390b",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c50",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ucrtbase.dll!0x1800ee428",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee6ef",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke_prof.exe!0x1400c390e",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"kernel32.dll!0x1800326b0",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\kernel32.dll"
+"smoke::serial::applyForces(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",1.0000,1.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x140026330",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18006ed4e",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400e1b0d",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::Field3D::fill(float)",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18011c123",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ucrtbase.dll!0x1800ee2d3",1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ntdll.dll!0x18011c068",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ucrtbase.dll!0x1800ee451",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ntdll.dll!0x180172110",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ucrtbase.dll!0x1800ee6fa",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"ntdll.dll!0x180046539",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18002d4b1",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18012cdfd",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke::serial::setVelocityBoundary(smoke::SmokeState&)",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18001c934",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18002df99",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18006ed18",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400c3904",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18012bbff",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18004650a",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke::serial::advectSlabAvx2(float* const*, float const* const*, int, float const*, float const*, float const*, smoke::GridSize, int, int, float, long long, long long)",0.0000,3.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x180047396",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x180046519",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x18002d065",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke::serial::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+
+"HOTTEST PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:1400)",88462.0000,58060.0000,1.5236,0.0199,0.1555,0.4478,0.2997,2.0927,142.6628,0.0069,0.0034,0.0000,0.0000
+
+"HOTTEST MODULES (Sort Event - CYCLES_NOT_IN_HALT)"
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",71945.0000,54183.0000,1.3278,0.0208,0.1526,0.4411,0.2953,2.1446,140.4038,0.0055,0.0018,0.0000,0.0000
+"c:\windows\system32\ucrtbase.dll",16508.0000,3877.0000,4.2579,0.0108,0.2143,0.5417,0.2321,1.3412,173.9231,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\ntdll.dll",7.0000,0.0000,0.0000,0.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\kernel32.dll",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST THREADS (Sort Event - CYCLES_NOT_IN_HALT)"
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","OP_CACHE_64B_FETCH_MISS_RATIO","IC_MISS_RATIO","IC_MISSES (PTI)","L2_CACHE_ACCESSES_FROM_IC_MISSES (PTI)","L2_CACHE_MISSES_FROM_IC_MISSES (PTI)","L1_ITLB_REQUESTS (PTI)","L1_ITLB_MISSES (PTI)","L2_ITLB_MISSES (PTI)","L1_ITLB_MISS_RATE","L2_ITLB_MISS_RATE",THREAD ID
+"Thread-14652 (PID:1400)",88462.0000,58060.0000,1.5236,0.0199,0.1555,0.4478,0.2997,2.0927,142.6628,0.0069,0.0034,0.0000,0.0000,"14652"

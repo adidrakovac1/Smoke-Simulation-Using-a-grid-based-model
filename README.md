@@ -12,9 +12,13 @@ OpenMP, eventualno GPU) uz mjerenje šta je koja tehnika donijela, i na kraju pr
 | :--- | :--- |
 | `Solver/` | **Naš kod**: simulacija dima. Samostalan CMake projekat, bez OpenGL-a, gradi se i pokreće bez renderera. |
 | `Renderer/` | OpenGL forward renderer prethodnog tima (tuđi kod, ne diramo ga osim navedenih mjesta). |
-| `Integration/` | Spoj Solvera i Renderera. Tek u zadnjem milestone-u (vizualizacija). |
+| `Integration/` | Spoj Solvera i Renderera: dim u rendereru (ray marching) i prepreke iz `.obj` fajla. |
 | `docs/` | Literatura (PDF), uputstvo za Windows i planovi u `docs/plan/`. |
 | `perf/` | Evidencija mjerenja (`results.csv`). |
+
+Programi u `Solver/build`: `smoke_cli` (simulacija u konzoli), `smoke_tests` (62 testa), `smoke_bench`
+(mjerenje, `--verify`, `--calibrate`, `--hwinfo`), `smoke_lab` i `smoke_demo` (poređenje verzija); opis je u
+[`Solver/README.md`](Solver/README.md).
 
 Početi čitanjem: [`docs/plan/README.md`](docs/plan/README.md).
 
@@ -33,4 +37,16 @@ Solver\build\smoke_cli.exe --grid 64
 
 ## Status
 
-Skelet postoji i gradi se. Faze simulacije još nisu implementirane (vidi [`docs/plan/PLAN.md`](docs/plan/PLAN.md)).
+Solver je implementiran i serijski optimiziran (M0 do M4; PC-2: cijeli korak 2.2x do 3.2x brži od osnove bez
+vektorizacije B0, bit po bit isti rezultat; [`docs/plan/PERF_LOG.md`](docs/plan/PERF_LOG.md), odjeljak 7).
+Poslije toga je urađeno (plan: [`docs/plan/EXECUTION_PLAN.md`](docs/plan/EXECUTION_PLAN.md)):
+
+- **M4d, profil:** AMD uProf s hardverskim brojačima, tabela hardvera i nalazi u
+  [`docs/plan/PROFILE.md`](docs/plan/PROFILE.md); HTML izvještaj `perf/uprof/report.html`.
+- **M-VIZ, vizualizacija:** dim u rendereru ([`Integration/README.md`](Integration/README.md)).
+- **M-OBS, prepreke:** čvrsti i porozni predmeti iz `.obj` fajla
+  ([`docs/plan/OBSTACLES.md`](docs/plan/OBSTACLES.md)); bez prepreka rezultat je i dalje bit po bit isti.
+- **Nacrt izvještaja:** [`docs/plan/REPORT_DRAFT.md`](docs/plan/REPORT_DRAFT.md).
+
+Stanje po stavkama je u [`docs/plan/PLAN.md`](docs/plan/PLAN.md). Paralelizacija (OpenMP, GPU) nije u planu dok
+se ne odluči (odluka D8).

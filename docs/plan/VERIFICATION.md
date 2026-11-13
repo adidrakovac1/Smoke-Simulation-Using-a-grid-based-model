@@ -24,6 +24,12 @@ Isti testovi se pokreću i komandom `smoke_cli --selftest` (za računare na koji
 | T9 | Promjena veličine | `resize` 64³, pa 32³, pa 128³ | nema pada programa, polja su nulirana, dimenzije tačne |
 | T10 | Sačuvana ukupna masa (približno) | zatvorena kutija bez izvora | ukupna masa se **ne mora** tačno održati (semi-Lagrangian ne čuva masu tačno), ali promjena je ograničena; **prag određujemo mjerenjem, ne pogađamo** |
 
+Dodatni testovi izvan ove tabele: prepreke (`test_obstacles.cpp`, 10 testova, opisani u OBSTACLES.md, odjeljak 6)
+i **raspon slojeva** (`test_slab_range.cpp`, 4 testa, od 2026-11-12): svako jezgro koje prima `SlabRange` pozove
+se jednom za cijelu unutrašnjost i jednom u četiri komada (neravnomjerna, s jednim praznim), i rezultat mora biti
+bit po bit isti; prazan raspon ne smije promijeniti ništa. To je osobina na koju će se osloniti paralelna verzija
+(ARCHITECTURE.md, odjeljak 5, pravilo 1). Ukupno 62 testa.
+
 **O pragovima:** brojevi u T3 i T10 mjere se na stvarnom solveru, pa se upisuju u test kao komentar
 s datumom i veličinom mreže.
 
@@ -144,7 +150,9 @@ Profilisanje dolazi prije paralelizacije jer bez njega ne znamo šta paralelizir
 koraka; `--grid N`, `--warmup N`, `--steps N` i `--output FILE` mijenjaju postavke. CSV ima
 `grid,stage,median_ms,min_ms,max_ms,steps`, sa redovima za pet faza, `jacobi_iteration` (prosjek
 po iteraciji, unutar projekcije) i `total`. `smoke_bench --calibrate` ispisuje otisak mašine,
-memorijski triad i latenciju zavisnog lanca.
+memorijski triad i latenciju zavisnog lanca. `--obstacle sphere|blanket` (od 2026-11-12) u isti scenarij
+stavlja čvrstu kuglu ili porozni sloj, za mjerenje troška prepreka (PERF_LOG.md, odjeljak 9); veličine lista
+ispisuje na stderr. Opcija ne vrijedi uz `--reference` i `--verify`, jer referentni scenarij nema prepreka.
 
 **M3, izmjereno 2026-11-09:** B1 medijani u ms po koraku (100 koraka + 10 zagrijavanja), Apple M4,
 AppleClang 21.0.0.21000101, Release, `-O3 -DNDEBUG`, `dt=1/60`, K=40, `ε=5`, jedna nit:

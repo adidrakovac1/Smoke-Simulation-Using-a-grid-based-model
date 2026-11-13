@@ -31,7 +31,7 @@ plan napajanja).
 | Oznaka | Vlasnik | Procesor | Jezgara/niti | L2 / L3 | RAM | AVX2 | Kompajler | Napomena |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | PC-1 | Adi | Apple M4 | 10/10 | L2 4 MiB / L3 nije prijavljen | 16 GiB | AVX2 ne, ARM NEON da | AppleClang 21.0.0.21000101 | macOS 25.6.0 |
-| PC-2 | Ermin | AMD Ryzen 5 5500 (Zen 3) | 6/12 | L2 6×512 KiB / L3 16 MiB | 32 GiB | AVX2 da, FMA da, AVX-512 ne | g++ 16.2.0 (MSYS2 UCRT64) | Windows 11 Pro 10.0.26300, plan napajanja High performance |
+| PC-2 | Ermin | AMD Ryzen 5 5500 (Zen 3) | 6/12 | L2 6×512 KiB / L3 16 MiB | 32 GiB (2×16 DDR4, dvokanalno, 2400 MT/s) | AVX2 da, FMA da, AVX-512 ne | g++ 16.2.0 (MSYS2 UCRT64) | Windows 11 Pro 10.0.26300, plan napajanja High performance; puna tabela u PROFILE.md |
 | PC-3 | | | | | | | | |
 
 Komanda za procesor (PowerShell):
@@ -298,7 +298,9 @@ Zajedničko za sve unose u ovom odjeljku:
   `serial_64_100steps_pc2.bin`, bit po bit isto (razlika 0).
 - **Kalibracija:** `--calibrate` daje triad oko 107 GB/s, a teorijski maksimum dvokanalnog DDR4
   je oko 51 GB/s. Mjerenje kalibracije je vjerovatno pogrešno (nije provjereno), pa se **E ne
-  računa** dok se ne provjeri.
+  računa** dok se ne provjeri. **Ispravljeno 2026-11-11 (odjeljak 8):** stari triad je bio 6 puta
+  prevelik; ispravljena vrijednost je oko 17.9 GB/s, a teorijski maksimum ovog računara 38.4 GB/s
+  (RAM radi na 2400 MT/s, ne na 3200).
 
 ### P2-001 / P2-002: osnove B0 i B1 na PC-2 (commit `73ceb9e`)
 
@@ -775,5 +777,145 @@ M4-017) bio je 1.99 do 2.68x prema B0 i 1.60 do 2.02x prema B1; njegovi redovi u
 - Brojevi vrijede za PC-2. Na računaru bez AVX2 otpadaju doprinosi M4-009, M4-014, M4-017 i M4-020; ostalo
   ostaje. Na PC-1 (Mac, ARM) M4 nije ponovo mjeren.
 - E (efikasnost memorije) nije izračunat: kalibracija na PC-2 daje nevjerovatnih ~107 GB/s (odjeljak 6), pa
-  zaključci stoje samo na S i Δ.
+  zaključci stoje samo na S i Δ. (Kalibracija je ispravljena 2026-11-11 i E je izračunat za Jacobi, odjeljak 8.)
 - Oznake u CSV-u: `PC2-20261109-M4-SUM2-B0-*` i `PC2-20261109-M4-SUM2-B1-*`.
+
+---
+
+## 8. Kalibracija memorije i E na PC-2 (2026-11-11, M4d / P0)
+
+Ovo **nije izmjena brzine solvera** (kod solvera je isti kao `c9dca43`), nego ispravka mjernog alata. Puno
+objašnjenje, tabela hardvera i postupak su u [PROFILE.md](PROFILE.md), odjeljci 1 i 2.
+
+- **Greška:** `measureMemoryTriad` je 6 puta izvršavao `a = b + s·c` s nepromijenjenim `b` i `c`. Kompajler je
+  ostavio jedan prolaz (potvrđeno u asembleru), a program je računao bajte za 6, pa je rezultat bio 6 puta
+  prevelik (88 do 107 GB/s).
+- **Ispravka:** nizovi rotiraju uloge (svaki prolaz čita ono što je prethodni upisao), jezgro je u funkciji
+  `triadPass` koja se ne ugrađuje. `objdump -d` pokazuje petlju sa 6 poziva.
+- **RAM:** 2 × 16 GiB DDR4 dvokanalno na **2400 MT/s** (XMP nije uključen). Teorijski maksimum je
+  2 × 8 B × 2400·10⁶ = **38.4 GB/s**, a ne 51 GB/s kako je ranije pretpostavljeno.
+- **Triad poslije ispravke:** 17.13, 18.49, 17.89, 18.07, 16.96 GB/s u 5 pokretanja; medijan **17.9 GB/s**
+  (2 čitanja + 1 upis). S "write allocate" (3 čitanja + 1 upis, model) 23.8 GB/s. Oba ispod 38.4 GB/s.
+- **Tačnost:** 48/48 testova; `--verify` prema `serial_64_100steps_pc2.bin` bit po bit isto.
+
+**E za Jacobi iteraciju** (jedno pokretanje `smoke_bench`, 100 + 10 koraka, K = 40, triad u istoj sesiji
+18.29 GB/s; računar nije bio umiren, nije protokol D10):
+
+| Mreža | Jacobi iter. medijan / min (ms) | GB/s uz 12 B po ćeliji | E | GB/s uz 32 B po ćeliji (stari model) |
+| :--- | :--- | ---: | ---: | ---: |
+| 32³ | 0.00966 / 0.00947 | 40.7 | 2.23 | 108.5 |
+| 64³ | 0.0738 / 0.0711 | 42.6 | 2.33 | 113.7 |
+| 96³ | 0.287 / 0.240 | 37.0 | 2.02 | 98.7 |
+| 128³ | 1.465 / 1.262 | 17.2 | 0.94 | 45.8 |
+
+- 12 B po ćeliji: čitanje starog pritiska, čitanje divergencije, upis novog pritiska (isti dogovor kao triad).
+  Model od 32 B (VERIFICATION.md, odjeljak 4.4) broji i šest susjeda koji su već u kešu.
+- **Zaključak:** na 128³ je E ≈ 0.94 (po minimumu 1.09), dakle Jacobi radi na granici propusnosti memorije ovog
+  računara. Na 32³ do 96³ je E oko 2, jer su polja u kešu. Ovo je u skladu s nalazom da SIMD na 128³ daje malo
+  (M4-009: 1.11x).
+- Vremena u ovoj tabeli su viša nego u odjeljku 7 (npr. 128³: 1.47 prema 1.11 ms), jer je računar bio u
+  upotrebi; ne koristiti ih kao osnovu za S.
+- Oznake u CSV-u: `PC2-20261111-CAL-*`, presuda `info`.
+
+---
+
+## 9. Trošak prepreka na PC-2 (2026-11-12, M-OBS / P4.4)
+
+Ovo **nije optimizacija**, nego mjerenje koliko prepreke koštaju (EXECUTION_PLAN.md, P4.4), po protokolu D10.
+Objašnjenje prepreka je u [OBSTACLES.md](OBSTACLES.md).
+
+- Datum / autor / računar: 2026-11-12 / Ermin (Claude CLI) / PC-2
+- Commit: `32f38a7` plus opcija `smoke_bench --obstacle` (kod solvera je isti kao `32f38a7`); gradnja od prije
+  prepreka je `278a0c4`
+- Hipoteza (D16): bez prepreka nema dodatnog posla, jer je u koraku samo jedan `if` po fazi izvan petlji; s
+  preprekom je trošak srazmjeran broju ćelija u listama (površina predmeta), dakle mali prema cijelom koraku.
+- Gradnja: Release, g++ 16.2.0, `-O3 -DNDEBUG`, AVX2 po fajlu (iste opcije kao u odjeljku 7). K = 40, jedna nit.
+- Uslovi: računar **nije bio umiren** (u upotrebi tokom mjerenja), pa je šum veći nego u M4 sesijama. Triad u
+  istoj sesiji: 17.9 GB/s.
+
+**Varijante** (ista sesija, naizmjenično, redoslijed rotiran po rundi):
+
+| Oznaka | Šta je |
+| :--- | :--- |
+| `pre` | `smoke_bench` izgrađen iz `278a0c4` (kod prije prepreka) |
+| `none` | sadašnji kod, bez prepreka |
+| `sphere` | sadašnji kod, `--obstacle sphere`: čvrsta kugla, središte (0.5, 0.5, 0.5), poluprečnik 0.15 kutije |
+| `blanket` | sadašnji kod, `--obstacle blanket`: porozni sloj debeo 2 ćelije na visini 0.45, 0.7 × 0.7 kutije, σ = 20 1/s |
+
+Ćelije se u `smoke_bench` označavaju formulom (ćelija pripada predmetu ako mu pripada njeno središte), bez mesha,
+da scenarij bude isti u svakom pokretanju. Veličine lista:
+
+| Mreža | Kugla: čvrstih | Kugla: graničnih čvrstih | Kugla: veza prema fluidu | Deka: poroznih |
+| :--- | ---: | ---: | ---: | ---: |
+| 32³ | 480 | 200 | 456 | 968 |
+| 64³ | 3648 | 896 | 1704 | 3872 |
+| 96³ | 12568 | 2088 | 3888 | 9248 |
+| 128³ | 29464 | 3696 | 6960 | 16200 |
+
+**Tačnost prije mjerenja:** 58/58 testova; `--verify` prema `serial_64_100steps_pc2.bin` bit po bit isto i za
+`none` i za `pre`.
+
+### Sesija A: sve mreže, 5 rundi, 100 koraka + 10 zagrijavanja
+
+Cijeli korak, medijan medijana rundi (ms). Δ je negativan kad je varijanta sporija. Šum je raspon medijana rundi
+osnove (D10).
+
+| Mreža | `pre` | `none` | Δ `none` prema `pre` (presuda) | `sphere` | Δ prema `none` (presuda) | `blanket` | Δ prema `none` (presuda) | Šum osnove `none` |
+| :--- | ---: | ---: | :--- | ---: | :--- | ---: | :--- | ---: |
+| 32³ | 0.911 | 0.928 | −1.92% (šum) | 0.923 | +0.50% (šum) | 0.921 | +0.75% (šum) | 0.316 |
+| 64³ | 7.444 | 7.435 | +0.12% (šum) | 7.710 | −3.69% (šum) | 7.533 | −1.32% (šum) | 0.507 |
+| 96³ | 30.519 | 28.965 | +5.09% (šum) | 32.474 | −12.12% (šum) | 30.638 | −5.78% (šum) | 5.018 |
+| 128³ | 100.478 | 101.421 | −0.94% (šum) | 101.227 | +0.19% (šum) | 101.805 | −0.38% (šum) | 5.709 |
+
+Po fazama, presudu "sporije" (veće od šuma **i** sporije u svakoj rundi) dobili su samo:
+
+| Mreža | Faza, varijanta | Osnova `none` (ms) | Varijanta (ms) | Δ |
+| :--- | :--- | ---: | ---: | ---: |
+| 64³ | izvor, `sphere` | 0.02195 | 0.02410 | −9.79% |
+| 96³ | izvor, `sphere` | 0.07090 | 0.08130 | −14.67% |
+| 128³ | izvor, `sphere` | 0.39310 | 0.46145 | −17.39% |
+| 64³ | Jacobi iteracija, `sphere` | 0.073054 | 0.075791 | −3.75% |
+| 96³ | advekcija skalara, `sphere` | 4.74405 | 4.92080 | −3.73% |
+
+Sve ostale faze, sve faze s dekom i sve faze `none` prema `pre` su "šum".
+
+### Sesija B: samo 64³, 7 rundi, 300 koraka + 10 zagrijavanja
+
+Ponovljeno za mrežu na kojoj radi demo, s više uzoraka.
+
+| Faza | `pre` (ms) | `none` (ms) | Δ prema `pre` | `sphere` (ms) | Δ prema `none` | `blanket` (ms) | Δ prema `none` |
+| :--- | ---: | ---: | :--- | ---: | :--- | ---: | :--- |
+| izvor | 0.02205 | 0.02190 | +0.68% (šum) | 0.02470 | −12.79% (**sporije**) | 0.02255 | −2.97% (šum) |
+| sile | 0.70730 | 0.69345 | +1.96% (šum) | 0.72450 | −4.48% (šum) | 0.73670 | −6.24% (šum) |
+| advekcija brzine | 1.80455 | 1.82475 | −1.12% (šum) | 1.83795 | −0.72% (šum) | 1.83935 | −0.80% (šum) |
+| projekcija | 3.50530 | 3.39755 | +3.07% (šum) | 3.51845 | −3.56% (šum) | 3.45635 | −1.73% (šum) |
+| advekcija skalara | 1.49825 | 1.49900 | −0.05% (šum) | 1.53230 | −2.22% (šum) | 1.51975 | −1.38% (šum) |
+| Jacobi iteracija | 0.074894 | 0.074311 | +0.78% (šum) | 0.077074 | −3.72% (šum) | 0.074665 | −0.48% (šum) |
+| **cijeli korak** | 7.68115 | 7.50865 | +2.25% (šum) | 7.77650 | −3.57% (šum) | 7.73225 | −2.98% (šum) |
+
+Šum osnove `none` za cijeli korak u ovoj sesiji: 0.439 ms (5.9% koraka).
+
+### Zaključak
+
+- **Bez prepreka trošak nije mjerljiv.** `none` prema `pre` je "šum" u svakoj fazi, na svakoj mreži, u obje
+  sesije, a rezultat je bit po bit isti. Prvi dio hipoteze stoji.
+- **S preprekom trošak cijelog koraka nije dokazan po D10** (presuda "šum" na svim mrežama). Za kuglu na 64³ obje
+  sesije daju sličnu procjenu, Δ oko −3.6% (−3.69% i −3.57%), ali je šum osnove 5.9 do 6.8% koraka, pa se to ne
+  smije navoditi kao izmjeren trošak, nego kao gornja procjena reda veličine. Za deku je procjena −1.3% i −3.0%.
+- **Dokazano sporije** je samo ono što radi direktno po listama čvrstih ćelija: brisanje dima u čvrstim ćelijama
+  u fazi izvora (64³: oko +0.002 do +0.003 ms; 128³: +0.068 ms) i, u sesiji A, Jacobi iteracija s kuglom na 64³
+  (+0.0027 ms po iteraciji). U apsolutnom iznosu to je ispod 0.1% koraka za izvor.
+- 96³ je i ovdje bučna (šum 5 ms od 29 ms), kao u M4; brojevi za 96³ ne nose zaključak.
+- **Nije izmjereno:** trošak pri tihom računaru; trošak po ćeliji liste (ns po graničnoj ćeliji); predmeti koji
+  zauzimaju veći dio kutije; mesh iz `.obj` (voxelizacija se radi jednom, izvan koraka, i nije mjerena).
+- **Odluka:** nema izmjene koda. Dizajn D16 (rijetke liste) ostaje. Oznake u CSV-u: `PC2-20261112-OBS-*`
+  (sesija A) i `PC2-20261112-OBS64-*` (sesija B), presuda `info`.
+
+Ponoviti mjerenje:
+
+```
+perf/run_rounds.sh OUT 5 pre=<stari>/smoke_bench.exe none=Solver/build/smoke_bench.exe \
+    sphere=Solver/build/smoke_bench.exe,--obstacle,sphere blanket=Solver/build/smoke_bench.exe,--obstacle,blanket
+perf/summarize_rounds.sh OUT pre none
+perf/summarize_rounds.sh OUT none sphere blanket
+```

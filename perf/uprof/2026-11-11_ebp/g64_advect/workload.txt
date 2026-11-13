@@ -1,0 +1,5 @@
+smoke_prof: faza=advect mreza=64^3 razvoj_koraka=100 K=40
+  trajanje_s: 22.004
+  ponavljanja: 5358
+  ms_po_ponavljanju: 4.106718
+  kontrolna_vrijednost: 0.252673

@@ -1,0 +1,92 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 128 --seconds 34 --stage forces "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config tbp --start-delay 14 -o perf\uprof\2026-11-11_tbp\g128_forces C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 128 --seconds 34 --stage forces"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-11_tbp\g128_forces --cutoff 0 --report-output perf\uprof\2026-11-11_tbp\g128_forces\report.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Time-based Sampling"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Wed Nov 11 21:04:39 2026"
+Profile End Time:,"Wed Nov 11 21:05:24 2026"
+Profile Duration:,"44.968 seconds"
+Start Delay:,"14 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-11_tbp\g128_forces"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Time based hotspots"
+
+MONITORED EVENTS
+TBP Events:,Name,Interval,Description
+,"CPU_TIME","1.000 milliseconds","CPU Time is the time in which the CPU core is executing the code."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CPU_TIME)"
+FUNCTION,"CPU_TIME" (seconds),Module
+"smoke::serial::(anonymous namespace)::vorticityRow(float*, float*, float*, float*, float const*, float const*, float const*, int, long long, long long)",9.6830,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::(anonymous namespace)::confinementRow(float*, float*, float*, float const*, float const*, float const*, float const*, int, float, long long, long long)",8.6210,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke::serial::SlabRange)",3.2650,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",2.3300,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee606",1.9940,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5d9",1.0440,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5e3",0.7370,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee616",0.6530,"c:\windows\system32\ucrtbase.dll"
+"smoke::serial::vorticitySlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, long long, long long)",0.2380,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee5f6",0.0800,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5d4",0.0700,"c:\windows\system32\ucrtbase.dll"
+"smoke::serial::confinementSlabAvx2(float*, float*, float*, float*, float*, float*, float*, int, int, int, int, float, long long, long long)",0.0660,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee5fe",0.0450,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee61e",0.0400,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5ec",0.0400,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5de",0.0370,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee636",0.0360,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee626",0.0340,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee62e",0.0260,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5f1",0.0250,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee60e",0.0220,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee5e7",0.0070,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee64b",0.0060,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee63d",0.0040,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee2d0",0.0030,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee451",0.0020,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee2d3",0.0020,"c:\windows\system32\ucrtbase.dll"
+"smoke_prof.exe!0x1400e1432",0.0020,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e0c50",0.0020,"c:\windows\system32\ntdll.dll"
+"main",0.0010,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee428",0.0010,"c:\windows\system32\ucrtbase.dll"
+"ucrtbase.dll!0x1800ee418",0.0010,"c:\windows\system32\ucrtbase.dll"
+"smoke_prof.exe!0x1400e143c",0.0010,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee644",0.0010,"c:\windows\system32\ucrtbase.dll"
+"smoke::avx2Supported()",0.0010,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1446",0.0010,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18006ed20",0.0010,"c:\windows\system32\ntdll.dll"
+"ucrtbase.dll!0x1800ee652",0.0010,"c:\windows\system32\ucrtbase.dll"
+
+"HOTTEST PROCESSES (Sort Event - CPU_TIME)"
+PROCESS,"CPU_TIME" (seconds)
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:34112)",29.1230
+
+"HOTTEST MODULES (Sort Event - CPU_TIME)"
+MODULE,"CPU_TIME" (seconds)
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",24.2090
+"c:\windows\system32\ucrtbase.dll",4.9110
+"c:\windows\system32\ntdll.dll",0.0030
+
+"HOTTEST THREADS (Sort Event - CPU_TIME)"
+THREAD,"CPU_TIME" (seconds),THREAD ID
+"Thread-5572 (PID:34112)",29.1230,"5572"

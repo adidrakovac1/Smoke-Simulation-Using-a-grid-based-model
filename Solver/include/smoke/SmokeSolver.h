@@ -3,6 +3,7 @@
 #include "smoke/DensityView.h"
 #include "smoke/Diagnostics.h"
 #include "smoke/GridSize.h"
+#include "smoke/Obstacles.h"
 #include "smoke/SmokeParams.h"
 #include "smoke/SolverConfig.h"
 #include "smoke/StepTimings.h"
@@ -41,6 +42,15 @@ public:
     SmokeParams&       params();
     const SmokeParams& params() const;
     long long          stepCount() const;
+
+    /// Puts obstacles into the box (docs/plan/OBSTACLES.md). The cell types are copied and turned into the
+    /// solver's sparse lists once, here. The grid must have the same size as gridSize(); otherwise nothing
+    /// changes and false is returned. A grid with only Fluid cells is the same as clearObstacles().
+    /// resize() removes the obstacles, because they described the old grid.
+    bool setObstacles(const ObstacleGrid& grid);
+    /// Removes all obstacles. Without obstacles the result is bit for bit the same as before they existed.
+    void clearObstacles();
+    bool hasObstacles() const;
 
     DensityView          density() const;
     /// Computes the health numbers of the current state ON DEMAND (several passes over the grid).

@@ -29,8 +29,20 @@ add_executable(${PROJECT_NAME}
         src/TerrainScene.cpp
 )
 
+# Smoke simulation (docs/plan/ARCHITECTURE.md, section 6, allowed change 1): the solver library and the
+# Integration layer that draws it. Only the solver library is built here; its console programs, tests and
+# benchmarks are built from Solver/ on its own.
+set(SMOKE_BUILD_CLI   OFF CACHE BOOL "" FORCE)
+set(SMOKE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(SMOKE_BUILD_BENCH OFF CACHE BOOL "" FORCE)
+set(SMOKE_BUILD_LAB   OFF CACHE BOOL "" FORCE)
+set(SMOKE_BUILD_PROF  OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../Solver ${CMAKE_BINARY_DIR}/smoke-solver)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../Integration ${CMAKE_BINARY_DIR}/smoke-integration)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
         RendererLib
+        SmokeIntegration
 )
 
 # Copy shaders to test app output directory

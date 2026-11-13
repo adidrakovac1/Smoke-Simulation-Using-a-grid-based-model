@@ -1,0 +1,271 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 64 --seconds 22 --stage jacobi "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config tbp --start-delay 2 -o perf\uprof\2026-11-11_tbp\g64_jacobi C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 64 --seconds 22 --stage jacobi"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-11_tbp\g64_jacobi --detail --disasm-only --disasm-style att --show-percentage --cutoff 0 --report-output perf\uprof\2026-11-11_tbp\g64_jacobi\detail.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Time-based Sampling"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Wed Nov 11 21:00:10 2026"
+Profile End Time:,"Wed Nov 11 21:00:34 2026"
+Profile Duration:,"23.972 seconds"
+Start Delay:,"2 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-11_tbp\g64_jacobi"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Time based hotspots"
+
+MONITORED EVENTS
+TBP Events:,Name,Interval,Description
+,"CPU_TIME","1.000 milliseconds","CPU Time is the time in which the CPU core is executing the code."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CPU_TIME)"
+FUNCTION,"CPU_TIME",Module
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",89.63%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",9.63%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::Field3D::fill(float)",0.67%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::serial::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::serial::SlabRange, smoke::serial::KernelIsa)",0.03%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"main",0.02%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400e1446",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::avx2Supported()",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400c390b",0.01%,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+
+"HOTTEST PROCESSES (Sort Event - CPU_TIME)"
+PROCESS,"CPU_TIME"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:20372)",100.00%
+
+"HOTTEST MODULES (Sort Event - CPU_TIME)"
+MODULE,"CPU_TIME"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",100.00%
+
+"HOTTEST THREADS (Sort Event - CPU_TIME)"
+THREAD,"CPU_TIME",THREAD ID
+"Thread-18976 (PID:20372)",100.00%,"18976"
+
+"ALL PROCESSES (Sort Event - CPU_TIME)"
+PROCESS,"CPU_TIME"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:20372)",100.00%
+
+
+PROFILE REPORT FOR PROCESS - c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:20372)
+PROCESS,"CPU_TIME"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:20372)",100.00%
+
+THREAD SUMMARY
+THREAD,"CPU_TIME",THREAD ID
+"Thread-18976 (PID:20372)",100.00%,"18976"
+
+
+MODULE SUMMARY
+MODULE,"CPU_TIME"
+c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe,100.00%
+
+
+FUNCTION SUMMARY
+FUNCTION,"CPU_TIME",MODULE
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)",89.63%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)",9.63%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::Field3D::fill(float)",0.67%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::serial::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::serial::SlabRange, smoke::serial::KernelIsa)",0.03%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"main",0.02%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400e1446",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::avx2Supported()",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400c390b",0.01%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+
+Function Detail Data
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::jacobiSlabAvx2(float*, float const*, float const*, int, int, int, int, long long, long long)" (Showing only disassembly),,,,89.63%
+,0x140007ac1,"imul %r14, %rax",49 0F AF C6 ,0.02%
+,0x140007b40,"lea (%r15,%r8,1), %rax",4B 8D 04 07 ,0.01%
+,0x140007b44,"mov -0x60(%rbp), %rdi",48 8B 7D A0 ,0.05%
+,0x140007b48,"mov %r9, -0x50(%rbp)",4C 89 4D B0 ,0.01%
+,0x140007b4f,"mov %rax, -0x10(%rbp)",48 89 45 F0 ,0.01%
+,0x140007b53,"mov -0x70(%rbp), %rax",48 8B 45 90 ,0.01%
+,0x140007b63,"movl $0x01, -0x04(%rbp)",C7 45 FC 01 00 00 00 ,0.01%
+,0x140007b6a,"lea (%rax,%r9,1), %rdx",4A 8D 14 08 ,0.01%
+,0x140007b6e,"mov 0x78(%rbp), %eax",8B 45 78 ,0.01%
+,0x140007b75,"mov %r10d, 0x88(%rbp)",44 89 95 88 00 00 00 ,0.01%
+,0x140007b7f,"mov %rdi, -0x30(%rbp)",48 89 7D D0 ,0.01%
+,0x140007b83,"mov %eax, -0x28(%rbp)",89 45 D8 ,0.01%
+,0x140007b86,"mov %eax, %edi",89 C7 ,0.02%
+,0x140007b94,"jbe 0x0000000140007EAD",0F 86 13 03 00 00 ,0.10%
+,0x140007b9a,"mov -0x30(%rbp), %rax",48 8B 45 D0 ,0.88%
+,0x140007b9e,"lea 0x08(%rdx), %rsi",48 8D 72 08 ,0.05%
+,0x140007ba2,"lea (%rax,%r12,1), %rbx",4A 8D 1C 20 ,0.07%
+,0x140007baa,"lea (%rcx,%rax,1), %r11",4C 8D 1C 01 ,0.04%
+,0x140007bae,"mov -0x38(%rbp), %rax",48 8B 45 C8 ,0.21%
+,0x140007bb2,"lea (%rcx,%rax,1), %r10",4C 8D 14 01 ,0.02%
+,0x140007bb6,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.07%
+,0x140007bba,"lea 0x04(%r12,%rax,1), %r9",4D 8D 4C 04 04 ,0.92%
+,0x140007bbf,"mov -0x48(%rbp), %rax",48 8B 45 B8 ,0.07%
+,0x140007bc3,"lea 0x04(%r12,%rax,1), %r8",4D 8D 44 04 04 ,0.08%
+,0x140007bc8,"xor %eax, %eax",31 C0 ,0.24%
+,0x140007bca,"nop %ax, (%rax,%rax,1)",66 2E 0F 1F 84 00 00 00 00 00 ,0.02%
+,0x140007bd4,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.05%
+,0x140007bdf,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.91%
+,0x140007bea,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.15%
+,0x140007c00,"vmovups (%rdx,%rax,1), %ymm0",C5 FC 10 04 02 ,0.02%
+,0x140007c05,"vaddps (%rsi,%rax,1), %ymm0, %ymm0",C5 FC 58 04 06 ,1.94%
+,0x140007c0a,"vaddps (%rcx,%rax,1), %ymm0, %ymm0",C5 FC 58 04 01 ,2.66%
+,0x140007c0f,"vaddps (%rbx,%rax,1), %ymm0, %ymm0",C5 FC 58 04 03 ,1.75%
+,0x140007c14,"vaddps (%r11,%rax,1), %ymm0, %ymm0",C4 C1 7C 58 04 03 ,1.63%
+,0x140007c1a,"vaddps (%r10,%rax,1), %ymm0, %ymm0",C4 C1 7C 58 04 02 ,9.71%
+,0x140007c20,"vsubps (%r9,%rax,1), %ymm0, %ymm0",C4 C1 7C 5C 04 01 ,2.52%
+,0x140007c26,"vdivps %ymm1, %ymm0, %ymm0",C5 FC 5E C1 ,4.71%
+,0x140007c2a,"vmovups %ymm0, (%r8,%rax,1)",C4 C1 7C 11 04 00 ,53.37%
+,0x140007c30,"add $0x20, %rax",48 83 C0 20 ,4.32%
+,0x140007c34,"cmp %rdi, %rax",48 39 F8 ,0.48%
+,0x140007c37,"jnz 0x0000000140007C00",75 C7 ,0.01%
+,0x140007c3c,"lea (,%rax,8), %r8d",44 8D 04 C5 00 00 00 00 ,0.06%
+,0x140007c44,"cmp 0x78(%rbp), %r8d",44 3B 45 78 ,0.23%
+,0x140007c48,"jz 0x0000000140007E49",0F 84 FB 01 00 00 ,0.04%
+,0x140007e4d,"addl $0x01, -0x04(%rbp)",83 45 FC 01 ,0.15%
+,0x140007e51,"add %r15, -0x10(%rbp)",4C 01 7D F0 ,1.09%
+,0x140007e55,"mov -0x04(%rbp), %eax",8B 45 FC ,0.24%
+,0x140007e58,"add %rsi, %r12",49 01 F4 ,0.09%
+,0x140007e5b,"add %rsi, %rdx",48 01 F2 ,0.01%
+,0x140007e5e,"add %rsi, %rcx",48 01 F1 ,0.03%
+,0x140007e61,"cmp -0x24(%rbp), %eax",3B 45 DC ,0.22%
+,0x140007e64,"jnz 0x0000000140007B90",0F 85 26 FD FF FF ,0.02%
+,0x140007e6e,"mov 0x88(%rbp), %r10d",44 8B 95 88 00 00 00 ,0.04%
+,0x140007e75,"mov -0x50(%rbp), %r9",4C 8B 4D B0 ,0.01%
+,0x140007e7d,"add $0x01, %r10d",41 83 C2 01 ,0.10%
+,0x140007e81,"add %r14, %r8",4D 01 F0 ,0.14%
+,0x140007e8b,"jnz 0x0000000140007B40",0F 85 AF FC FF FF ,0.01%
+,0x140007e94,"vmovups (%rbp), %xmm6",C5 F8 10 75 00 ,0.01%
+,0x140007e99,"add $0x88, %rsp",48 81 C4 88 00 00 00 ,0.01%
+,0x140007ea2,"pop %rdi",5F ,0.02%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::setBoundary(smoke::Field3D&, smoke::serial::BoundaryKind)" (Showing only disassembly),,,,9.63%
+,0x140007281,"push %r15",41 57 ,0.01%
+,0x140007298,"mov %rax, %rdi",48 89 C7 ,0.02%
+,0x1400072b3,"cmp $0x01, %edx",83 FA 01 ,0.01%
+,0x1400072c5,"movssl 0x00000001400E7460, %xmm2",F3 0F 10 15 93 01 0E 00 ,0.01%
+,0x1400072cd,"movaps %xmm2, %xmm0",0F 28 C2 ,0.01%
+,0x140007323,"mov $0x01, %r8d",41 B8 01 00 00 00 ,0.01%
+,0x140007329,"imul %r13, %rdx",49 0F AF D5 ,0.01%
+,0x140007330,"lea (%r12,%rdx,4), %rdx",49 8D 14 94 ,0.01%
+,0x140007335,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.01%
+,0x140007345,"add $0x01, %r8d",41 83 C0 01 ,1.72%
+,0x140007349,"mulss %xmm0, %xmm1",F3 0F 59 C8 ,0.18%
+,0x14000734d,"movss %xmm1, (%rdx)",F3 0F 11 0A ,0.70%
+,0x140007351,"movssl (%rdx,%r9,4), %xmm1",F3 42 0F 10 0C 8A ,0.14%
+,0x140007357,"mulss %xmm0, %xmm1",F3 0F 59 C8 ,2.78%
+,0x14000735b,"movss %xmm1, 0x04(%rdx,%r9,4)",F3 42 0F 11 4C 8A 04 ,1.10%
+,0x140007362,"add %rbx, %rdx",48 01 DA ,0.03%
+,0x140007365,"cmp %r10d, %r8d",45 39 D0 ,0.05%
+,0x140007368,"jnz 0x0000000140007340",75 D6 ,0.09%
+,0x1400073c0,"mov %rdi, %r8",49 89 F8 ,0.01%
+,0x14000747f,"lea (,%r10,4), %r9",4E 8D 0C 95 00 00 00 00 ,0.01%
+,0x140007487,"lea 0x10(%rcx), %rax",48 8D 41 10 ,0.01%
+,0x140007492,"setle %al",0F 9E C0 ,0.01%
+,0x140007498,"jz 0x00000001400078D0",0F 84 32 04 00 00 ,0.01%
+,0x1400074a2,"jz 0x00000001400078D0",0F 84 28 04 00 00 ,0.01%
+,0x1400074a8,"cmpl $0x02, -0x14(%rbp)",83 7D EC 02 ,0.01%
+,0x1400074ac,"jbe 0x000000014000797B",0F 86 C9 04 00 00 ,0.01%
+,0x1400074bc,"xor %eax, %eax",31 C0 ,0.02%
+,0x1400074c9,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.01%
+,0x140007500,"movups (%rbx,%rax,1), %xmm0",0F 10 04 03 ,0.01%
+,0x140007504,"mulps %xmm1, %xmm0",0F 59 C1 ,0.32%
+,0x140007507,"movups %xmm0, (%r9,%rax,1)",41 0F 11 04 01 ,0.21%
+,0x14000750c,"movups (%rcx,%rax,1), %xmm0",0F 10 04 01 ,0.09%
+,0x140007510,"mulps %xmm1, %xmm0",0F 59 C1 ,0.40%
+,0x140007513,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.25%
+,0x140007518,"add $0x10, %rax",48 83 C0 10 ,0.07%
+,0x14000751c,"cmp %rsi, %rax",48 39 F0 ,0.02%
+,0x140007528,"jz 0x0000000140007620",0F 84 F2 00 00 00 ,0.01%
+,0x140007534,"cmp $-0x01, %ebx",83 FB FF ,0.01%
+,0x140007537,"jz 0x0000000140007579",74 40 ,0.01%
+,0x140007547,"lea (%r10,%rax,1), %r11",4D 8D 1C 02 ,0.01%
+,0x14000754e,"movlps %xmm0, (%rdx,%r11,4)",42 0F 13 04 9A ,0.01%
+,0x140007557,"add %r13, %rax",4C 01 E8 ,0.02%
+,0x14000755a,"movqq (%rdx,%r11,4), %xmm0",F3 42 0F 7E 04 9A ,0.01%
+,0x140007567,"mov %r9d, %eax",44 89 C8 ,0.01%
+,0x1400075c0,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.01%
+,0x1400075cc,"jmp 0x000000014000746C",E9 9B FE FF FF ,0.03%
+,0x140007624,"cmp -0x38(%rbp), %r12",4C 3B 65 C8 ,0.01%
+,0x140007628,"jnz 0x00000001400075B0",75 86 ,0.01%
+,0x140007641,"lea 0x02(%rcx), %edi",8D 79 02 ,0.01%
+,0x1400076e6,"lea (%r14,%r10,1), %r8",4F 8D 04 16 ,0.01%
+,0x14000770e,"lea 0x10(,%r10,4), %rax",4A 8D 04 95 10 00 00 00 ,0.01%
+,0x140007725,"setnl %cl",0F 9D C1 ,0.01%
+,0x14000772b,"setnl %al",0F 9D C0 ,0.01%
+,0x140007730,"jz 0x0000000140007858",0F 84 22 01 00 00 ,0.01%
+,0x14000773a,"jz 0x0000000140007858",0F 84 18 01 00 00 ,0.02%
+,0x140007744,"jbe 0x000000014000796B",0F 86 21 02 00 00 ,0.01%
+,0x140007751,"add %rdx, %r9",49 01 D1 ,0.01%
+,0x140007756,"lea (%rdx,%r13,4), %rcx",4A 8D 0C AA ,0.02%
+,0x140007784,"mulps %xmm1, %xmm0",0F 59 C1 ,0.09%
+,0x140007787,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.12%
+,0x14000778c,"movups (%r9,%rax,1), %xmm0",41 0F 10 04 01 ,0.12%
+,0x140007791,"mulps %xmm1, %xmm0",0F 59 C1 ,0.17%
+,0x140007794,"movups %xmm0, (%rcx,%rax,1)",0F 11 04 01 ,0.31%
+,0x140007798,"add $0x10, %rax",48 83 C0 10 ,0.13%
+,0x14000779c,"cmp %rsi, %rax",48 39 F0 ,0.01%
+,0x1400077a8,"jz 0x0000000140007958",0F 84 AA 01 00 00 ,0.01%
+,0x1400077b1,"mov %r15d, %ecx",44 89 F9 ,0.01%
+,0x1400077b7,"jz 0x00000001400077F9",74 40 ,0.02%
+,0x1400077bd,"lea (%rax,%rdi,1), %r11",4C 8D 1C 38 ,0.01%
+,0x1400077c7,"lea (%rax,%r10,1), %r11",4E 8D 1C 10 ,0.01%
+,0x1400077d3,"lea (%rax,%r8,1), %r11",4E 8D 1C 00 ,0.02%
+,0x1400077da,"movqq (%rdx,%r11,4), %xmm0",F3 42 0F 7E 04 9A ,0.01%
+,0x1400077e0,"mulps %xmm2, %xmm0",0F 59 C2 ,0.01%
+,0x1400077e3,"movlps %xmm0, (%rdx,%rax,4)",0F 13 04 82 ,0.04%
+,0x1400077e7,"mov %r9d, %eax",44 89 C8 ,0.02%
+,0x1400077ed,"and $0x01, %r9d",41 83 E1 01 ,0.01%
+,0x140007838,"mov -0x28(%rbp), %rax",48 8B 45 D8 ,0.01%
+,0x140007844,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.01%
+,0x140007850,"jmp 0x0000000140007706",E9 B1 FE FF FF ,0.01%
+,0x1400078b9,"pop %rbx",5B ,0.01%
+,0x1400078bb,"pop %rdi",5F ,0.02%
+,0x140007944,"cmp %r12, -0x38(%rbp)",4C 39 65 C8 ,0.01%
+,0x140007948,"jnz 0x0000000140007834",0F 85 E6 FE FF FF ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::Field3D::fill(float)" (Showing only disassembly),,,,0.67%
+,0x1400016d3,"add $0x20, %rax",48 83 C0 20 ,0.35%
+,0x1400016db,"cmp %rcx, %rax",48 39 C8 ,0.32%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::serial::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::serial::SlabRange, smoke::serial::KernelIsa)" (Showing only disassembly),,,,0.03%
+,0x1400068ba,"push %rsi",56 ,0.01%
+,0x140006931,"mov $0x01, %eax",B8 01 00 00 00 ,0.01%
+,0x140006936,"add $0x78, %rsp",48 83 C4 78 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"main" (Showing only disassembly),,,,0.02%
+,0x1400dfb04,"movsxdl 0xA0(%rbp), %rax",48 63 85 A0 00 00 00 ,0.01%
+,0x1400dfb92,"punpckldq %xmm3, %xmm1",66 0F 62 CB ,0.01%
+,0x1400dfbf5,"add $0x01, %edi",83 C7 01 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke_prof.exe!0x1400e1446" (DEBUG INFO NOT FOUND),,,,0.01%
+,0x1400e1446,"test %eax, %eax",85 C0 ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke::avx2Supported()" (Showing only disassembly),,,,0.01%
+,0x140007a00,"push %rbp",55 ,0.01%
+,0x140007a14,"movzxb 0x0D(%rax), %eax",0F B6 40 0D ,0.01%
+
+Function,Address,Instruction,CodeByte,"CPU_TIME"
+"smoke_prof.exe!0x1400c390b" (DEBUG INFO NOT FOUND),,,,0.01%
+,0x1400c390b,"mov (%rcx), %rdx",48 8B 11 ,0.01%
+

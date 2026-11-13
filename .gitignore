@@ -25,3 +25,22 @@ desktop.ini
 # Output of local runs (slices, temporary measurements). Real results go to perf/results.csv.
 *.pgm
 perf/*.tmp
+
+# AMD uProf raw session files (large, binary). The CSV reports and workload.txt next to them are committed.
+perf/uprof/**/cpu/
+perf/uprof/**/binaries/
+perf/uprof/**/sources/
+perf/uprof/**/metadata/
+perf/uprof/**/*.db
+perf/uprof/**/*.uprof
+perf/uprof/**/*.log
+perf/uprof/**/.config
+perf/uprof/**/.error
+perf/uprof/**/.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Screenshots saved by the smoke scene (F12) into the working directory
+smoke_screenshot_*.png

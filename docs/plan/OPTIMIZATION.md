@@ -160,7 +160,9 @@ Proširuje VERIFICATION.md, odjeljak 4. Za svako mjerenje:
    (`perf/run_rounds.sh`, redoslijed se rotira svake runde). Šum je **raspon medijana rundi osnove**
    (najveći minus najmanji medijan runde). Izmjena se priznaje kao brža (ili sporija) samo ako je
    (a) razlika medijana veća od tog šuma **i** (b) kandidat je brži (sporiji) u **svakoj** rundi.
-   Inače je presuda "šum". Računa to `perf/summarize_rounds.sh`.
+   Inače je presuda "šum". Računa to `perf/summarize_rounds.sh`. Jedan program se može mjeriti u više načina:
+   varijanta u `run_rounds.sh` smije imati vlastite argumente iza putanje, odvojene zarezom
+   (`sphere=put/smoke_bench.exe,--obstacle,sphere`).
    *Zašto ne max − min svih koraka:* na Windowsu pojedinačni koraci imaju zastoje sistema, pa je
    taj raspon ogroman. Na PC-2 je po njemu čak i 2x ubrzanje projekcije (B1 naspram B0, 32³)
    ispalo "unutar šuma" (raspon 1.07 ms, razlika 0.67 ms). Medijan po rundi je stabilan
@@ -218,6 +220,9 @@ vrijednosti (propusnost memorije, ns po zavisnoj operaciji). Kalibracija se pokr
 i mjerenje i upisuje u unos. `smoke_bench --calibrate` ispisuje CPU, OS, broj hardverskih niti,
 RAM, dostupne podatke o cacheu, vektorsku ISA, kompajler, Release oznake, varijantu i commit; zatim
 mjeri triad memorije i zavisni lanac. Mjerenje triadom je približno i zavisi od računara/opterećenja.
+Triad je ispravljen 2026-11-11 (ranije je bio 6 puta prevelik; PROFILE.md, odjeljak 2). Od tada postoji i
+`smoke_bench --hwinfo`: procesor, keševi i skupovi instrukcija pročitani instrukcijom CPUID, te kompajler i
+opcije gradnje (uključujući opcije po fajlu), bez mjerenja.
 
 Osnovne gradnje M3:
 

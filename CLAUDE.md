@@ -12,16 +12,22 @@ eventualno GPU) i mjerimo ubrzanje. Dim prikazujemo u postojećem OpenGL rendere
 M4 (tehnike iz laba 1, pa dodatne sekvencijalne tehnike). Paralelizacija (OpenMP niti, GPU) **nije
 milestone** i ne pišemo je dok tim ne kaže (odluka D8), ali kod pišemo tako da je ne otežava.
 
+**Plan rada od 2026-11-11: `docs/plan/EXECUTION_PLAN.md` je izvršen (2026-11-13):** M4d (profiling, uProf), M-VIZ
+(vizualizacija), M-OBS (prepreke/mesh); tačke G0 do G3 su prošle. Šta još čeka Ermina ili tim piše u
+`docs/plan/TODO/MOBS_HANDOFF.md`. Za novi rad prvo predloži plan. Najvažnije pravilo objašnjavanja ispod vrijedi
+i dalje: Ermin uči.
+
 ## Gdje je šta
 
-- `Renderer/`: **tuđi kod** (OpenGL forward renderer prethodnog tima). **Ne mijenjati.**
-  Jedine dozvoljene izmjene su navedene u `docs/plan/ARCHITECTURE.md`, odjeljak 6.
+- `Renderer/`: **tuđi kod** (OpenGL forward renderer prethodnog tima). Mijenja se samo prema odluci D13 i popisu u
+  `docs/plan/ARCHITECTURE.md`, odjeljak 6; sve ostalo ne dirati.
 - `Solver/`: **naš kod**, simulacija. Čisti C++20, **bez OpenGL-a, GLFW-a, GLM-a i bez ikakvog
   headera iz Renderera**.
-  **Skelet već postoji** (gradi se, 11 testova prolazi): javni interfejs u `Solver/include/smoke/`, faze su
-  prazne funkcije s `TODO(M1)`/`TODO(M2)`/`TODO(M3)` u `Solver/src/stages/`. Gradi se i bez renderera:
+  **Solver je implementiran i serijski optimiziran, s preprekama** (M0 do M4, M-OBS; 62 testa prolaze): javni interfejs u
+  `Solver/include/smoke/`, faze u `Solver/src/stages/`. Gradi se i bez renderera:
   `cmake -S Solver -B Solver/build -G "MinGW Makefiles"`. Nadograđuj ga, ne prepravljaj strukturu bez razloga.
-- `Integration/`: tek u zadnjem milestone-u (M-VIZ, vizualizacija); jedino mjesto koje uključuje i Solver i Renderer.
+  Bez prepreka rezultat mora ostati bit po bit isti kao PC-2 referenca (`smoke_bench --verify`).
+- `Integration/`: urađeno u M-VIZ (vizualizacija, `Integration/README.md`); jedino mjesto koje uključuje i Solver i Renderer.
   Dim je u "nevidljivoj kutiji" koja se kasnije postavlja u scenu (`docs/plan/ARCHITECTURE.md`, odjeljak 8).
 - `docs/`: literatura (PDF) i naši dokumenti u `docs/plan/`.
 
@@ -47,7 +53,7 @@ milestone** i ne pišemo je dok tim ne kaže (odluka D8), ali kod pišemo tako d
 - Ne izmišljati brojeve (pragove, konstante) koje moramo izmjeriti ili pročitati u radu: ostaviti
   `TODO(measure)` ili `TODO(paper: <rad, jednadžba>)` i reći korisniku.
 - Git: grane `feature/<naziv>`, `bugfix/<naziv>`, `docs/<naziv>`; poruke `tip(opseg): opis`.
-  Ne commitati bez da korisnik to traži.
+  Commit na feature granama je dozvoljen na kraju svakog zadatka iz `EXECUTION_PLAN.md`; push, merge i rad na `main` samo kad korisnik traži.
 
 ## Optimizacija i mjerenje (obavezna pravila)
 
@@ -81,6 +87,7 @@ Objašnjenja u razgovoru piši na **bosanskom**, jasno i redom. Prije većih kor
 ## Radni tok
 
 1. Za svaki milestone iz `PLAN.md` prvo predloži plan (fajlovi, funkcije, testovi), sačekaj odobrenje.
+   (`EXECUTION_PLAN.md`, odobren 2026-11-11, je izvršen; za rad poslije njega opet vrijedi ovo pravilo.)
 2. Piši test zajedno s kodom. Milestone je gotov tek kad je njegov kriterij završetka ispunjen.
 3. Poslije izmjene pokreni izgradnju i testove i prijavi tačan rezultat (i ako nešto nije prošlo).
 4. Kad se donese odluka (D1 do D7 ili nova), upiši je u odgovarajući dokument.
