@@ -50,6 +50,16 @@ function(smoke_set_warnings target)
   endif()
 endfunction()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(SMOKE_NO_VECTORIZE_FLAGS "-fno-tree-vectorize")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set(SMOKE_NO_VECTORIZE_FLAGS "-fno-vectorize;-fno-slp-vectorize")
+else()
+  set(SMOKE_NO_VECTORIZE_FLAGS "")
+endif()
+
+set_source_files_properties(demo/m3_b0.cpp PROPERTIES COMPILE_OPTIONS "${SMOKE_NO_VECTORIZE_FLAGS}")
+
 add_library(smoke_solver STATIC
   src/SmokeSolver.cpp
   src/Field3D.cpp
@@ -159,13 +169,17 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/test_stability.cpp
     tests/test_obstacles.cpp
     tests/test_slab_range.cpp
+    tests/test_demo_versions.cpp
     tests/demo_advect.cpp                              # M1 demo, started by "smoke_cli --demo advect"
+    demo/m3_b0.cpp
+    demo/m3_b1.cpp
   )
   target_link_libraries(smoke_selftest PUBLIC smoke_solver)
   target_include_directories(smoke_selftest
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src            # tests check the internal stages directly
             ${CMAKE_CURRENT_SOURCE_DIR}/apps/common    # PgmWriter.h for the demo
+            ${CMAKE_CURRENT_SOURCE_DIR}/demo           # historical M3 versions used by demo-version tests
   )
   # SYSTEM: warnings coming from inside doctest.h are not ours and must not hide our own warnings.
   target_include_directories(smoke_selftest SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
@@ -239,14 +253,6 @@ endif()
 # lab example). The *_scalar.cpp / m3_b0.cpp files are compiled without vectorization, like the lab's
 # *_scalar.cpp files; the others use the default Release flags.
 if(SMOKE_BUILD_LAB)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(SMOKE_NO_VECTORIZE_FLAGS "-fno-tree-vectorize")
-  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(SMOKE_NO_VECTORIZE_FLAGS "-fno-vectorize;-fno-slp-vectorize")
-  else()
-    set(SMOKE_NO_VECTORIZE_FLAGS "")
-  endif()
-
   # Old (M3) kernel versions, AoS and unrolled demonstration versions, and the comparison tables.
   add_library(smoke_lab_kernels STATIC
     lab/LabRunner.cpp
@@ -293,4 +299,7 @@ if(SMOKE_BUILD_TESTS)
   target_link_libraries(smoke_tests PRIVATE smoke_solver smoke_selftest)
   smoke_set_warnings(smoke_tests)
   add_test(NAME smoke_tests COMMAND smoke_tests)
+  add_test(NAME smoke_demo_version_A COMMAND smoke_tests --test-case=demo_version_A*)
+  add_test(NAME smoke_demo_version_B COMMAND smoke_tests --test-case=demo_version_B*)
+  add_test(NAME smoke_demo_version_C COMMAND smoke_tests --test-case=demo_version_C*)
 endif()

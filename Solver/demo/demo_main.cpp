@@ -20,6 +20,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
@@ -58,6 +60,9 @@ struct Options {
     int rounds = 3;
     bool full = false;
     bool kernels = true;
+    bool separate = false;
+    int version = -1;
+    unsigned long launcherId = 0;
 };
 
 constexpr int kVersions = 3;
@@ -97,7 +102,17 @@ std::vector<float> packInterior(const float* origin, int nx, int ny, int nz, std
 }
 
 // Versions A and B: the M3 step (DemoM3.h) on our own SmokeState.
-RunResult runM3(int version, const GridSize& g, const Options& o) {
+void runProgressStep(int version, int round, int roundCount, std::string_view phase, int stepIndex, int stepCount,
+                    bool showProgress, const auto& step) {
+    if (showProgress) {
+        std::cout << "    " << static_cast<char>('A' + version) << " runda " << round << "/" << roundCount << " - "
+                  << phase << " " << stepIndex << "/" << stepCount << " ... " << std::flush;
+    }
+    step();
+    if (showProgress) std::cout << "gotovo\n" << std::flush;
+}
+
+RunResult runM3(int version, const GridSize& g, const Options& o, bool showProgress, int round, int roundCount) {
     smoke::SmokeParams params;  // defaults, as SmokeSolver uses them
     smoke::SmokeState state;
     state.resize(g);
@@ -106,10 +121,11 @@ RunResult runM3(int version, const GridSize& g, const Options& o) {
         if (version == 0) smoke_demo::m3_b0::m3Step(state, params, t);
         else smoke_demo::m3_b1::m3Step(state, params, t);
     };
-    for (int i = 0; i < o.warmup; ++i) step();
+    for (int i = 0; i < o.warmup; ++i)
+        runProgressStep(version, round, roundCount, "zagrijavanje", i + 1, o.warmup, showProgress, step);
     RunResult r;
     for (int i = 0; i < o.steps; ++i) {
-        step();
+        runProgressStep(version, round, roundCount, "mjerenje", i + 1, o.steps, showProgress, step);
         accumulate(r, t);
     }
     const smoke::Field3D& d = state.density;
@@ -118,14 +134,17 @@ RunResult runM3(int version, const GridSize& g, const Options& o) {
 }
 
 // Version C: the optimized solver through its public interface (the same one smoke_cli and the renderer use).
-RunResult runOptimized(const GridSize& g, const Options& o) {
+RunResult runOptimized(const GridSize& g, const Options& o, bool showProgress, int round, int roundCount) {
     smoke::SolverConfig config;
     config.grid = g;
     smoke::SmokeSolver solver(config);
-    for (int i = 0; i < o.warmup; ++i) solver.step();
+    for (int i = 0; i < o.warmup; ++i)
+        runProgressStep(2, round, roundCount, "zagrijavanje", i + 1, o.warmup, showProgress,
+                        [&] { solver.step(); });
     RunResult r;
     for (int i = 0; i < o.steps; ++i) {
-        solver.step();
+        runProgressStep(2, round, roundCount, "mjerenje", i + 1, o.steps, showProgress,
+                        [&] { solver.step(); });
         accumulate(r, solver.lastTimings());
     }
     const smoke::DensityView v = solver.density();
@@ -133,8 +152,10 @@ RunResult runOptimized(const GridSize& g, const Options& o) {
     return r;
 }
 
-RunResult runVersion(int version, const GridSize& g, const Options& o) {
-    return version < 2 ? runM3(version, g, o) : runOptimized(g, o);
+RunResult runVersion(int version, const GridSize& g, const Options& o, bool showProgress = false, int round = 1,
+                     int roundCount = 1) {
+    return version < 2 ? runM3(version, g, o, showProgress, round, roundCount)
+                       : runOptimized(g, o, showProgress, round, roundCount);
 }
 
 std::string accuracyText(const std::vector<float>& a, const std::vector<float>& ref) {
@@ -215,6 +236,164 @@ GridSummary simulateGrid(int n, const Options& o) {
     return {n, total[0] / total[2], total[1] / total[2]};
 }
 
+std::uint64_t densityHash(const std::vector<float>& density) {
+    std::uint64_t hash = 14695981039346656037ull;
+    for (float value : density) {
+        std::uint32_t bits = 0;
+        std::memcpy(&bits, &value, sizeof(bits));
+        for (unsigned int shift = 0; shift < 32; shift += 8) {
+            hash ^= (bits >> shift) & 0xffu;
+            hash *= 1099511628211ull;
+        }
+    }
+    return hash;
+}
+
+bool allFinite(const std::vector<float>& density) {
+    return std::all_of(density.begin(), density.end(), [](float value) { return std::isfinite(value); });
+}
+
+bool simulateVersion(int n, int version, const Options& o) {
+    const GridSize g{n, n, n};
+    std::vector<double> totals;
+    std::array<std::vector<double>, smoke::kStageCount> stages;
+    std::vector<float> finalDensity;
+
+    std::cout << "\nMreza " << n << "^3 (" << static_cast<long long>(n) * n * n << " celija), "
+              << o.steps << " izmjerenih koraka (+" << o.warmup << " zagrijavanje), broj rundi: " << o.rounds
+              << "\n";
+    for (int round = 0; round < o.rounds; ++round) {
+        std::cout << "  runda " << round + 1 << "/" << o.rounds << " ..." << std::flush;
+        RunResult result = runVersion(version, g, o, true, round + 1, o.rounds);
+        totals.push_back(result.totalMs);
+        for (std::size_t stage = 0; stage < smoke::kStageCount; ++stage)
+            stages[stage].push_back(result.stageMs[stage]);
+        if (round == 0) finalDensity = std::move(result.density);
+        std::cout << " gotovo\n";
+    }
+
+    const double medianTotal = medianOf(totals);
+    const double perStep = medianTotal / o.steps;
+    std::cout << "\n  Rezultati verzije " << static_cast<char>('A' + version) << ":\n"
+              << "  " << std::left << std::setw(26) << "faza" << std::right << std::setw(16) << "ms/korak"
+              << "\n";
+    for (std::size_t stage = 0; stage < smoke::kStageCount; ++stage)
+        std::cout << "  " << std::left << std::setw(26) << smoke::stageName(static_cast<Stage>(stage)) << std::right
+                  << std::fixed << std::setprecision(3) << std::setw(16) << medianOf(stages[stage]) / o.steps << "\n";
+    std::cout << "  " << std::left << std::setw(26) << "UKUPNO (cijeli korak)" << std::right << std::fixed
+              << std::setprecision(3) << std::setw(16) << perStep << "\n"
+              << "  Ukupno: " << std::setprecision(3) << medianTotal / 1000.0 << " s; " << std::setprecision(1)
+              << 1000.0 / perStep << " koraka/s\n"
+              << "  Gustina: " << (allFinite(finalDensity) ? "sve vrijednosti su konacne" : "GRESKA: NaN/Inf")
+              << "; FNV-1a: " << std::hex << std::setfill('0') << std::setw(16) << densityHash(finalDensity)
+              << std::dec << std::setfill(' ') << "\n";
+    std::cout << std::defaultfloat << std::flush;
+    return allFinite(finalDensity);
+}
+
+#if defined(_WIN32)
+std::wstring completionEventName(unsigned long launcherId, int version) {
+    return L"Local\\SmokeDemoABC_" + std::to_wstring(launcherId) + L"_" +
+           std::to_wstring(version);
+}
+
+bool signalVersionComplete(unsigned long launcherId, int version) {
+    if (launcherId == 0) return true;
+    const std::wstring name = completionEventName(launcherId, version);
+    HANDLE event = OpenEventW(EVENT_MODIFY_STATE, FALSE, name.c_str());
+    if (event == nullptr) {
+        std::cerr << "GRESKA: ne mogu otvoriti signal za verziju " << static_cast<char>('A' + version)
+                  << " (Windows greska " << GetLastError() << ").\n";
+        return false;
+    }
+    const BOOL signaled = SetEvent(event);
+    const DWORD error = signaled ? ERROR_SUCCESS : GetLastError();
+    CloseHandle(event);
+    if (!signaled) {
+        std::cerr << "GRESKA: ne mogu javiti zavrsetak verzije " << static_cast<char>('A' + version)
+                  << " (Windows greska " << error << ").\n";
+        return false;
+    }
+    return true;
+}
+
+bool launchSeparateWindows(const Options& o) {
+    std::array<HANDLE, kVersions> completionEvents{};
+    const unsigned long launcherId = GetCurrentProcessId();
+    for (int version = 0; version < kVersions; ++version) {
+        const std::wstring name = completionEventName(launcherId, version);
+        SetLastError(ERROR_SUCCESS);
+        completionEvents[version] = CreateEventW(nullptr, TRUE, FALSE, name.c_str());
+        const DWORD error = GetLastError();
+        if (completionEvents[version] == nullptr || error == ERROR_ALREADY_EXISTS) {
+            std::cerr << "GRESKA: ne mogu pripremiti signal za konzolu " << static_cast<char>('A' + version)
+                      << " (Windows greska " << (error == ERROR_SUCCESS ? ERROR_INVALID_HANDLE : error) << ").\n";
+            for (HANDLE event : completionEvents)
+                if (event != nullptr) CloseHandle(event);
+            return false;
+        }
+    }
+
+    std::array<wchar_t, 32768> executablePath{};
+    const DWORD pathLength = GetModuleFileNameW(nullptr, executablePath.data(),
+                                                 static_cast<DWORD>(executablePath.size()));
+    if (pathLength == 0 || pathLength >= executablePath.size()) {
+        std::cerr << "GRESKA: ne mogu pronaci putanju do smoke_demo.exe (Windows greska " << GetLastError()
+                  << ").\n";
+        for (HANDLE event : completionEvents)
+            if (event != nullptr) CloseHandle(event);
+        return false;
+    }
+
+    bool success = true;
+    for (int version = 0; version < kVersions; ++version) {
+        std::wstring command = L"\"" + std::wstring(executablePath.data(), pathLength) + L"\" --verzija ";
+        command += static_cast<wchar_t>(L'A' + version);
+        command += L" --launcher-id " + std::to_wstring(launcherId);
+        if (o.full) command += L" --puno";
+        for (int grid : o.grids) command += L" --grid " + std::to_wstring(grid);
+        command += L" --koraci " + std::to_wstring(o.steps);
+        command += L" --runde " + std::to_wstring(o.rounds);
+
+        STARTUPINFOW startup{};
+        startup.cb = sizeof(startup);
+        PROCESS_INFORMATION process{};
+        if (!CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NEW_CONSOLE, nullptr, nullptr,
+                            &startup, &process)) {
+            std::cerr << "GRESKA: ne mogu otvoriti konzolu za verziju " << static_cast<char>('A' + version)
+                      << " (Windows greska " << GetLastError() << ").\n";
+            success = false;
+            break;
+        }
+        CloseHandle(process.hThread);
+        std::cout << "Otvorena konzola " << static_cast<char>('A' + version) << "; mjerenje ide redom.\n"
+                  << std::flush;
+
+        HANDLE waitHandles[] = {completionEvents[version], process.hProcess};
+        const DWORD waitResult = WaitForMultipleObjects(2, waitHandles, FALSE, INFINITE);
+        if (waitResult == WAIT_OBJECT_0) {
+            CloseHandle(process.hProcess);
+            continue;
+        }
+        DWORD exitCode = 0;
+        if (waitResult == WAIT_OBJECT_0 + 1 && GetExitCodeProcess(process.hProcess, &exitCode)) {
+            std::cerr << "GRESKA: konzola verzije " << static_cast<char>('A' + version)
+                      << " zatvorila se prije zavrsetka mjerenja (kod " << exitCode << ").\n";
+        } else {
+            std::cerr << "GRESKA: cekanje konzole verzije " << static_cast<char>('A' + version)
+                      << " nije uspjelo (Windows greska " << GetLastError() << ").\n";
+        }
+        CloseHandle(process.hProcess);
+        success = false;
+        break;
+    }
+
+    for (HANDLE event : completionEvents)
+        if (event != nullptr) CloseHandle(event);
+    return success;
+}
+#endif
+
 void printWhatChanged() {
     std::cout <<
 R"(
@@ -271,10 +450,14 @@ bool parseArgs(int argc, char** argv, Options& o) {
     for (int i = 1; i < argc; ++i) {
         const std::string_view a(argv[i]);
         int value = 0;
-        if (i + 1 >= argc && (a == "--grid" || a == "--koraci" || a == "--runde")) return false;
+        if (i + 1 >= argc &&
+            (a == "--grid" || a == "--koraci" || a == "--runde" || a == "--verzija" || a == "--launcher-id"))
+            return false;
         if (a == "--puno") {
             o.full = true;
             if (!gridGiven) o.grids = {32, 64, 96, 128};
+        } else if (a == "--odvojeno") {
+            o.separate = true;
         } else if (a == "--grid") {
             if (!parsePositive(argv[++i], value) || value > 512) return false;
             if (!gridGiven) { o.grids.clear(); gridGiven = true; }
@@ -283,13 +466,24 @@ bool parseArgs(int argc, char** argv, Options& o) {
             if (!parsePositive(argv[++i], o.steps)) return false;
         } else if (a == "--runde") {
             if (!parsePositive(argv[++i], o.rounds)) return false;
+        } else if (a == "--verzija") {
+            const std::string_view requested(argv[++i]);
+            if (requested == "A") o.version = 0;
+            else if (requested == "B") o.version = 1;
+            else if (requested == "C") o.version = 2;
+            else return false;
+        } else if (a == "--launcher-id") {
+            char* end = nullptr;
+            const unsigned long id = std::strtoul(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || id == 0 || id > 0xfffffffful) return false;
+            o.launcherId = id;
         } else if (a == "--bez-jezgara") {
             o.kernels = false;
         } else {
             return false;
         }
     }
-    return true;
+    return !(o.separate && o.version >= 0) && (o.launcherId == 0 || o.version >= 0);
 }
 
 // When smoke_demo is started by double-click, Windows opens a console window just for it and closes the
@@ -311,15 +505,35 @@ int main(int argc, char** argv) {
     Options o;
     if (!parseArgs(argc, argv, o)) {
         std::cout << "Koriscenje: smoke_demo [--puno] [--grid N]... [--koraci K] [--runde R] [--bez-jezgara]\n"
+                  << "             smoke_demo --odvojeno [--puno] [--grid N]... [--koraci K] [--runde R]\n"
                   << "  zadano (brzi mod): mreza 64^3, 100 koraka, 3 runde, pa poredjenje tehnika na 64^3 (~20 s)\n"
                   << "  --puno: mreze 32, 64, 96 i 128 (nekoliko minuta)\n"
+                  << "  --odvojeno: otvori zasebne konzole A/B/C; mjerenja se izvrsavaju redom\n"
                   << "  --bez-jezgara: samo cijela simulacija (bez dijela 2)\n";
         waitIfOwnConsole();
         return 2;
     }
+#if defined(_WIN32)
+    if (o.separate) {
+        std::cout << "Otvaram zasebne konzole za verzije A, B i C. Mjerenja idu redom kako se ne bi ometala.\n"
+                  << std::flush;
+        const bool launched = launchSeparateWindows(o);
+        if (!launched) return 1;
+        std::cout << "Sve tri verzije su zavrsile mjerenje; prozori ostaju otvoreni do Enter.\n";
+        return 0;
+    }
+#else
+    if (o.separate) {
+        std::cerr << "GRESKA: --odvojeno trenutno podrzava samo Windows konzole.\n";
+        return 2;
+    }
+#endif
+
     std::cout << "==========================================================================================================\n"
               << " smoke_demo: 3D simulacija dima na mrezi celija (Eulerov pristup), serijska verzija (jedna nit)\n"
-              << " Poredjenje: Neoptimizirana verzija (M3) i Optimizirana verzija (M4)\n"
+              << (o.version < 0 ? " Poredjenje: Neoptimizirana verzija (M3) i Optimizirana verzija (M4)\n"
+                                : " Samostalni rezultat verzije " + std::string(1, static_cast<char>('A' + o.version)) +
+                                      "\n")
               << "==========================================================================================================\n"
               << "AVX2 na ovom procesoru: "
               << (smoke::avx2Supported() ? "da (verzija C koristi AVX2 putanju)"
@@ -337,6 +551,16 @@ int main(int argc, char** argv) {
               << ", oznake: " << SMOKE_DEMO_FLAGS << ", commit: " << SMOKE_DEMO_COMMIT << "\n"
               << "Mod: " << (o.full ? "puni (--puno)" : "brzi (za sve mreze: --puno)") << "\n"
               << "Za vrijeme mjerenja racunar treba biti miran (bez igara, videa, kompajliranja).\n";
+
+    if (o.version >= 0) {
+        std::cout << "\nVerzija " << static_cast<char>('A' + o.version) << ": " << kVersionNames[o.version]
+                  << "\nHash gustine se moze porediti izmedju A, B i C.\n";
+        bool finite = true;
+        for (const int n : o.grids) finite = simulateVersion(n, o.version, o) && finite;
+        if (!signalVersionComplete(o.launcherId, o.version)) return 1;
+        waitIfOwnConsole();
+        return finite ? 0 : 1;
+    }
 
     std::cout << "\n==========================================================================================================\n"
               << " DIO 1: Cijela simulacija, ista pocetna stanja i parametri (izvor dima, uzgon, vorticity eps = 5,\n"

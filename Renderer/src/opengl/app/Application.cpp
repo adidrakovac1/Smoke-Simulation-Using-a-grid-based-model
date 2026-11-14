@@ -637,8 +637,35 @@ void Application::Run(const std::vector<Scene *> &scenes, std::size_t initialIdx
     }
 }
 
+namespace {
+std::size_t FindValidSceneIndex(const std::vector<Scene *> &scenes, std::size_t fallback = 0)
+{
+    if (scenes.empty())
+        return 0;
+
+    for (std::size_t i = 0; i < scenes.size(); ++i)
+    {
+        if (scenes[i] != nullptr)
+            return i;
+    }
+
+    return std::min(fallback, scenes.size() - 1);
+}
+} // namespace
+
 void Application::RunHotKeys()
 {
+    if (m_activeSceneIndex >= m_scenes.size() || !m_scenes[m_activeSceneIndex])
+    {
+        m_activeSceneIndex = FindValidSceneIndex(m_scenes, m_activeSceneIndex);
+        if (m_activeSceneIndex >= m_scenes.size() || !m_scenes[m_activeSceneIndex])
+            return;
+    }
+
+    Scene *activeScene = m_scenes[m_activeSceneIndex];
+    if (!activeScene)
+        return;
+
     if (m_input->IsKeyPressed(GLFW_KEY_F11))
     {
         ToggleFullscreen();
@@ -671,13 +698,13 @@ void Application::RunHotKeys()
     if (m_input->IsKeyPressed(GLFW_KEY_K))
     {
         m_ui->skyboxOverride = !m_ui->skyboxOverride;
-        m_scenes[m_activeSceneIndex]->SetSkyboxVisible(m_ui->skyboxOverride);
+        activeScene->SetSkyboxVisible(m_ui->skyboxOverride);
         spdlog::debug("[Application] Toggle skybox: {}", m_ui->skyboxOverride);
     }
 
     if (m_input->IsKeyPressed(GLFW_KEY_C))
     {
-        Camera &cam = m_scenes[m_activeSceneIndex]->GetCamera();
+        Camera &cam = activeScene->GetCamera();
 
         CameraMode mode = cam.GetMode();
         mode = static_cast<CameraMode>((static_cast<int>(mode) + 1) % 3);
