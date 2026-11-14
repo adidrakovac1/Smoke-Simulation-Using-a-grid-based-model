@@ -27,6 +27,14 @@ Linux / macOS: isto, bez `-G "MinGW Makefiles"`.
 
 `smoke_demo` bez argumenata (mreža 64³, 100 koraka, 3 runde) traje oko pola minute; `smoke_demo --puno` radi
 mreže 32³ do 128³ (nekoliko minuta). Ostale opcije: `--grid N`, `--koraci K`, `--runde R`, `--bez-jezgara`.
+Na Windowsu `smoke_demo --odvojeno` otvara tri zasebne konzole (A, B i C), pokreće ih redom radi poštenog
+mjerenja, a svaki prozor ostaje otvoren do Enter. Može se kombinovati s `--grid N`, `--koraci K`, `--runde R`
+i `--puno`; svaki prozor prikazuje napredak po rundi, pa zatim ispisuje vrijeme po fazi, ukupno vrijeme i
+FNV-1a hash gustine za poređenje rezultata. Ispis se ne radi između koraka zagrijavanja i mjerenja. Ovaj demo
+služi za poređenje verzija; za rezultate u `PERF_LOG.md` koristi se `smoke_bench`. Verzija A je namjerno bez
+vektorizacije i može trajati znatno duže od B i C.
+
+Primjer: `.\Solver\build\smoke_demo.exe --odvojeno --grid 32 --koraci 20 --runde 3` pokreće verzije u odvojenim konzolama.
 Neoptimizirana verzija je M3 kod (commit `73ceb9e`), kopiran u `demo/M3Solver.inc` i preveden dvaput
 (`demo/m3_b0.cpp` bez vektorizacije, `demo/m3_b1.cpp` sa zadanim oznakama); Optimizirana verzija je
 `smoke::SmokeSolver`. Računar za vrijeme mjerenja treba biti miran.
@@ -45,7 +53,9 @@ poređenje s referencom: `Solver/build/smoke_bench --verify Solver/reference/ser
 (referenca zavisi od računara i kompajlera, vidi `../docs/plan/VERIFICATION.md`, odjeljak 3).
 B0 bez vektorizacije gradi se s `-DSMOKE_DISABLE_VECTORIZATION=ON`; zadani B1 koristi optimizacije
 kompajlera.
-Testovi: `ctest --test-dir Solver/build --output-on-failure` ili direktno `smoke_tests`.
+Testovi: `ctest --test-dir Solver/build --output-on-failure` ili direktno `smoke_tests`. CTest prikazuje verzije
+A, B i C iz `smoke_demo` kao tri zasebna testa: A se provjerava na ponovljivost i konacnu gustinu, a B i C se
+bit-po-bit porede s A. Puni `smoke_tests` ih isključuje kako se ne bi izvršavali dvaput.
 Ako Windows blokira `smoke_tests.exe` ("Application Control policy"), iste testove pokreće `smoke_cli --selftest`.
 
 ## Šta je u folderima
@@ -65,6 +75,7 @@ reference/       referentni rezultati (kasnije)
 Radi cijeli korak s opcionim vorticity confinementom, serijski optimiziran u M4 (vektorizacija, AVX2 po fajlu,
 fuzija jezgara u advekciji); rezultat je bit po bit isti kao referenca snimljena prije optimizacije.
 Prepreke (`SmokeSolver::setObstacles`, `ObstacleGrid`, `voxelize`, `loadObj`) su opisane u
-`../docs/plan/OBSTACLES.md`. 62 testa: T1 do T10, prepreke i raspon slojeva (`SlabRange`).
+`../docs/plan/OBSTACLES.md`. 65 testova: T1 do T10, prepreke, raspon slojeva (`SlabRange`) i zasebne provjere
+verzija A/B/C iz demonstracije.
 Mjerenje s preprekom: `smoke_bench --obstacle sphere|blanket`; opterećenje za profiler: `smoke_prof`.
 Zadani confinement `ε = 5` vizualno je podešen na 64³; `smoke_cli --vorticity-eps 0` ga isključuje.
