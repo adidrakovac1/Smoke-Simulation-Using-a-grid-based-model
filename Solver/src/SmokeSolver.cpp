@@ -45,154 +45,118 @@ void SmokeSolver::step(float dt) {
     const ObstacleLists* obstacles   = s.obstacles.get();
     const float          ambientTemp = s.config.params.ambientTemp;
 
-    // Use parallel path when a thread pool is active with >1 threads
-    if (s.pool && s.pool->numThreads() > 1 && s.config.grid.nz > 1) {
-        ThreadPool& pool = *s.pool;
-        const GridSize g = s.config.grid;
-
-        // 1. Sources
-        {
-            ScopedTimer t(s.timings[Stage::Sources]);
-            addSources(s.state, s.config.params, dt, all);
-            if (obstacles) clearSolidScalars(s.state, ambientTemp, *obstacles);
+    const GridSize g = s.config.grid;
+    const bool parallel = s.pool && s.pool->numThreads() > 1 && g.nz > 1;
+    auto forSlabs = [&](auto&& kernel) {
+        if (parallel) {
+            s.pool->parallelSlabs(g.nz, kernel);
+        } else {
+            kernel(all, 0);
         }
+    };
 
-        // 2. Forces
-        {
-            ScopedTimer t(s.timings[Stage::Forces]);
-            pool.parallelSlabs(g.nz, [&](SlabRange slab, int) {
-                applyBuoyancy(s.state, s.config.params, dt, slab);
-            });
-            setBoundary(s.state.v, BoundaryKind::VelocityY);
+    // 1. Sources. Source placement and obstacle lists intentionally remain serial (D18).
+    {
+        ScopedTimer t(s.timings[Stage::Sources]);
+        addSources(s.state, s.config.params, dt, all);
+        if (obstacles) clearSolidScalars(s.state, ambientTemp, *obstacles);
+    }
 
-            if (s.config.params.vorticityEps > 0.0f) {
-                applyVorticityConfinement(s.state, s.config.params.vorticityEps, dt, all);
-            }
-
-            if (obstacles) {
-                applyPorousDrag(s.state, dt, *obstacles);
-                enforceSolidVelocity(s.state, *obstacles);
-            }
+    // 2. Forces. The cellwise buoyancy kernel can use slabs; its boundary pass must follow the join.
+    {
+        ScopedTimer t(s.timings[Stage::Forces]);
+        forSlabs([&](SlabRange slab, int) { applyBuoyancySlab(s.state, s.config.params, dt, slab); });
+        setBoundary(s.state.v, BoundaryKind::VelocityY);
+        if (s.config.params.vorticityEps > 0.0f)
+            applyVorticityConfinement(s.state, s.config.params.vorticityEps, dt, all);
+        if (obstacles) {
+            applyPorousDrag(s.state, dt, *obstacles);
+            enforceSolidVelocity(s.state, *obstacles);
         }
+    }
 
-        // 3. Advect Velocity
-        {
-            ScopedTimer t(s.timings[Stage::AdvectVelocity]);
-            s.state.u.swap(s.state.u0);
-            s.state.v.swap(s.state.v0);
-            s.state.w.swap(s.state.w0);
-            Field3D* const dstV[3] = {&s.state.u, &s.state.v, &s.state.w};
-            const Field3D* const srcV[3] = {&s.state.u0, &s.state.v0, &s.state.w0};
-            pool.parallelSlabs(g.nz, [&](SlabRange slab, int) {
-                advectFields(dstV, srcV, 3, s.state.u0, s.state.v0, s.state.w0, dt, slab);
-            });
-            setVelocityBoundary(s.state);
-            if (obstacles) enforceSolidVelocity(s.state, *obstacles);
-        }
+    // 3. Advect velocity. All components share one back-trace and the same phase ordering in both backends.
+    {
+        ScopedTimer t(s.timings[Stage::AdvectVelocity]);
+        s.state.u.swap(s.state.u0);
+        s.state.v.swap(s.state.v0);
+        s.state.w.swap(s.state.w0);
+        Field3D* const dst[3] = {&s.state.u, &s.state.v, &s.state.w};
+        const Field3D* const src[3] = {&s.state.u0, &s.state.v0, &s.state.w0};
+        forSlabs([&](SlabRange slab, int) {
+            advectFields(dst, src, 3, s.state.u0, s.state.v0, s.state.w0, dt, slab);
+        });
+        setVelocityBoundary(s.state);
+        if (obstacles) enforceSolidVelocity(s.state, *obstacles);
+    }
 
-        // 4. Project
-        {
-            ScopedTimer t(s.timings[Stage::Project]);
-            pool.parallelSlabs(g.nz, [&](SlabRange slab, int) {
-                computeDivergence(s.state.u, s.state.v, s.state.w, s.state.divergence, slab);
-            });
-            setBoundary(s.state.divergence, BoundaryKind::Scalar);
+    // 4. Project. Each Jacobi iteration must finish and update ghost cells before the next begins.
+    {
+        ScopedTimer t(s.timings[Stage::Project]);
+        forSlabs([&](SlabRange slab, int) {
+            computeDivergence(s.state.u, s.state.v, s.state.w, s.state.divergence, slab);
+        });
+        setBoundary(s.state.divergence, BoundaryKind::Scalar);
+        s.state.pressure.fill(0.0f);
+        if (parallel) s.state.pressure0.fill(0.0f);
 
-            s.state.pressure.fill(0.0f);
-            s.state.pressure0.fill(0.0f);
-            const int iterations = s.config.params.jacobiIterations;
-            if (iterations > 0) {
-                double jacobiTotalMs = 0.0;
-                {
-                    ScopedTimer jt(jacobiTotalMs);
-                    auto on_complete = [&]() noexcept {
-                        if (obstacles) extendIntoSolids(s.state.pressure, *obstacles);
-                        setBoundary(s.state.pressure, BoundaryKind::Scalar);
-                        s.state.pressure.swap(s.state.pressure0);
-                    };
-                    std::barrier sync(pool.numThreads(), on_complete);
-
-                    pool.parallelRun([&](int tid) {
-                        const int k0 = 1 + (tid * g.nz) / pool.numThreads();
-                        const int k1 = 1 + ((tid + 1) * g.nz) / pool.numThreads();
-                        const SlabRange slab{k0, k1};
-                        for (int it = 0; it < iterations; ++it) {
-                            if (slab.k0 < slab.k1) {
-                                jacobiIteration(s.state.pressure, s.state.pressure0, s.state.divergence, slab);
-                            }
-                            sync.arrive_and_wait();
-                        }
-                    });
+        const int iterations = s.config.params.jacobiIterations;
+        double jacobiTotalMs = 0.0;
+        if (iterations > 0) {
+            ScopedTimer jt(jacobiTotalMs);
+            if (parallel) {
+                auto on_complete = [&]() noexcept {
+                    if (obstacles) extendIntoSolids(s.state.pressure, *obstacles);
+                    setBoundary(s.state.pressure, BoundaryKind::Scalar);
                     s.state.pressure.swap(s.state.pressure0);
-                }
-                s.timings.jacobiIterationMs = jacobiTotalMs / iterations;
+                };
+                std::barrier sync(s.pool->numThreads(), on_complete);
+                s.pool->parallelRun([&](int tid) {
+                    const int k0 = 1 + (tid * g.nz) / s.pool->numThreads();
+                    const int k1 = 1 + ((tid + 1) * g.nz) / s.pool->numThreads();
+                    const SlabRange slab{k0, k1};
+                    for (int it = 0; it < iterations; ++it) {
+                        if (slab.k0 < slab.k1)
+                            jacobiIteration(s.state.pressure, s.state.pressure0, s.state.divergence, slab);
+                        sync.arrive_and_wait();
+                    }
+                });
+                s.state.pressure.swap(s.state.pressure0);
             } else {
-                s.timings.jacobiIterationMs = 0.0;
+                for (int it = 0; it < iterations; ++it) {
+                    s.state.pressure.swap(s.state.pressure0);
+                    jacobiIteration(s.state.pressure, s.state.pressure0, s.state.divergence, all);
+                    if (obstacles) extendIntoSolids(s.state.pressure, *obstacles);
+                    setBoundary(s.state.pressure, BoundaryKind::Scalar);
+                }
             }
+        }
+        s.timings.jacobiIterationMs = iterations > 0 ? jacobiTotalMs / iterations : 0.0;
 
-            pool.parallelSlabs(g.nz, [&](SlabRange slab, int) {
-                subtractPressureGradient(s.state.u, s.state.v, s.state.w, s.state.pressure, slab);
-            });
-            if (obstacles) reflectVelocityIntoSolids(s.state.u, s.state.v, s.state.w, *obstacles);
-            setVelocityBoundary(s.state);
-        }
+        forSlabs([&](SlabRange slab, int) {
+            subtractPressureGradient(s.state.u, s.state.v, s.state.w, s.state.pressure, slab);
+        });
+        if (obstacles) reflectVelocityIntoSolids(s.state.u, s.state.v, s.state.w, *obstacles);
+        setVelocityBoundary(s.state);
+    }
 
-        // 5. Advect Scalars
-        {
-            ScopedTimer t(s.timings[Stage::AdvectScalars]);
-            if (obstacles) {
-                extendIntoSolids(s.state.density, *obstacles);
-                extendIntoSolids(s.state.temperature, *obstacles);
-            }
-            s.state.density.swap(s.state.density0);
-            s.state.temperature.swap(s.state.temperature0);
-            Field3D* const dstS[2] = {&s.state.density, &s.state.temperature};
-            const Field3D* const srcS[2] = {&s.state.density0, &s.state.temperature0};
-            pool.parallelSlabs(g.nz, [&](SlabRange slab, int) {
-                advectFields(dstS, srcS, 2, s.state.u, s.state.v, s.state.w, dt, slab);
-            });
-            setBoundary(s.state.density, BoundaryKind::Scalar);
-            setBoundary(s.state.temperature, BoundaryKind::Scalar);
-            if (obstacles) {
-                clearSolidScalars(s.state, ambientTemp, *obstacles);
-                applyPorousFilter(s.state, dt, *obstacles);
-            }
+    // 5. Advect scalars.
+    {
+        ScopedTimer t(s.timings[Stage::AdvectScalars]);
+        if (obstacles) {
+            extendIntoSolids(s.state.density, *obstacles);
+            extendIntoSolids(s.state.temperature, *obstacles);
         }
-    } else {
-        // Serial execution path
-        {
-            ScopedTimer t(s.timings[Stage::Sources]);
-            addSources(s.state, s.config.params, dt, all);
-            if (obstacles) clearSolidScalars(s.state, ambientTemp, *obstacles);
-        }
-        {
-            ScopedTimer t(s.timings[Stage::Forces]);
-            applyForces(s.state, s.config.params, dt, all);
-            if (obstacles) {
-                applyPorousDrag(s.state, dt, *obstacles);
-                enforceSolidVelocity(s.state, *obstacles);
-            }
-        }
-        {
-            ScopedTimer t(s.timings[Stage::AdvectVelocity]);
-            advectVelocity(s.state, dt, all);
-            if (obstacles) enforceSolidVelocity(s.state, *obstacles);
-        }
-        {
-            ScopedTimer t(s.timings[Stage::Project]);
-            project(s.state, s.config.params, all, &s.timings.jacobiIterationMs, obstacles);
-        }
-        {
-            ScopedTimer t(s.timings[Stage::AdvectScalars]);
-            if (obstacles) {
-                extendIntoSolids(s.state.density, *obstacles);
-                extendIntoSolids(s.state.temperature, *obstacles);
-            }
-            advectScalars(s.state, dt, all);
-            if (obstacles) {
-                clearSolidScalars(s.state, ambientTemp, *obstacles);
-                applyPorousFilter(s.state, dt, *obstacles);
-            }
+        s.state.density.swap(s.state.density0);
+        s.state.temperature.swap(s.state.temperature0);
+        Field3D* const dst[2] = {&s.state.density, &s.state.temperature};
+        const Field3D* const src[2] = {&s.state.density0, &s.state.temperature0};
+        forSlabs([&](SlabRange slab, int) { advectFields(dst, src, 2, s.state.u, s.state.v, s.state.w, dt, slab); });
+        setBoundary(s.state.density, BoundaryKind::Scalar);
+        setBoundary(s.state.temperature, BoundaryKind::Scalar);
+        if (obstacles) {
+            clearSolidScalars(s.state, ambientTemp, *obstacles);
+            applyPorousFilter(s.state, dt, *obstacles);
         }
     }
 

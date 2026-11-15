@@ -27,6 +27,8 @@ Linux / macOS: isto, bez `-G "MinGW Makefiles"`.
 
 `smoke_demo` bez argumenata (mreža 64³, 100 koraka, 3 runde) traje oko pola minute; `smoke_demo --puno` radi
 mreže 32³ do 128³ (nekoliko minuta). Ostale opcije: `--grid N`, `--koraci K`, `--runde R`, `--niti T`, `--bez-jezgara`.
+Verzija C je serijska po zadanim postavkama; `--niti T` izričito uključuje eksperimentalni CPU paralelni backend.
+`smoke_bench` također prima `--niti T` za mjerenje tog backenda; bez opcije uvijek mjeri serijski backend.
 Na Windowsu `smoke_demo --odvojeno` otvara tri zasebne konzole (A, B i C), pokreće ih redom radi poštenog
 mjerenja, a svaki prozor ostaje otvoren do Enter. Na macOS-u ista opcija pokreće A, B i C redom i sprema
 njihove ispise u `smoke_demo_A.txt`, `smoke_demo_B.txt` i `smoke_demo_C.txt` pored izvršne datoteke; postojeći

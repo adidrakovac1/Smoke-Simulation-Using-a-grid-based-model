@@ -164,9 +164,11 @@ Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 do P2. Još uvijek s
 **Kriterij:** postoji HTML izvještaj s hardverskim brojačima i PROFILE.md; Jacobi je potvrđen ili je red-black
 eksperiment odobren.
 
-### Paralelizacija: nije milestone (odluka D8)
-OpenMP niti, GPU i ostale paralelne tehnike (OPTIMIZATION.md, odjeljak 3.2) se **ne planiraju** u ovoj
-fazi. Kad tim odluči da počinje, za to se pišu posebni milestone-ovi. Do tada se paralelni kod ne piše.
+### Paralelizacija: eksperimentalni CPU backend (odluke D8 i D18)
+D8 i dalje isključuje OpenMP i GPU iz ove faze. D18 dopušta da se postojeća, eksplicitno uključena
+`std::thread` CPU implementacija isporuči kao eksperimentalni backend. `Serial` ostaje zadani backend
+za solver, benchmark i renderer; `smoke_demo --niti T` uključuje paralelni backend samo za C. Ovo nije
+odobrenje za dalju paralelizaciju ili za tvrdnje o ubrzanju bez mjerenja po D10.
 
 ### M-VIZ: vizualizacija u rendereru (poslije M4d; odluke D14 i D17)
 Radi se tek kad je solver gotov, sekvencijalno optimiziran i izmjeren. Do tada se dim provjerava konzolnim programom
@@ -250,12 +252,13 @@ izabran način bez preuzimanja s interneta. D8 je dodana istog dana.
 | D15 | Rješavač pritiska (2026-11-11) | Jacobi ostaje dok mjerenje (P2) ne pokaže da K = 40 na 128³ ne dostiže granicu tačnosti; tada red-black GS kao eksperiment, poređen po vremenu do iste divergencije. Multigrid se ne radi. **Zaključeno na G1 (2026-11-11, Ermin): Jacobi ostaje, red-black eksperiment se ne radi** (MATH.md, odjeljak 5) |
 | D16 | Dizajn prepreka (2026-11-11) | Rijetke liste graničnih ćelija; vektorizirana jezgra netaknuta; vlastiti OBJ parser u Solveru; bez prepreka rezultat bit po bit isti kao referenca |
 | D17 | Petlja simulacije i prva scena (2026-11-11) | Jedan korak po frejmu u glavnoj niti (D8); prva scena je jednostavna kutija s dimom |
+| D18 | Eksperimentalni CPU backend (2026-11-15, na zahtjev za PR #10) | Dozvoljen je postojeći `std::thread` backend kao opt-in u `smoke_demo --niti T`; `Serial` ostaje zadani backend i osnova mjerenja. Dalja paralelizacija nije odobrena ovim izuzetkom |
 
 ---
 
 ## 4. Šta se NE radi u ovoj fazi
 
-- OpenMP niti, GPU i bilo kakav višenitni kod (odluka D8). Nisu milestone.
+- OpenMP niti i GPU (odluke D8/D18). Nisu milestone; jedini izuzetak je opt-in `std::thread` backend opisan pod D18.
 - Optimizacija prije M4. U M1 do M3 pišemo jasan, ispravan kod; brzina dolazi tek u M4, poslije mjerenja.
 - Izmjene u `Renderer/` mimo popisa u ARCHITECTURE.md, odjeljak 6 (odluka D13).
 - Vizualizacija prije M4d (profiling dolazi prvi, D14).

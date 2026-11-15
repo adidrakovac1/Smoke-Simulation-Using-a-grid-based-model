@@ -7,14 +7,14 @@ namespace smoke {
 
 /// Which implementation of the stages is used:
 ///   Serial: single-threaded execution (reference)
-///   CpuParallel: multi-threaded CPU parallel execution (default for optimized solver)
+///   CpuParallel: opt-in multi-threaded CPU parallel execution
 enum class Backend { Serial, CpuParallel };
 
 struct SolverConfig {
     GridSize    grid;                      // default 64x64x64
     SmokeParams params;
-    Backend     backend = Backend::CpuParallel;
-    int         threads = 0;               // 0 = auto (hardware concurrency), 1 = single-threaded
+    Backend     backend = Backend::Serial;
+    int         threads = 0;               // 0 = auto (hardware concurrency) when CpuParallel is selected
 };
 
 } // namespace smoke

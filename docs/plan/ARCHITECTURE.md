@@ -264,6 +264,9 @@ sad paraleliziramo, nego da ne ugrađujemo prepreke:
    jednom po koraku s cijelim rasponom, a buduća paralelna verzija dijeli raspon **unutar** njih, oko poziva
    jezgra. `setBoundary` i petlje po listama prepreka (`Obstacles.cpp`) uopšte ne primaju raspon: rade nad
    cijelim poljem i u paralelnoj verziji ostaju serijski dio ili traže vlastitu podjelu.
+   **Izuzetak D18 (2026-11-15):** eksperimentalni `std::thread` backend dijeli samo navedena jezgra po `SlabRange`;
+   `setBoundary`, izvori i obrada rijetkih listi prepreka ostaju serijski. Rubni uslovi uzgona pozivaju se tek nakon
+   što svi radnici završe jezgro. Backend se bira izričito; `Serial` ostaje zadani.
 2. **Dvostruko baferovanje.** Advekcija i Jacobi čitaju iz starog polja, a pišu u novo. Tako
    nema trke podataka (jedan od ciljeva projekta). Zamjena polja je zamjena pokazivača.
 3. **Bez skrivenog stanja.** Nema `static` pomoćnih nizova unutar funkcija, nema globalnih

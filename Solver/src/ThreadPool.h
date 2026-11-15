@@ -2,9 +2,9 @@
 
 #include "stages/Stages.h"
 
-#include <barrier>
 #include <condition_variable>
 #include <cstddef>
+#include <cstdint>
 #include <mutex>
 #include <thread>
 #include <type_traits>
