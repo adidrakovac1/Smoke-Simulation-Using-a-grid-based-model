@@ -69,6 +69,7 @@ void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRang
 
 /// v += dt * ( -alpha * rho + beta * (T - T_amb) )  (Fedkiw et al. 2001, eq. 8; +y is up), then setBoundary(v).
 void applyBuoyancy(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
+void applyBuoyancySlab(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 
 /// 2. Forces: buoyancy and optional vorticity confinement (docs/plan/MATH.md, section 3).
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);

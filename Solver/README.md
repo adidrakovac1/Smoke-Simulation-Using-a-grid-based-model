@@ -26,15 +26,20 @@ Linux / macOS: isto, bez `-G "MinGW Makefiles"`.
 | `smoke_demo` | **program za prezentaciju**: cijela simulacija u tri verzije (Neoptimizirana M3, M3 + auto-vektorizacija, Optimizirana M4), ukupno vrijeme, ms po koraku, koraka u sekundi, vrijeme po fazi, ubrzanje S i provjera tačnosti; zatim tablice `smoke_lab` i spisak izmijenjenih funkcija i tehnika |
 
 `smoke_demo` bez argumenata (mreža 64³, 100 koraka, 3 runde) traje oko pola minute; `smoke_demo --puno` radi
-mreže 32³ do 128³ (nekoliko minuta). Ostale opcije: `--grid N`, `--koraci K`, `--runde R`, `--bez-jezgara`.
+mreže 32³ do 128³ (nekoliko minuta). Ostale opcije: `--grid N`, `--koraci K`, `--runde R`, `--niti T`, `--bez-jezgara`.
+Verzija C je serijska po zadanim postavkama; `--niti T` izričito uključuje eksperimentalni CPU paralelni backend.
+`smoke_bench` također prima `--niti T` za mjerenje tog backenda; bez opcije uvijek mjeri serijski backend.
 Na Windowsu `smoke_demo --odvojeno` otvara tri zasebne konzole (A, B i C), pokreće ih redom radi poštenog
-mjerenja, a svaki prozor ostaje otvoren do Enter. Može se kombinovati s `--grid N`, `--koraci K`, `--runde R`
-i `--puno`; svaki prozor prikazuje napredak po rundi, pa zatim ispisuje vrijeme po fazi, ukupno vrijeme i
-FNV-1a hash gustine za poređenje rezultata. Ispis se ne radi između koraka zagrijavanja i mjerenja. Ovaj demo
-služi za poređenje verzija; za rezultate u `PERF_LOG.md` koristi se `smoke_bench`. Verzija A je namjerno bez
-vektorizacije i može trajati znatno duže od B i C.
+mjerenja, a svaki prozor ostaje otvoren do Enter. Na macOS-u ista opcija pokreće A, B i C redom i sprema
+njihove ispise u `smoke_demo_A.txt`, `smoke_demo_B.txt` i `smoke_demo_C.txt` pored izvršne datoteke; postojeći
+fajlovi se prepisuju. Može se kombinovati s `--grid N`, `--koraci K`, `--runde R`, `--niti T` i `--puno`; svaki ispis
+sadrži napredak po rundi, vrijeme po fazi, ukupno vrijeme i FNV-1a hash gustine za poređenje rezultata.
+Ispis se ne radi između koraka zagrijavanja i mjerenja. Ovaj demo služi za poređenje verzija; za rezultate
+u `PERF_LOG.md` koristi se `smoke_bench`. Verzija A je namjerno bez vektorizacije i može trajati znatno duže
+od B i C.
 
-Primjer: `.\Solver\build\smoke_demo.exe --odvojeno --grid 32 --koraci 20 --runde 3` pokreće verzije u odvojenim konzolama.
+Primjer na Windowsu: `.\Solver\build\smoke_demo.exe --odvojeno --grid 32 --koraci 20 --runde 3`.
+Primjer na macOS-u: `./Solver/build/smoke_demo --odvojeno --grid 32 --koraci 20 --runde 3`.
 Neoptimizirana verzija je M3 kod (commit `73ceb9e`), kopiran u `demo/M3Solver.inc` i preveden dvaput
 (`demo/m3_b0.cpp` bez vektorizacije, `demo/m3_b1.cpp` sa zadanim oznakama); Optimizirana verzija je
 `smoke::SmokeSolver`. Računar za vrijeme mjerenja treba biti miran.

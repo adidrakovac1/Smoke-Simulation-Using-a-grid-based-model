@@ -42,6 +42,7 @@ public:
     SmokeParams&       params();
     const SmokeParams& params() const;
     long long          stepCount() const;
+    int                threadCount() const;
 
     /// Puts obstacles into the box (docs/plan/OBSTACLES.md). The cell types are copied and turned into the
     /// solver's sparse lists once, here. The grid must have the same size as gridSize(); otherwise nothing

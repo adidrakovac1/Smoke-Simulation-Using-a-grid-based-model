@@ -14,6 +14,13 @@ namespace smoke::serial {
 // (docs/plan/ARCHITECTURE.md, section 8), so only v changes. The force is added as v += dt * f
 // (Fedkiw et al. 2001, section 4; Stam 1999, addForce). Forces are cell-centred like everything else.
 void applyBuoyancy(SmokeState& s, const SmokeParams& p, float dt, SlabRange range) {
+    applyBuoyancySlab(s, p, dt, range);
+    setBoundary(s.v, BoundaryKind::VelocityY);
+}
+
+// The slab kernel deliberately leaves ghost cells alone. Parallel callers apply the boundary
+// once, after every worker has finished writing its interior cells.
+void applyBuoyancySlab(SmokeState& s, const SmokeParams& p, float dt, SlabRange range) {
     const GridSize g     = s.v.size();
     const float    alpha = p.buoyancyAlpha;
     const float    beta  = p.buoyancyBeta;
@@ -26,7 +33,6 @@ void applyBuoyancy(SmokeState& s, const SmokeParams& p, float dt, SlabRange rang
             }
         }
     }
-    setBoundary(s.v, BoundaryKind::VelocityY);
 }
 
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range) {

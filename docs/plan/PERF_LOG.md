@@ -21,6 +21,9 @@ vremena i rezultat.
 referenca su u odjeljku 6. Unosi M4-001 do M4-005 (odjeljak 5) vrijede za PC-1 i AppleClang. Opseg M4 je skraćen
 (odluka D11); zbir M4 prema B0/B1 je u odjeljku 7.
 
+**CPU niti (D18):** hipoteza je da dijeljenje slojeva ubrzava veće mreže, dok pokretanje/sinhronizacija niti
+može usporiti male mreže. Prvi protokolarni rezultat je P-003 ispod. Stariji brojevi iz PR-a ostaju orijentacioni.
+
 ---
 
 ## 1. Otisci računara tima
@@ -73,8 +76,50 @@ Komanda za procesor (PowerShell):
 | :--- | :--- | :--- | :--- | :--- | :--- | ---: | ---: | ---: | :--- |
 | P-001 | 2026-11-09 | PC-1 | M3 / bez vektorizacije | svi koraci | 32³–128³ | 1 | — | — | baseline |
 | P-002 | 2026-11-09 | PC-1 | M3 / compiler default | svi koraci | 32³–128³ | 1 | 1.58–1.64x | 36.55–38.89% | baseline |
+| P-003 | 2026-11-15 | PC-1 | CPU / std::thread slojevi | cijeli korak | 32³–128³ | 2, 4, 6, 10 | 0.90–3.25x | -10.92–69.25% | brže na 64³–128³; mali grid zavisi od niti |
 
 (Ispod tabele idu puni unosi po šablonu, najnoviji na kraju.)
+
+### P-003: Eksperimentalni CPU backend naspram serijskog
+
+- Datum / autor / računar: 2026-11-15 / Adi / PC-1 (Apple M4, 10 hardverskih niti, 16 GiB RAM)
+- Commit: `bb42b7f-dirty` (osnova: `bb42b7f`)
+- Nivo i tehnika: eksperimentalni `std::thread`, podjela po z-slojevima
+- Jezgro / faza: cijeli `SmokeSolver::step`
+- Hipoteza: veće mreže će se ubrzati kad se jezgra podijele po slojevima; na malim mrežama trošak sinhronizacije može pojesti dobitak.
+- Parametri: 32³, 64³, 96³, 128³; K=40; ε=5; 2 zagrijavanja + 10 mjerenih koraka po pokretanju; 3 naizmjenične runde; 1, 2, 4, 6 i 10 niti.
+- Gradnja: Release, AppleClang 21.0.0.21000401, `-O3 -DNDEBUG`; bez AVX2 kernela.
+- Uslovi: isti računar i sesija; redoslijed varijanti rotiran kroz runde.
+- Sirovi podaci: `perf/rounds/2026-11-15_cpu_parallel/`; sažetak po D10 u `perf/results.csv`.
+
+| Mreža | Niti | Medijan ukupno (ms/korak) | S | Δ | Rasp. medijana rundi (ms) | Presuda D10 |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| 32³ | 1 | 2.156334 | 1.000 | 0.00% | 1.554874–2.163125 | osnova |
+| 32³ | 2 | 1.307376 | 1.649 | 39.37% | 1.259437–1.766477 | brže |
+| 32³ | 4 | 1.207313 | 1.786 | 44.01% | 1.205416–1.210395 | brže |
+| 32³ | 6 | 1.863854 | 1.157 | 13.56% | 1.699875–1.884980 | šum |
+| 32³ | 10 | 2.391707 | 0.902 | -10.92% | 2.222272–2.564813 | šum |
+| 64³ | 1 | 11.139146 | 1.000 | 0.00% | 11.128832–11.258354 | osnova |
+| 64³ | 2 | 6.735500 | 1.654 | 39.53% | 6.710938–8.846459 | brže |
+| 64³ | 4 | 4.579999 | 2.432 | 58.88% | 4.479355–4.712645 | brže |
+| 64³ | 6 | 6.029229 | 1.848 | 45.87% | 5.825271–6.030792 | brže |
+| 64³ | 10 | 6.661104 | 1.672 | 40.20% | 6.484916–6.946187 | brže |
+| 96³ | 1 | 75.046979 | 1.000 | 0.00% | 74.528250–75.368207 | osnova |
+| 96³ | 2 | 40.185729 | 1.868 | 46.45% | 39.885458–40.407063 | brže |
+| 96³ | 4 | 23.222210 | 3.232 | 69.06% | 23.062208–25.255355 | brže |
+| 96³ | 6 | 25.333395 | 2.962 | 66.24% | 24.523208–25.887959 | brže |
+| 96³ | 10 | 23.078353 | 3.252 | 69.25% | 22.980814–25.074832 | brže |
+| 128³ | 1 | 154.670375 | 1.000 | 0.00% | 151.157874–154.994354 | osnova |
+| 128³ | 2 | 103.245624 | 1.498 | 33.25% | 103.130063–103.506542 | brže |
+| 128³ | 4 | 73.548416 | 2.103 | 52.45% | 59.879604–74.280791 | brže |
+| 128³ | 6 | 66.497084 | 2.326 | 57.01% | 66.397564–67.201188 | brže |
+| 128³ | 10 | 64.355082 | 2.403 | 58.39% | 63.877522–64.695480 | brže |
+
+Svi kandidati na 64³–128³ su brži po D10 na ovom računaru. Na 32³ rezultat za 2 i 4 niti je brži, a 6 i 10 niti
+ne prolaze prag protiv šuma. Neki pojedinačni koraci imali su vanjske skokove (min/max u sirovim CSV-ovima), pa se
+ovi medijani ne prenose na druge računare. Ovo nije dokaz za Ryzen/Windows; treba ponoviti na PC-2.
+Testovi tačnosti porede cijelo polje gustoće bit po bit za 32³, 64³, 96³ i 128³, nekubne mreže i čvrste/porozne ćelije.
+Mjerenje barijere nije izolovano; Jacobi vrijeme u sirovim CSV-ovima uključuje samu barijeru i ostali rad iteracije.
 
 ### P-001: B0 serijska osnova bez vektorizacije
 

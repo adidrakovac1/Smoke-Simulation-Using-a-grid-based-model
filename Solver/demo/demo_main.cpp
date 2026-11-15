@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -38,6 +39,16 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#endif
+
+#if defined(__APPLE__)
+#include <cerrno>
+#include <fcntl.h>
+#include <spawn.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+extern char** environ;
 #endif
 
 #ifndef SMOKE_DEMO_COMMIT
@@ -63,6 +74,8 @@ struct Options {
     bool separate = false;
     int version = -1;
     unsigned long launcherId = 0;
+    int threads = 0;
+    bool parallel = false;
 };
 
 constexpr int kVersions = 3;
@@ -139,6 +152,8 @@ RunResult runM3(int version, const GridSize& g, const Options& o, bool showProgr
 RunResult runOptimized(const GridSize& g, const Options& o, bool showProgress) {
     smoke::SolverConfig config;
     config.grid = g;
+    config.backend = o.parallel ? smoke::Backend::CpuParallel : smoke::Backend::Serial;
+    config.threads = o.threads;
     smoke::SmokeSolver solver(config);
     reportProgressStart(2, o, showProgress);
     for (int i = 0; i < o.warmup; ++i) solver.step();
@@ -352,6 +367,7 @@ bool launchSeparateWindows(const Options& o) {
         for (int grid : o.grids) command += L" --grid " + std::to_wstring(grid);
         command += L" --koraci " + std::to_wstring(o.steps);
         command += L" --runde " + std::to_wstring(o.rounds);
+        if (o.threads > 0) command += L" --niti " + std::to_wstring(o.threads);
 
         STARTUPINFOW startup{};
         startup.cb = sizeof(startup);
@@ -389,6 +405,88 @@ bool launchSeparateWindows(const Options& o) {
     for (HANDLE event : completionEvents)
         if (event != nullptr) CloseHandle(event);
     return success;
+}
+#endif
+
+#if defined(__APPLE__)
+bool launchSeparateLogsMac(const Options& o, const char* executable) {
+    std::error_code pathError;
+    const std::filesystem::path executablePath = std::filesystem::absolute(executable, pathError);
+    if (pathError) {
+        std::cerr << "GRESKA: ne mogu odrediti putanju do smoke_demo: " << pathError.message() << ".\n";
+        return false;
+    }
+
+    const std::filesystem::path outputDirectory = executablePath.parent_path();
+    for (int version = 0; version < kVersions; ++version) {
+        const char versionName = static_cast<char>('A' + version);
+        const std::filesystem::path logPath =
+            outputDirectory / (std::string("smoke_demo_") + versionName + ".txt");
+
+        const std::string executableString = executablePath.string();
+        std::vector<std::string> arguments{executableString, "--verzija", std::string(1, versionName)};
+        if (o.full) arguments.emplace_back("--puno");
+        for (int grid : o.grids) {
+            arguments.emplace_back("--grid");
+            arguments.push_back(std::to_string(grid));
+        }
+        arguments.emplace_back("--koraci");
+        arguments.push_back(std::to_string(o.steps));
+        arguments.emplace_back("--runde");
+        arguments.push_back(std::to_string(o.rounds));
+        if (o.threads > 0) {
+            arguments.emplace_back("--niti");
+            arguments.push_back(std::to_string(o.threads));
+        }
+
+        std::vector<char*> childArguments;
+        childArguments.reserve(arguments.size() + 1);
+        for (std::string& argument : arguments) childArguments.push_back(argument.data());
+        childArguments.push_back(nullptr);
+
+        posix_spawn_file_actions_t fileActions;
+        int error = posix_spawn_file_actions_init(&fileActions);
+        const bool fileActionsInitialized = error == 0;
+        if (error == 0) {
+            error = posix_spawn_file_actions_addopen(&fileActions, STDOUT_FILENO, logPath.c_str(),
+                                                     O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        }
+        if (error == 0) error = posix_spawn_file_actions_adddup2(&fileActions, STDOUT_FILENO, STDERR_FILENO);
+        if (error != 0) {
+            std::cerr << "GRESKA: ne mogu pripremiti izlaz za verziju " << versionName << " u "
+                      << logPath << ": " << std::strerror(error) << ".\n";
+            if (fileActionsInitialized) posix_spawn_file_actions_destroy(&fileActions);
+            return false;
+        }
+
+        std::cout << "Pokrecem verziju " << versionName << "; izlaz: " << logPath << "\n" << std::flush;
+        pid_t child = 0;
+        error = posix_spawnp(&child, executableString.c_str(), &fileActions, nullptr, childArguments.data(), environ);
+        posix_spawn_file_actions_destroy(&fileActions);
+        if (error != 0) {
+            std::cerr << "GRESKA: ne mogu pokrenuti verziju " << versionName << ": " << std::strerror(error)
+                      << ".\n";
+            return false;
+        }
+
+        int status = 0;
+        pid_t waited = 0;
+        do {
+            waited = waitpid(child, &status, 0);
+        } while (waited == -1 && errno == EINTR);
+        if (waited == -1) {
+            std::cerr << "GRESKA: cekanje verzije " << versionName << " nije uspjelo: "
+                      << std::strerror(errno) << ".\n";
+            return false;
+        }
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            std::cerr << "GRESKA: verzija " << versionName << " nije zavrsila uspjesno; pogledaj " << logPath
+                      << ".\n";
+            return false;
+        }
+        std::cout << "Zavrsila verzija " << versionName << ".\n" << std::flush;
+    }
+    return true;
 }
 #endif
 
@@ -449,13 +547,17 @@ bool parseArgs(int argc, char** argv, Options& o) {
         const std::string_view a(argv[i]);
         int value = 0;
         if (i + 1 >= argc &&
-            (a == "--grid" || a == "--koraci" || a == "--runde" || a == "--verzija" || a == "--launcher-id"))
+            (a == "--grid" || a == "--koraci" || a == "--runde" || a == "--verzija" || a == "--launcher-id" ||
+             a == "--niti" || a == "--threads"))
             return false;
         if (a == "--puno") {
             o.full = true;
             if (!gridGiven) o.grids = {32, 64, 96, 128};
         } else if (a == "--odvojeno") {
             o.separate = true;
+        } else if (a == "--niti" || a == "--threads") {
+            if (!parsePositive(argv[++i], o.threads)) return false;
+            o.parallel = true;
         } else if (a == "--grid") {
             if (!parsePositive(argv[++i], value) || value > 512) return false;
             if (!gridGiven) { o.grids.clear(); gridGiven = true; }
@@ -502,11 +604,12 @@ void waitIfOwnConsole() {
 int main(int argc, char** argv) {
     Options o;
     if (!parseArgs(argc, argv, o)) {
-        std::cout << "Koriscenje: smoke_demo [--puno] [--grid N]... [--koraci K] [--runde R] [--bez-jezgara]\n"
-                  << "             smoke_demo --odvojeno [--puno] [--grid N]... [--koraci K] [--runde R]\n"
+        std::cout << "Koriscenje: smoke_demo [--puno] [--grid N]... [--koraci K] [--runde R] [--niti T] [--bez-jezgara]\n"
+                  << "             smoke_demo --odvojeno [--puno] [--grid N]... [--koraci K] [--runde R] [--niti T]\n"
                   << "  zadano (brzi mod): mreza 64^3, 100 koraka, 3 runde, pa poredjenje tehnika na 64^3 (~20 s)\n"
                   << "  --puno: mreze 32, 64, 96 i 128 (nekoliko minuta)\n"
                   << "  --odvojeno: otvori zasebne konzole A/B/C; mjerenja se izvrsavaju redom\n"
+                  << "  --niti T: ukljuci paralelni backend za verziju C s T niti (bez opcije: serijski)\n"
                   << "  --bez-jezgara: samo cijela simulacija (bez dijela 2)\n";
         waitIfOwnConsole();
         return 2;
@@ -520,15 +623,23 @@ int main(int argc, char** argv) {
         std::cout << "Sve tri verzije su zavrsile mjerenje; prozori ostaju otvoreni do Enter.\n";
         return 0;
     }
+#elif defined(__APPLE__)
+    if (o.separate) {
+        std::cout << "Pokrecem verzije A, B i C redom; svaki izlaz se cuva u zasebnoj TXT datoteci pored smoke_demo.\n"
+                  << std::flush;
+        if (!launchSeparateLogsMac(o, argv[0])) return 1;
+        std::cout << "Rezultati su sacuvani u smoke_demo_A.txt, smoke_demo_B.txt i smoke_demo_C.txt.\n";
+        return 0;
+    }
 #else
     if (o.separate) {
-        std::cerr << "GRESKA: --odvojeno trenutno podrzava samo Windows konzole.\n";
+        std::cerr << "GRESKA: --odvojeno trenutno podrzava samo Windows i macOS.\n";
         return 2;
     }
 #endif
 
     std::cout << "==========================================================================================================\n"
-              << " smoke_demo: 3D simulacija dima na mrezi celija (Eulerov pristup), serijska verzija (jedna nit)\n"
+              << " smoke_demo: 3D simulacija dima na mrezi celija (Eulerov pristup)\n"
               << (o.version < 0 ? " Poredjenje: Neoptimizirana verzija (M3) i Optimizirana verzija (M4)\n"
                                 : " Samostalni rezultat verzije " + std::string(1, static_cast<char>('A' + o.version)) +
                                       "\n")
@@ -547,6 +658,8 @@ int main(int argc, char** argv) {
                  "unknown"
 #endif
               << ", oznake: " << SMOKE_DEMO_FLAGS << ", commit: " << SMOKE_DEMO_COMMIT << "\n"
+              << "Backend C: " << (o.parallel ? "CpuParallel" : "Serial")
+              << (o.parallel ? " (" + std::to_string(o.threads) + " niti)" : "") << "\n"
               << "Mod: " << (o.full ? "puni (--puno)" : "brzi (za sve mreze: --puno)") << "\n"
               << "Za vrijeme mjerenja racunar treba biti miran (bez igara, videa, kompajliranja).\n";
 

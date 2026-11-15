@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(SmokeSolver VERSION 0.1.0 LANGUAGES CXX)
 
+find_package(Threads REQUIRED)
+
 # Solver is a standalone project: no OpenGL, no GLFW, no GLM, no Renderer headers.
 # The solver library itself has no third-party dependencies. The tests use doctest, vendored as a
 # single header in third_party/doctest (decision D5): nothing is downloaded at configure time.
@@ -131,6 +133,7 @@ target_include_directories(smoke_solver
   PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+target_link_libraries(smoke_solver PUBLIC Threads::Threads)
 smoke_set_warnings(smoke_solver)
 
 if(SMOKE_DISABLE_VECTORIZATION)
@@ -169,6 +172,7 @@ if(SMOKE_BUILD_CLI OR SMOKE_BUILD_TESTS)
     tests/test_stability.cpp
     tests/test_obstacles.cpp
     tests/test_slab_range.cpp
+    tests/test_parallel_solver.cpp
     tests/test_demo_versions.cpp
     tests/demo_advect.cpp                              # M1 demo, started by "smoke_cli --demo advect"
     demo/m3_b0.cpp
