@@ -658,8 +658,9 @@ Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i 
       <div class="tiles" id="cmpTiles"></div>
       <div id="cmpWhy"></div>
       <h3>Po fazama koraka</h3>
-      <p class="small muted">Vrijeme faze = udio uzoraka te faze × vrijeme jednog koraka. "S" je koliko puta je B brža od A u toj fazi.
-      "Instrukcije A / B" je koliko puta manje instrukcija B izvrši za isti posao.</p>
+      <p class="small muted">Vrijeme faze = udio uzoraka te faze × vrijeme jednog koraka. "S = A ÷ B" je odnos vremena, a
+      "Instrukcije A ÷ B" odnos broja instrukcija za isti posao. <b>Iznad 1</b>: B je brža, odnosno izvrši manje instrukcija (zeleno).
+      <b>Ispod 1</b>: B je sporija, odnosno izvrši više instrukcija (crveno).</p>
       <div class="scroll"><table id="cmpPhases"></table></div>
       <h3>Koliko brojeva jedna instrukcija obradi odjednom</h3>
       <p class="small muted">Udio vremena po širini registara koje instrukcije koriste. Ovo je paralelizam unutar jedne niti (SIMD).</p>
@@ -1391,16 +1392,25 @@ function renderCompare() {
   const range = instRange(ma, mb);
   const l1R = ma.sp && mb.sp ? ratio(perStep(mb, mb.l1 * mb.acc), perStep(ma, ma.l1 * ma.acc)) : null;
 
+  // Words for a ratio A / B, correct for either order of A and B.
+  // The same number of decimals as the printed ratio decides "equal", so the words never contradict the number.
+  const isOne = (r) => fmt(r, 2) === "1.00";
+  const fewer = (r) => isOne(r) ? "isto" : r > 1 ? `${fmt(r, 2)} puta manje` : `${fmt(1 / r, 2)} puta više`;
+  const speedWords = (r) => r == null ? "" : isOne(r) ? "B je jednako brza kao A" : r > 1 ? `B je ${fmt(r, 2)} puta brža od A` : `B je ${fmt(1 / r, 2)} puta sporija od A`;
+  const instWords = (r) => r == null ? "" : isOne(r) ? "B izvrši isto instrukcija kao A" : r > 1 ? `B izvrši ${fmt(r, 2)} puta manje instrukcija` : `B izvrši ${fmt(1 / r, 2)} puta više instrukcija`;
+  const ratioCell = (r) => r == null ? "–" : `<span class="${isOne(r) ? "muted" : r > 1 ? "neg" : "pos"}">${fmt(r, 2)}</span>`;
+
   el("cmpTiles").innerHTML = tile("A: " + esc(VSHORT[state.ca]), fmt(ma.ms, 2) + " ms", `po koraku; ${fmt(1000 / ma.ms, 0)} koraka u sekundi`)
     + tile("B: " + esc(VSHORT[state.cb]), fmt(mb.ms, 2) + " ms", `po koraku; ${fmt(1000 / mb.ms, 0)} koraka u sekundi`)
-    + tile("Ubrzanje S = A ÷ B", fmt(S, 2) + "x", "koliko puta je B brža od A (pod profilerom)")
+    + tile("Odnos vremena S = A ÷ B", fmt(S, 2) + "x", esc(speedWords(S)) + " (pod profilerom)")
     + (off && off.whole_step ? tile("Službeno S", fmt(off.whole_step.S, 2) + "x", `obična gradnja, protokol D10, ${esc(off.whole_step.date)} (PERF_LOG.md, odjeljak 7)`)
       : tile("Službeno S", "nije mjereno", "za ovaj par verzija nema zbirnog unosa u perf/results.csv"))
-    + tile("Instrukcije po koraku A ÷ B", range ? range.text + "x" : "–", "B izvrši toliko puta manje instrukcija (procjena na dva načina)")
+    + tile("Instrukcije po koraku A ÷ B", range ? range.text + "x" : "–", range ? (range.lo === range.hi || (range.lo > 1) === (range.hi > 1)
+        ? esc(instWords(instR)) + (ratio(ma.instS, mb.instS) != null ? "; druga procjena: " + esc(fewer(ratio(ma.instS, mb.instS))) : "")
+        : "dvije procjene se ne slažu u smjeru") + " (nije direktno izbrojano)" : "nema sesija s brojačima za obje verzije")
     + tile("CPI: A → B", ma.cpi ? `${fmt(ma.cpi, 2)} → ${fmt(mb.cpi, 2)}` : "–", "ciklusa po instrukciji");
-  const fewer = (r) => r >= 1 ? `${fmt(r, 2)} puta manje` : `${fmt(1 / r, 2)} puta više`;
   el("cmpWhy").innerHTML = (instR && cpiR) ? `<p class="note"><b>Odakle dolazi razlika.</b> Vrijeme koraka je broj instrukcija puta ciklusa po instrukciji. `
-    + `B izvrši ${fewer(instR)} instrukcija, a svaka u prosjeku traje ${cpiR >= 1 ? fmt(cpiR, 2) + " puta duže" : fmt(1 / cpiR, 2) + " puta kraće"}. `
+    + `B izvrši ${fewer(instR)} instrukcija, a svaka u prosjeku traje ${isOne(cpiR) ? "jednako" : cpiR > 1 ? fmt(cpiR, 2) + " puta duže" : fmt(1 / cpiR, 2) + " puta kraće"}. `
     + `Zajedno to daje S = ${fmt(instR / cpiR, 2)}x u sesijama s brojačima (vremensko uzorkovanje daje ${fmt(S, 2)}x).`
     + (instR > 1 && cpiR > 1 && l1R ? ` Instrukcija je manje jer jedna vektorska instrukcija radi posao više skalarnih. Podataka koje korak mora proći ima isto `
       + `(L1 promašaja po koraku B ima ${fmt(l1R, 2)} puta koliko A), pa na svaku od manjeg broja instrukcija dolazi više čekanja na memoriju.` : "")
@@ -1417,8 +1427,8 @@ function renderCompare() {
     + `<div style="width:${100 * r.tb / maxMs}%;background:var(--bar)" title="B: ${fmt(r.tb, 3)} ms"></div></div>`};
   drawTable("cmpPhases", [{key: "name", label: "Faza", get: (r) => r.name, html: (r) => r._head ? esc(r.name) : tag(r.name)}, duo,
     {key: "ta", label: "A ms po koraku", num: true, d: 3, get: (r) => r.ta}, {key: "tb", label: "B ms po koraku", num: true, d: 3, get: (r) => r.tb},
-    {key: "s", label: "S = A ÷ B", title: "Koliko puta je B brža od A u ovoj fazi.", num: true, get: (r) => r.s},
-    {key: "ir", label: "Instrukcije A ÷ B (procjena)", title: "Koliko puta manje instrukcija B izvrši u ovoj fazi. Procjena iz vremena i CPI-ja sesija s brojačima; nije direktno izbrojano.", num: true, wrap: true, get: (r) => r.ir},
+    {key: "s", label: "S = A ÷ B", title: "Vrijeme faze u A podijeljeno vremenom u B. Iznad 1: B je brža u ovoj fazi. Ispod 1: B je sporija.", num: true, get: (r) => r.s, html: (r) => ratioCell(r.s)},
+    {key: "ir", label: "Instrukcije A ÷ B (procjena)", title: "Broj instrukcija faze u A podijeljen brojem u B. Iznad 1: B izvrši manje instrukcija. Ispod 1: B izvrši više. Procjena iz vremena i CPI-ja sesija s brojačima; nije direktno izbrojano.", num: true, wrap: true, get: (r) => r.ir, html: (r) => ratioCell(r.ir)},
     {key: "ca", label: "A CPI", title: helpOf("CPI"), num: true, get: (r) => r.ca}, {key: "cb", label: "B CPI", title: helpOf("CPI"), num: true, get: (r) => r.cb}],
     phases.map((p) => row(p, ma.phaseMs[p], mb.phaseMs[p], ma.phase[p], mb.phase[p])),
     {sort: "ta", pinned: [row("Cijeli korak", ma.ms, mb.ms, {cpi: ma.cpi, inst: ma.inst}, {cpi: mb.cpi, inst: mb.inst}, {_head: true, _noheat: true})]});
@@ -1438,7 +1448,7 @@ function renderCompare() {
         + `<td class="num">${r == null ? "–" : `<span class="${r < 0.995 ? "neg" : r > 1.005 ? "pos" : "muted"}">${fmt(r, 2)}x</span>`}</td></tr>`; };
     const pti = (label, name, d) => { const a = agg(ma.sp, ma.sp.functions, name), b = agg(mb.sp, mb.sp.functions, name);
       return line(label, a, b, perStep(ma, a), perStep(mb, b), d, helpOf(name)); };
-    el("cmpCounters").innerHTML = "<tr><th>Brojač</th><th class='num'>A</th><th class='num'>B</th><th class='num wrap' title='Isti događaj prebrojan po jednom koraku simulacije, B podijeljeno s A. Ispod 1: B ih ima manje.'>po koraku, B ÷ A (procjena)</th></tr>"
+    el("cmpCounters").innerHTML = "<tr><th>Brojač</th><th class='num'>A</th><th class='num'>B</th><th class='num wrap' title='Isti događaj prebrojan po jednom koraku simulacije, B podijeljeno s A. Ispod 1: B ih ima manje (zeleno). Iznad 1: B ih ima više (crveno).'>po koraku, B ÷ A (procjena)</th></tr>"
       + line("Ciklusi procesora (vrijeme koraka u sesiji s brojačima)", ma.msP, mb.msP, ma.msP, mb.msP, 2, "ms po koraku u sesiji assess_ext")
       + line("Instrukcije (relativno)", null, null, ma.inst, mb.inst, 2, "Izračunato iz vremena koraka i CPI-ja.")
       + line("CPI (ciklusa po instrukciji)", ma.cpi, mb.cpi, null, null, 2, helpOf("CPI"))
@@ -1466,7 +1476,7 @@ function renderCompare() {
   fnTable("cmpFnA", wa, ma); fnTable("cmpFnB", wb, mb);
 
   el("cmpOfficial").innerHTML = off ? `<h3>Službeno izmjereno ubrzanje (protokol D10)</h3><p class="small muted">Iz <code>perf/results.csv</code>: obična Release gradnja, `
-    + `mjereno po protokolu D10 (docs/plan/PERF_LOG.md, odjeljak 7). Ovo su brojevi za izvještaj; profil iznad objašnjava odakle dolaze.</p><table style="max-width:560px"><tr><th>Faza</th><th class="num">S = A ÷ B</th><th>Unos</th></tr>`
+    + `mjereno po protokolu D10 (docs/plan/PERF_LOG.md, odjeljak 7). Ovo su brojevi za izvještaj; profil iznad objašnjava odakle dolaze.</p><table style="max-width:560px"><tr><th>Faza</th><th class="num" title="Koliko puta je B (finalna verzija) brža od A.">S = A ÷ B</th><th>Unos</th></tr>`
     + Object.keys(OFFICIAL_STAGE).filter((k) => off[k]).map((k) => `<tr><td>${esc(OFFICIAL_STAGE[k])}</td><td class="num">${fmt(off[k].S, 2)}x</td><td class="small muted">${esc(off[k].id)}</td></tr>`).join("")
     + "</table>" : "";
 }
