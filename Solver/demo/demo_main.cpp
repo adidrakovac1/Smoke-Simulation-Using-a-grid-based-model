@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -38,6 +39,16 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#endif
+
+#if defined(__APPLE__)
+#include <cerrno>
+#include <fcntl.h>
+#include <spawn.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+extern char** environ;
 #endif
 
 #ifndef SMOKE_DEMO_COMMIT
@@ -392,6 +403,84 @@ bool launchSeparateWindows(const Options& o) {
 }
 #endif
 
+#if defined(__APPLE__)
+bool launchSeparateLogsMac(const Options& o, const char* executable) {
+    std::error_code pathError;
+    const std::filesystem::path executablePath = std::filesystem::absolute(executable, pathError);
+    if (pathError) {
+        std::cerr << "GRESKA: ne mogu odrediti putanju do smoke_demo: " << pathError.message() << ".\n";
+        return false;
+    }
+
+    const std::filesystem::path outputDirectory = executablePath.parent_path();
+    for (int version = 0; version < kVersions; ++version) {
+        const char versionName = static_cast<char>('A' + version);
+        const std::filesystem::path logPath =
+            outputDirectory / (std::string("smoke_demo_") + versionName + ".txt");
+
+        const std::string executableString = executablePath.string();
+        std::vector<std::string> arguments{executableString, "--verzija", std::string(1, versionName)};
+        if (o.full) arguments.emplace_back("--puno");
+        for (int grid : o.grids) {
+            arguments.emplace_back("--grid");
+            arguments.push_back(std::to_string(grid));
+        }
+        arguments.emplace_back("--koraci");
+        arguments.push_back(std::to_string(o.steps));
+        arguments.emplace_back("--runde");
+        arguments.push_back(std::to_string(o.rounds));
+
+        std::vector<char*> childArguments;
+        childArguments.reserve(arguments.size() + 1);
+        for (std::string& argument : arguments) childArguments.push_back(argument.data());
+        childArguments.push_back(nullptr);
+
+        posix_spawn_file_actions_t fileActions;
+        int error = posix_spawn_file_actions_init(&fileActions);
+        const bool fileActionsInitialized = error == 0;
+        if (error == 0) {
+            error = posix_spawn_file_actions_addopen(&fileActions, STDOUT_FILENO, logPath.c_str(),
+                                                     O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        }
+        if (error == 0) error = posix_spawn_file_actions_adddup2(&fileActions, STDOUT_FILENO, STDERR_FILENO);
+        if (error != 0) {
+            std::cerr << "GRESKA: ne mogu pripremiti izlaz za verziju " << versionName << " u "
+                      << logPath << ": " << std::strerror(error) << ".\n";
+            if (fileActionsInitialized) posix_spawn_file_actions_destroy(&fileActions);
+            return false;
+        }
+
+        std::cout << "Pokrecem verziju " << versionName << "; izlaz: " << logPath << "\n" << std::flush;
+        pid_t child = 0;
+        error = posix_spawnp(&child, executableString.c_str(), &fileActions, nullptr, childArguments.data(), environ);
+        posix_spawn_file_actions_destroy(&fileActions);
+        if (error != 0) {
+            std::cerr << "GRESKA: ne mogu pokrenuti verziju " << versionName << ": " << std::strerror(error)
+                      << ".\n";
+            return false;
+        }
+
+        int status = 0;
+        pid_t waited = 0;
+        do {
+            waited = waitpid(child, &status, 0);
+        } while (waited == -1 && errno == EINTR);
+        if (waited == -1) {
+            std::cerr << "GRESKA: cekanje verzije " << versionName << " nije uspjelo: "
+                      << std::strerror(errno) << ".\n";
+            return false;
+        }
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            std::cerr << "GRESKA: verzija " << versionName << " nije zavrsila uspjesno; pogledaj " << logPath
+                      << ".\n";
+            return false;
+        }
+        std::cout << "Zavrsila verzija " << versionName << ".\n" << std::flush;
+    }
+    return true;
+}
+#endif
+
 void printWhatChanged() {
     std::cout <<
 R"(
@@ -520,9 +609,17 @@ int main(int argc, char** argv) {
         std::cout << "Sve tri verzije su zavrsile mjerenje; prozori ostaju otvoreni do Enter.\n";
         return 0;
     }
+#elif defined(__APPLE__)
+    if (o.separate) {
+        std::cout << "Pokrecem verzije A, B i C redom; svaki izlaz se cuva u zasebnoj TXT datoteci pored smoke_demo.\n"
+                  << std::flush;
+        if (!launchSeparateLogsMac(o, argv[0])) return 1;
+        std::cout << "Rezultati su sacuvani u smoke_demo_A.txt, smoke_demo_B.txt i smoke_demo_C.txt.\n";
+        return 0;
+    }
 #else
     if (o.separate) {
-        std::cerr << "GRESKA: --odvojeno trenutno podrzava samo Windows konzole.\n";
+        std::cerr << "GRESKA: --odvojeno trenutno podrzava samo Windows i macOS.\n";
         return 2;
     }
 #endif
