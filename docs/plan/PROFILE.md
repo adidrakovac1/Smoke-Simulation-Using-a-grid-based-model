@@ -151,6 +151,13 @@ posla, bez ispisa u toku rada. Poziva iste funkcije faza kao `SmokeSolver::step`
 | `advect` | obje advekcije jednog koraka (u, v, w, pa gustina i temperatura), uvijek iz istih razvijenih polja u rezervna polja | pet advektiranih polja |
 | `forces` | uzgon i vorticity confinement; prije svakog poziva brzina se vraća na razvijenu (`memcpy`), inače bi rasla bez granice | jedan poziv `applyForces` |
 
+**Izbor verzije (od 2026-11-15).** `--version m4|m3auto|m3` (samo uz `--stage all`, bez prepreke) bira koji kod radi
+mjerene korake: `m4` je sadašnji optimizirani solver (zadano), `m3auto` je M3 korak (commit `73ceb9e`) sa zadanim
+opcijama kompajlera (kao B1), a `m3` isti M3 korak preveden bez vektorizacije, tj. naivna verzija (kao B0). M3 kod
+je onaj iz `smoke_demo` (`Solver/demo/M3Solver.inc`, `m3_b0.cpp`, `m3_b1.cpp`). Razvoj strujanja (100 koraka) uvijek
+radi `m4`: sve tri verzije daju bit po bit ista polja (`Solver/tests/test_demo_versions.cpp`), pa se razlikuju samo
+mjereni koraci, a kašnjenje početka uzorkovanja ostaje isto za sve verzije.
+
 Primjer: `Solver\build-prof\smoke_prof.exe --grid 128 --seconds 20 --stage jacobi`. Na kraju ispisuje trajanje,
 broj ponavljanja i ms po ponavljanju. Kratka proba na 64³ (2 s, obična gradnja): cijeli korak 8.3 ms, Jacobi
 iteracija 0.080 ms, advekcija 3.5 ms, sile 0.88 ms (uključuje `memcpy`); to su probe da program radi, ne mjerenja.
@@ -194,7 +201,15 @@ perf/uprof/collect.sh ebp assess_ext      # isto, s hardverskim brojačima
 perf/uprof/collect.sh inst inst_access 10 # keš instrukcija i ITLB (frontend), po 10 s
 python tools/uprof_report.py perf/uprof/2026-11-11_tbp perf/uprof/2026-11-11_ebp perf/uprof/2026-11-11_inst     perf/uprof/2026-11-12_obs_none_tbp perf/uprof/2026-11-12_obs_none_ebp     perf/uprof/2026-11-12_obs_sphere_tbp perf/uprof/2026-11-12_obs_sphere_ebp     perf/uprof/2026-11-12_obs_blanket_tbp perf/uprof/2026-11-12_obs_blanket_ebp -o perf/uprof/report.html
 python tools/uprof_report.py perf/uprof/2026-11-11_ebp --summary    # tekst: faze, brojači i instrukcije po funkciji
+
+# verzije (odjeljak 7): isti posao, tri verzije koda; oznaka foldera mora biti ver_<verzija>_tbp / _ebp
+for v in m3 m3auto m4; do
+  VERSION=$v STAGES=all perf/uprof/collect.sh ver_${v}_tbp tbp 20
+  VERSION=$v STAGES=all perf/uprof/collect.sh ver_${v}_ebp assess_ext 20
+done
 ```
+
+Izvještaj od 2026-11-15 se pravi iz svih 15 foldera: šest `2026-11-15_ver_*` i devet starijih iz komande gore.
 
 - `collect.sh` za svaku sesiju pokreće `smoke_prof` pod uProf-om (`--start-delay` preskače 100 koraka razvoja
   strujanja), pa pravi `report.csv` (tabela funkcija) i `detail.csv` (uzorci po instrukciji). U
@@ -213,7 +228,8 @@ python tools/uprof_report.py perf/uprof/2026-11-11_ebp --summary    # tekst: faz
   | Mikroarhitektura | po funkciji: CPI, grananja, pogrešna predviđanja, L1 promašaji, čitanja preko linije keša, STLI, i frontend (op cache, keš instrukcija, ITLB) iz `inst_access` | Microarchitecture Exploration |
   | Keš i memorija | veličina polja prema L1 / L2 / L3; po funkciji: L1 promašaji, punjenja L1 iz L2 / L3 / RAM-a i udio funkcije u svim punjenjima | Memory Access |
   | Instrukcije | instrukcije funkcije po adresi, toplotna skala po udjelu ili po izabranom brojaču, oznake petlji i preskočenih dijelova | Assembly |
-  | Poređenje | dva mjerenja: delta udjela po fazama i funkcijama, CPI i punjenja iz RAM-a jedno pored drugog | Compare |
+  | Ocjena (od 2026-11-15) | jedna verzija na jednoj mreži, jednostavnim jezikom: brzina, niti, SIMD, količina posla, CPI, keš, grananja, faze; uz svaku stavku odnos prema naivnoj verziji | nema |
+  | Poređenje verzija (od 2026-11-15) | dvije verzije koda na istoj mreži (zadano naivna prema finalnoj): ms po koraku i S po fazi, instrukcije, CPI, brojači po koraku, širina instrukcija, najvrelije funkcije, službeni S iz `perf/results.csv` | Compare |
   | Sve sesije, O mjerenju | popis sesija, značenje kolona, hardver, tabela "šta od VTune-a imamo, a šta ne" | |
 
   Boje ćelija su relativne (najveća vrijednost u koloni je najtamnija); pragova "dobro / loše" nema jer ih nismo
@@ -503,3 +519,72 @@ ovdje radi i nad brzinom, gustinom i temperaturom, a ne samo nad pritiskom.
   preprekama. Ide u tabelu iz odjeljka 5 kao kandidat 7, s najmanjim očekivanim dobitkom od svih.
 - **Nije mjereno:** veće prepreke, prepreke uz zid kutije (tada se poslije njih osvježava i ghost sloj),
   `inst_access` (frontend) s preprekama.
+
+---
+
+## 7. Poređenje verzija: naivna, auto-vektorizirana i finalna (2026-11-15)
+
+Pitanje: **šta se u procesoru promijenilo između naivne i optimizirane verzije**, ne samo koliko je brže. Ranije
+"Poređenje" u izvještaju je poredilo mreže (64³ prema 128³), što nije poređenje verzija; od 2026-11-15 poredi
+verzije koda na istoj mreži.
+
+### 7.1 Kako je mjereno
+
+- Tri verzije istog posla (`smoke_prof --stage all --version ...`, odjeljak 3.2): **m3** (naivna: M3 kod bez
+  vektorizacije), **m3auto** (M3 kod sa zadanim opcijama) i **m4** (finalna). Mreže 64³ i 128³.
+- Svaka kombinacija snimljena dvaput: `tbp` i `assess_ext`, po 20 s. Ukupno 12 sesija, folderi
+  `perf/uprof/2026-11-15_ver_<verzija>_tbp` i `_ebp`. Isti dan, isti računar (PC-2), profilna gradnja.
+- Računar **nije bio posebno umiren** (u upotrebi tokom snimanja). Ovo nije mjerenje po protokolu D10; službena
+  ubrzanja ostaju ona iz PERF_LOG.md, odjeljak 7.
+- Provjera prije snimanja: obična gradnja, 65/65 testova i `smoke_bench --verify` bit po bit isto.
+
+### 7.2 Vrijeme koraka i ubrzanje
+
+| Mreža | Naivna (m3) | Auto (m3auto) | Finalna (m4) | S m3 / m4 (profil) | S službeno (PERF_LOG 7) |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| 64³ | 24.22 ms | 18.91 ms | 8.73 ms | 2.77x | 3.22x |
+| 128³ | 205.22 ms | 168.81 ms | 101.44 ms | 2.02x | 2.23x |
+
+Vremena su iz `tbp` sesija (profilna gradnja pod profilerom). Odnos je manji od službenog; uzrok nije utvrđen
+(druga gradnja, profiler, računar u upotrebi). Za izvještaj se koristi službeni S.
+
+### 7.3 Šta se promijenilo u procesoru (m3 prema m4)
+
+| Veličina | 64³: m3 | 64³: m4 | 128³: m3 | 128³: m4 |
+| :--- | ---: | ---: | ---: | ---: |
+| CPI | 0.34 | 0.56 | 0.38 | 0.92 |
+| Udio vremena u instrukcijama s `ymm` registrima (8 floatova) | 0.0% | 50.8% | 0.0% | 54.9% |
+| Udio vremena u skalarnim float instrukcijama | 80.9% | 10.5% | 81.9% | 8.0% |
+| L1 promašaji (% pristupa memoriji) | 4.4% | 12.9% | 4.1% | 14.5% |
+| Punjenja L1 iz RAM-a (PTI) | 0.18 | 1.19 | 0.87 | 2.84 |
+| Pogrešno predviđena grananja | 0.20% | 0.26% | 0.59% | 0.19% |
+
+- **Finalna verzija izvršava oko 4 puta manje instrukcija po koraku, a svaka traje duže.** CPI raste 1.62 puta
+  na 64³ i 2.43 puta na 128³. Ubrzanje je količnik ta dva efekta.
+- **Broj instrukcija nije izbrojan direktno.** Odnos je procijenjen na dva načina: iz vremena koraka i CPI-ja
+  (4.07 na 64³, 4.77 na 128³) i iz broja uzoraka brojača instrukcija po koraku (3.77 i 3.67). Razlika je do 30%
+  i **nije objašnjena**; izvještaj zato prikazuje raspon. Sesije s brojačima usporavaju program različito po
+  verziji (m3 1.26 do 1.31 puta, m4 1.35 do 1.40 puta prema `tbp`), što je mogući uzrok, ali nije provjereno.
+- **Stope na 1000 instrukcija nisu uporedive među verzijama**, jer verzije izvršavaju različit broj instrukcija.
+  Preračunato po koraku (procjena iz vremena i CPI-ja), finalna verzija ima približno isto L1 promašaja kao
+  naivna (1.08 puta na 64³, 1.07 puta na 128³): podataka koje korak mora proći ima isto, a instrukcija je manje,
+  pa na svaku dolazi više čekanja. To se slaže s H1 (odjeljak 4.3).
+- **Faze** (64³, ms po koraku, m3 → m4): Jacobi 10.53 → 3.00, advekcija 9.79 → 3.65, sile 2.29 → 0.81, rubni
+  uslovi 0.86 → 0.79. `setBoundary` se gotovo nije ubrzao, pa mu je udio porastao s 3.6% na 9.1% (kandidat 1 iz
+  odjeljka 5).
+- **Širina instrukcija** je određena po registrima i imenu instrukcije u ispisu uProf-a (`width_index` u
+  `tools/uprof_report.py`), a udio po uzorcima vremena. Zbog skida je približna.
+
+### 7.4 Kartica "Ocjena"
+
+Opisuje jednu verziju na jednoj mreži jezikom za čitaoca bez tehničkog znanja. **Nema ocjena ni pragova**
+("dobro", "loše", 1 do 5), jer takve granice nismo mjerili: svaka stavka je izmjeren broj ili odnos prema naivnoj
+verziji. Paralelizam je podijeljen na dvoje: niti (program koristi 1 od 12; odluka D8) i SIMD unutar niti (udio
+vremena u instrukcijama od 8 floatova). Rečenica o tome da dodatne niti na 128³ možda neće dati srazmjerno
+ubrzanje u Jacobiju je pretpostavka iz H1 i označena je kao **nije izmjereno**.
+
+### 7.5 Šta nije urađeno
+
+- `inst_access` (frontend) za verzije m3 i m3auto.
+- Pojedinačne faze (`--stage jacobi|advect|forces`) za M3 kod: M3 korak je jedna funkcija za cijeli korak.
+- Ponavljanje na umirenom računaru i više sesija po verziji (raspon nije poznat).

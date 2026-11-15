@@ -1,0 +1,68 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 64 --seconds 22 --stage all --obstacle none --version m3auto "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config tbp --start-delay 2 -o perf\uprof\2026-11-15_ver_m3auto_tbp\g64_all C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 64 --seconds 22 --stage all --obstacle none --version m3auto"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-15_ver_m3auto_tbp\g64_all --cutoff 0 --report-output perf\uprof\2026-11-15_ver_m3auto_tbp\g64_all\report.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Time-based Sampling"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Sun Nov 15 15:05:40 2026"
+Profile End Time:,"Sun Nov 15 15:06:04 2026"
+Profile Duration:,"24.016 seconds"
+Start Delay:,"2 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-15_ver_m3auto_tbp\g64_all"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Time based hotspots"
+
+MONITORED EVENTS
+TBP Events:,Name,Interval,Description
+,"CPU_TIME","1.000 milliseconds","CPU Time is the time in which the CPU core is executing the code."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CPU_TIME)"
+FUNCTION,"CPU_TIME" (seconds),Module
+"smoke_demo::m3_b1::advectScalar(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, float, smoke_demo::m3_b1::SlabRange)",10.3640,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke_demo::m3_b1::SlabRange)",5.1240,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke_demo::m3_b1::SlabRange)",2.3590,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::setBoundary(smoke::Field3D&, smoke_demo::m3_b1::BoundaryKind) (.constprop.0)",0.5750,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke_demo::m3_b1::SlabRange)",0.4170,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::setBoundary(smoke::Field3D&, smoke_demo::m3_b1::BoundaryKind)",0.2740,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke_demo::m3_b1::SlabRange)",0.1900,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke_demo::m3_b1::SlabRange)",0.1270,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::Field3D::fill(float)",0.0730,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke_demo::m3_b1::SlabRange)",0.0120,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::project(smoke::SmokeState&, smoke::SmokeParams const&, smoke_demo::m3_b1::SlabRange, double*)",0.0030,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400300e0",0.0010,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18008b225",0.0010,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400cd60b",0.0010,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e1590",0.0010,"c:\windows\system32\ntdll.dll"
+
+"HOTTEST PROCESSES (Sort Event - CPU_TIME)"
+PROCESS,"CPU_TIME" (seconds)
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:33404)",19.5220
+
+"HOTTEST MODULES (Sort Event - CPU_TIME)"
+MODULE,"CPU_TIME" (seconds)
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",19.5200
+"c:\windows\system32\ntdll.dll",0.0020
+
+"HOTTEST THREADS (Sort Event - CPU_TIME)"
+THREAD,"CPU_TIME" (seconds),THREAD ID
+"Thread-25784 (PID:33404)",19.5220,"25784"

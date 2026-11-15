@@ -21,7 +21,7 @@ Linux / macOS: isto, bez `-G "MinGW Makefiles"`.
 | `smoke_cli` | konzolni program: pokreće simulaciju i ispisuje vrijeme po fazi (`../docs/plan/CLI_OUTPUT.md`) |
 | `smoke_tests` | provjere tačnosti (`../docs/plan/VERIFICATION.md`) |
 | `smoke_bench` | CSV benchmark, referentni rezultat i kalibracija računara |
-| `smoke_prof` | ustaljeno opterećenje za profiler (AMD uProf): `--grid N --seconds S --stage all\|jacobi\|advect\|forces`; profilna gradnja je `-DSMOKE_PROFILE_BUILD=ON` u `Solver/build-prof` (`../docs/plan/PROFILE.md`, odjeljak 3) |
+| `smoke_prof` | ustaljeno opterećenje za profiler (AMD uProf): `--grid N --seconds S --stage all\|jacobi\|advect\|forces`; `--version m4\|m3auto\|m3` (samo uz `--stage all`) bira kod koji radi mjerene korake: finalni solver, M3 kod sa zadanim opcijama ili naivni M3 kod bez vektorizacije (isti fajlovi kao u `smoke_demo`); profilna gradnja je `-DSMOKE_PROFILE_BUILD=ON` u `Solver/build-prof` (`../docs/plan/PROFILE.md`, odjeljak 3) |
 | `smoke_lab` | poređenje verzija jednog jezgra jednu do druge (M3 bez vektorizacije, ručno odmotavanje, AoS/SoA, auto, restrict, AVX2, fuzija), s vremenom, ubrzanjem i provjerom tačnosti, kao primjer iz laba; za demonstraciju |
 | `smoke_demo` | **program za prezentaciju**: cijela simulacija u tri verzije (Neoptimizirana M3, M3 + auto-vektorizacija, Optimizirana M4), ukupno vrijeme, ms po koraku, koraka u sekundi, vrijeme po fazi, ubrzanje S i provjera tačnosti; zatim tablice `smoke_lab` i spisak izmijenjenih funkcija i tehnika |
 
