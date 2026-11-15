@@ -5,15 +5,16 @@
 
 namespace smoke {
 
-/// Which implementation of the stages is used. Only Serial exists in the serial phase;
-/// OpenMP / SIMD / GPU variants are added later (docs/plan/OPTIMIZATION.md) while Serial stays
-/// as the correctness and speed reference.
-enum class Backend { Serial };
+/// Which implementation of the stages is used:
+///   Serial: single-threaded execution (reference)
+///   CpuParallel: opt-in multi-threaded CPU parallel execution
+enum class Backend { Serial, CpuParallel };
 
 struct SolverConfig {
     GridSize    grid;                      // default 64x64x64
     SmokeParams params;
     Backend     backend = Backend::Serial;
+    int         threads = 0;               // 0 = auto (hardware concurrency) when CpuParallel is selected
 };
 
 } // namespace smoke

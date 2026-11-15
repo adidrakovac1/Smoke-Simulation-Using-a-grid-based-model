@@ -130,16 +130,21 @@ Svaka stavka je **kandidat**, ne obaveza. Redoslijed biramo prema profilu i ogra
 | **AVX-512** | 16 floatova odjednom | samo ako hardver postoji; provjera u toku rada |
 | **Prefetch, huge pages** | fino podešavanje memorije | samo uz dokaz iz mjerenja da je memorija usko grlo |
 
-### 3.2 Paralelne tehnike: NISU milestone (odluka D8)
+### 3.2 Paralelne tehnike: izuzetak D18 i ostale nisu milestone
 
-Navedene su samo da se zna kuda projekat ide. U ovoj fazi se **ne pišu**; milestone-ovi za njih se prave tek
-kad tim odluči da počinje paralelizacija.
+OpenMP niti, NUMA i GPU ostaju van ove faze (D8). D18 dopušta eksperimentalni `std::thread` CPU backend iz PR #10,
+ali samo kao izričit izbor; `Serial` ostaje podrazumijevan. Za taj backend se rezultati mjerenja ne unose kao dobitak
+dok se ne uporede s osnovom u istoj sesiji po odjeljku 4.
 
 | Tehnika | Ideja | Napomena |
 | :--- | :--- | :--- |
 | **OpenMP niti po slojevima** | podjela po `k` (`SlabRange`), `#pragma omp parallel for` | glavna tema predmeta; mjeriti na 1, 2, 4, ... niti; paziti na prvi dodir memorije (first touch) i na broj fizičkih jezgara |
 | **NUMA** | raspored memorije po čvorovima | ima smisla tek uz više niti |
 | **GPU (compute shaderi ili CUDA)** | polja kao 3D teksture na GPU, bez prenosa na CPU | posljednja faza planskog dokumenta |
+
+Implementacijski dogovor za D18: niti dijele disjunktne raspone `k`; granice polja i prepreke se obrađuju nakon
+završetka jezgra. Jacobi iteracije zahtijevaju barijeru između prolaza. Test `test_parallel_solver.cpp` poredi
+polje gustoće bit po bit sa serijskim backendom na kubnim i nekubnim mrežama te s preprekama.
 
 Za svaku stavku prije početka upiši u PERF_LOG.md **hipotezu** ("očekujem X jer Y"), a poslije nje rezultat.
 

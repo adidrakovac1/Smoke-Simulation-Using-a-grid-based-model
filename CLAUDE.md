@@ -8,9 +8,10 @@ Studentski projekat za predmet **Paralelni računarski sistemi** (ETF Sarajevo):
 dima na mreži ćelija (Eulerov pristup) u C++-u, koju kasnije paraleliziramo (OpenMP, SIMD,
 eventualno GPU) i mjerimo ubrzanje. Dim prikazujemo u postojećem OpenGL rendereru.
 
-**Trenutna faza: SAMO serijska (sekvencijalna, jedna nit) verzija**, uključujući njenu optimizaciju u
-M4 (tehnike iz laba 1, pa dodatne sekvencijalne tehnike). Paralelizacija (OpenMP niti, GPU) **nije
-milestone** i ne pišemo je dok tim ne kaže (odluka D8), ali kod pišemo tako da je ne otežava.
+**Serijski backend ostaje zadani i referentni**, uključujući M4 optimizacije. Odluka D18 dopušta
+eksperimentalni CPU backend sa `std::thread`, ali samo kada se izričito uključi (`smoke_demo --niti T`
+ili `smoke_bench --niti T`). OpenMP niti i GPU ostaju van ove faze (D8); dalja paralelizacija traži
+novu odluku tima.
 
 **Plan rada od 2026-11-11: `docs/plan/EXECUTION_PLAN.md` je izvršen (2026-11-13):** M4d (profiling, uProf), M-VIZ
 (vizualizacija), M-OBS (prepreke/mesh); tačke G0 do G3 su prošle. Šta još čeka Ermina ili tim piše u
@@ -23,7 +24,7 @@ i dalje: Ermin uči.
   `docs/plan/ARCHITECTURE.md`, odjeljak 6; sve ostalo ne dirati.
 - `Solver/`: **naš kod**, simulacija. Čisti C++20, **bez OpenGL-a, GLFW-a, GLM-a i bez ikakvog
   headera iz Renderera**.
-  **Solver je implementiran i serijski optimiziran, s preprekama** (M0 do M4, M-OBS; 62 testa prolaze): javni interfejs u
+  **Solver je implementiran i serijski optimiziran, s preprekama** (M0 do M4, M-OBS; eksperimentalni CPU backend je opt-in): javni interfejs u
   `Solver/include/smoke/`, faze u `Solver/src/stages/`. Gradi se i bez renderera:
   `cmake -S Solver -B Solver/build -G "MinGW Makefiles"`. Nadograđuj ga, ne prepravljaj strukturu bez razloga.
   Bez prepreka rezultat mora ostati bit po bit isti kao PC-2 referenca (`smoke_bench --verify`).

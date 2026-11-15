@@ -74,6 +74,8 @@ struct Options {
     bool separate = false;
     int version = -1;
     unsigned long launcherId = 0;
+    int threads = 0;
+    bool parallel = false;
 };
 
 constexpr int kVersions = 3;
@@ -150,6 +152,8 @@ RunResult runM3(int version, const GridSize& g, const Options& o, bool showProgr
 RunResult runOptimized(const GridSize& g, const Options& o, bool showProgress) {
     smoke::SolverConfig config;
     config.grid = g;
+    config.backend = o.parallel ? smoke::Backend::CpuParallel : smoke::Backend::Serial;
+    config.threads = o.threads;
     smoke::SmokeSolver solver(config);
     reportProgressStart(2, o, showProgress);
     for (int i = 0; i < o.warmup; ++i) solver.step();
@@ -363,6 +367,7 @@ bool launchSeparateWindows(const Options& o) {
         for (int grid : o.grids) command += L" --grid " + std::to_wstring(grid);
         command += L" --koraci " + std::to_wstring(o.steps);
         command += L" --runde " + std::to_wstring(o.rounds);
+        if (o.threads > 0) command += L" --niti " + std::to_wstring(o.threads);
 
         STARTUPINFOW startup{};
         startup.cb = sizeof(startup);
@@ -429,6 +434,10 @@ bool launchSeparateLogsMac(const Options& o, const char* executable) {
         arguments.push_back(std::to_string(o.steps));
         arguments.emplace_back("--runde");
         arguments.push_back(std::to_string(o.rounds));
+        if (o.threads > 0) {
+            arguments.emplace_back("--niti");
+            arguments.push_back(std::to_string(o.threads));
+        }
 
         std::vector<char*> childArguments;
         childArguments.reserve(arguments.size() + 1);
@@ -538,13 +547,17 @@ bool parseArgs(int argc, char** argv, Options& o) {
         const std::string_view a(argv[i]);
         int value = 0;
         if (i + 1 >= argc &&
-            (a == "--grid" || a == "--koraci" || a == "--runde" || a == "--verzija" || a == "--launcher-id"))
+            (a == "--grid" || a == "--koraci" || a == "--runde" || a == "--verzija" || a == "--launcher-id" ||
+             a == "--niti" || a == "--threads"))
             return false;
         if (a == "--puno") {
             o.full = true;
             if (!gridGiven) o.grids = {32, 64, 96, 128};
         } else if (a == "--odvojeno") {
             o.separate = true;
+        } else if (a == "--niti" || a == "--threads") {
+            if (!parsePositive(argv[++i], o.threads)) return false;
+            o.parallel = true;
         } else if (a == "--grid") {
             if (!parsePositive(argv[++i], value) || value > 512) return false;
             if (!gridGiven) { o.grids.clear(); gridGiven = true; }
@@ -591,11 +604,12 @@ void waitIfOwnConsole() {
 int main(int argc, char** argv) {
     Options o;
     if (!parseArgs(argc, argv, o)) {
-        std::cout << "Koriscenje: smoke_demo [--puno] [--grid N]... [--koraci K] [--runde R] [--bez-jezgara]\n"
-                  << "             smoke_demo --odvojeno [--puno] [--grid N]... [--koraci K] [--runde R]\n"
+        std::cout << "Koriscenje: smoke_demo [--puno] [--grid N]... [--koraci K] [--runde R] [--niti T] [--bez-jezgara]\n"
+                  << "             smoke_demo --odvojeno [--puno] [--grid N]... [--koraci K] [--runde R] [--niti T]\n"
                   << "  zadano (brzi mod): mreza 64^3, 100 koraka, 3 runde, pa poredjenje tehnika na 64^3 (~20 s)\n"
                   << "  --puno: mreze 32, 64, 96 i 128 (nekoliko minuta)\n"
                   << "  --odvojeno: otvori zasebne konzole A/B/C; mjerenja se izvrsavaju redom\n"
+                  << "  --niti T: ukljuci paralelni backend za verziju C s T niti (bez opcije: serijski)\n"
                   << "  --bez-jezgara: samo cijela simulacija (bez dijela 2)\n";
         waitIfOwnConsole();
         return 2;
@@ -625,7 +639,7 @@ int main(int argc, char** argv) {
 #endif
 
     std::cout << "==========================================================================================================\n"
-              << " smoke_demo: 3D simulacija dima na mrezi celija (Eulerov pristup), serijska verzija (jedna nit)\n"
+              << " smoke_demo: 3D simulacija dima na mrezi celija (Eulerov pristup)\n"
               << (o.version < 0 ? " Poredjenje: Neoptimizirana verzija (M3) i Optimizirana verzija (M4)\n"
                                 : " Samostalni rezultat verzije " + std::string(1, static_cast<char>('A' + o.version)) +
                                       "\n")
@@ -644,6 +658,8 @@ int main(int argc, char** argv) {
                  "unknown"
 #endif
               << ", oznake: " << SMOKE_DEMO_FLAGS << ", commit: " << SMOKE_DEMO_COMMIT << "\n"
+              << "Backend C: " << (o.parallel ? "CpuParallel" : "Serial")
+              << (o.parallel ? " (" + std::to_string(o.threads) + " niti)" : "") << "\n"
               << "Mod: " << (o.full ? "puni (--puno)" : "brzi (za sve mreze: --puno)") << "\n"
               << "Za vrijeme mjerenja racunar treba biti miran (bez igara, videa, kompajliranja).\n";
 

@@ -101,6 +101,8 @@ struct Options {
     std::string outputPath;
     std::string obstacle = "none";  // benchmark mode only: none | sphere | blanket
     bool obstacleExplicit = false;
+    bool parallel = false;
+    int threads = 0;
     std::vector<int> gridSizes{32, 64, 96, 128};
     int steps = 100;
     int warmup = 10;
@@ -122,7 +124,7 @@ bool parsePositiveInt(std::string_view text, int& value, bool allowZero = false)
 }
 
 void printUsage(std::ostream& out) {
-    out << "Usage: smoke_bench [--grid N] [--steps N] [--warmup N] [--output FILE]\n"
+    out << "Usage: smoke_bench [--grid N] [--steps N] [--warmup N] [--output FILE] [--niti T]\n"
            "                   [--obstacle none|sphere|blanket]\n"
            "       smoke_bench --calibrate\n"
            "       smoke_bench --hwinfo\n"
@@ -148,7 +150,7 @@ bool parseArgs(int argc, char** argv, Options& options) {
             if (options.convergenceAllSteps) return false;
             options.convergenceAllSteps = true;
         } else if (arg == "--grid" || arg == "--steps" || arg == "--warmup" ||
-                   arg == "--output" || arg == "--reference" || arg == "--verify" ||
+                   arg == "--output" || arg == "--reference" || arg == "--verify" || arg == "--niti" ||
                    arg == "--obstacle") {
             if (i + 1 >= argc) return false;
             const std::string value(argv[++i]);
@@ -169,6 +171,9 @@ bool parseArgs(int argc, char** argv, Options& options) {
                 if (options.warmupExplicit) return false;
                 if (!parsePositiveInt(value, options.warmup, true)) return false;
                 options.warmupExplicit = true;
+            } else if (arg == "--niti") {
+                if (!parsePositiveInt(value, options.threads)) return false;
+                options.parallel = true;
             } else if (arg == "--output") {
                 if (options.outputExplicit) return false;
                 options.outputPath = value;
@@ -475,7 +480,8 @@ void printHardwareInfo() {
               << "  flags: " << SMOKE_BENCH_FLAGS << '\n'
               << "  per_file_flags: " << SMOKE_BENCH_PER_FILE_FLAGS << '\n'
               << "  avx2_kernels: " << SMOKE_BENCH_AVX2_KERNELS << '\n'
-              << "  OpenMP: not enabled (serial-only build)\n"
+              << "  OpenMP: not enabled\n"
+              << "  std::thread CPU backend: available; Serial remains the default\n"
               << "  commit: " << SMOKE_BENCH_COMMIT << '\n';
 }
 
@@ -580,7 +586,8 @@ void printCalibration() {
     else std::cout << "unavailable";
     std::cout << '\n'
               << "  vector_isa: " << vectorIsa() << '\n'
-              << "  OpenMP: not enabled (serial-only build)\n"
+              << "  OpenMP: not enabled\n"
+              << "  std::thread CPU backend: available; Serial remains the default\n"
               << "  compiler: " << SMOKE_BENCH_COMPILER_ID << ' ' << SMOKE_BENCH_COMPILER_VERSION << '\n'
               << "  build_type: " << SMOKE_BENCH_BUILD_TYPE << '\n'
               << "  variant: " << SMOKE_BENCH_VARIANT << '\n'
@@ -867,9 +874,16 @@ bool runConvergence(const Options& options) {
 
 bool runBenchmarks(const Options& options, std::ostream& csv) {
     csv << "grid,stage,median_ms,min_ms,max_ms,steps\n";
+    std::cerr << "backend=" << (options.parallel ? "CpuParallel" : "Serial");
+    if (options.parallel) std::cerr << " threads=" << options.threads;
+    std::cerr << '\n';
     for (const int n : options.gridSizes) {
         smoke::SolverConfig config;
         config.grid = {n, n, n};
+        if (options.parallel) {
+            config.backend = smoke::Backend::CpuParallel;
+            config.threads = options.threads;
+        }
         smoke::SmokeSolver solver(config);
         if (options.obstacle != "none") {
             const smoke::ObstacleGrid obstacles =
@@ -926,16 +940,18 @@ int main(int argc, char** argv) {
         return 2;
     }
     if (options.calibrate) {
+        if (options.parallel) { printUsage(std::cerr); return 2; }
         printCalibration();
         return 0;
     }
     if (options.hwinfo) {
+        if (options.parallel) { printUsage(std::cerr); return 2; }
         printHardwareInfo();
         return 0;
     }
-    if (options.convergence) return runConvergence(options) ? 0 : 1;
-    if (!options.referencePath.empty()) return runReference(options) ? 0 : 1;
-    if (!options.verifyPath.empty()) return runVerify(options) ? 0 : 1;
+    if (options.convergence) return options.parallel ? 2 : (runConvergence(options) ? 0 : 1);
+    if (!options.referencePath.empty()) return options.parallel ? 2 : (runReference(options) ? 0 : 1);
+    if (!options.verifyPath.empty()) return options.parallel ? 2 : (runVerify(options) ? 0 : 1);
 
     if (!options.outputPath.empty()) {
         if (!createParentDirectories(options.outputPath)) return 1;
