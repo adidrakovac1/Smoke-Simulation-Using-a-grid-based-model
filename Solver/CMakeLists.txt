@@ -197,9 +197,12 @@ endif()
 # smoke_prof: repeats one stage (or whole steps) for a fixed time, for AMD uProf (EXECUTION_PLAN.md, P1).
 # It calls the internal stage functions, so it needs the private src folder, like the tests and smoke_lab.
 if(SMOKE_BUILD_PROF)
-  add_executable(smoke_prof apps/smoke_prof/main.cpp)
+  # demo/m3_b0.cpp and demo/m3_b1.cpp: the M3 step without and with vectorization (the versions smoke_demo
+  # shows), so "smoke_prof --version m3|m3auto" can put the naive code under the profiler too.
+  add_executable(smoke_prof apps/smoke_prof/main.cpp demo/m3_b0.cpp demo/m3_b1.cpp)
   target_link_libraries(smoke_prof PRIVATE smoke_solver)
-  target_include_directories(smoke_prof PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/apps/common)
+  target_include_directories(smoke_prof PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/apps/common
+                                                ${CMAKE_CURRENT_SOURCE_DIR}/demo)
   smoke_set_warnings(smoke_prof)
   if(MINGW)
     # Static C++ runtime: the profiler may start the program from a shell without MSYS2 on PATH.

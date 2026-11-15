@@ -36,8 +36,10 @@ PHASES = [
                  r"|applyPorousDrag|applyPorousFilter"),
     ("Jacobi", r"jacobi"),
     ("Projekcija (ostalo)", r"computeDivergence|subtractPressureGradient|divergenceRow|gradientRow|\bproject\b"),
-    ("Advekcija", r"advect"),
-    ("Sile", r"vorticity|confinement|Buoyancy|applyForces"),
+    # sampleTrilinear / clampToBox: helpers of the M3 advection (Solver/demo/M3Solver.inc), if not inlined.
+    ("Advekcija", r"advect|sampleTrilinear|clampToBox"),
+    # [Vv] / [Cc]: the M3 step calls it applyVorticityConfinement, the optimized solver vorticityRow / confinementRow.
+    ("Sile", r"[Vv]orticity|[Cc]onfinement|Buoyancy|applyForces"),
     ("Rubni uslovi", r"setBoundary|setVelocityBoundary"),
     ("Izvor", r"addSources"),
     # ucrtbase.dll / vcruntime: the C runtime; in smoke_prof its samples are memcpy / memset (no symbols for it).
@@ -101,6 +103,28 @@ def classify(instruction):
     if mnemonic.startswith(("lea", "cmp", "test", "inc", "dec")) or mnemonic in ("add", "sub", "mov", "xor", "addl", "movl"):
         return "brojaci petlje i adrese"
     return "racun u registrima"
+
+
+# How many floats one instruction works on, judged by its registers and mnemonic. Used for the "data
+# parallelism" view: which part of the time goes to 8-wide (AVX), up to 4-wide (SSE) and one-at-a-time work.
+WIDTH_NAMES = ["256-bitni registri (ymm): 8 brojeva odjednom", "128-bitni registri (xmm), vektorski: do 4 broja odjednom",
+               "skalarno: jedan broj po instrukciji", "bez float registara: brojači petlje, adrese, skokovi"]
+
+
+def width_index(instruction):
+    parts = instruction.strip().split(None, 1)
+    if len(parts) < 2:
+        return 3
+    mnemonic, operands = parts[0].lower(), parts[1]
+    if "%ymm" in operands:
+        return 0
+    if "%xmm" in operands:
+        base = mnemonic[1:] if mnemonic.startswith("v") else mnemonic
+        # addss, mulsd, movss, cvtsi2ssl, cvttss2si, comiss, movd / movq: one value in the low part of the register.
+        if re.search(r"(ss|sd)[lq]?$|ss2|sd2|comis|^mov[dq]$", base):
+            return 2
+        return 1
+    return 3
 
 
 def number(text):
@@ -207,6 +231,9 @@ def parse_workload(path):
                 obstacle = re.search(r"prepreka=(\w+)", line)
                 if obstacle:
                     workload["prepreka"] = obstacle.group(1)
+                version = re.search(r"verzija=(\w+)", line)
+                if version:
+                    workload["verzija"] = version.group(1)
             elif ":" in line:
                 key, value = line.split(":", 1)
                 workload[key.strip()] = value.strip()
@@ -248,6 +275,11 @@ def load_session(folder, group):
         for item in instructions:
             classes[item["cls"]] = classes.get(item["cls"], 0.0) + item["share"]
         function["classes"] = sorted(classes.items(), key=lambda pair: -pair[1])
+        # vw: share of the session's samples (%) per register width class (WIDTH_NAMES), summed over the function.
+        widths = [0.0, 0.0, 0.0, 0.0]
+        for item in instructions:
+            widths[width_index(item["text"])] += item["share"]
+        function["vw"] = [round(value, 4) for value in widths]
         # Short keys: there are about 50 000 instruction rows in the page. a = address, t = text, s = share (%),
         # c = class index, n = length in bytes, v = the other counter columns.
         function["ins"] = [{"a": item["address"], "t": item["text"], "s": item["share"], "c": class_index(item["cls"]),
@@ -256,6 +288,8 @@ def load_session(folder, group):
     workload = parse_workload(folder / "workload.txt")
     return {"id": f"{group}/{folder.name}", "group": group, "kind": kind_of(metrics), "grid": grid, "stage": stage,
             "obstacle": workload.get("prepreka", "none"),
+            # Sessions made before smoke_prof had --version ran the optimized solver, which is now called m4.
+            "version": workload.get("verzija", "m4"),
             "label": f"{grid}^3 {stage} ({group})", "info": info, "events": events, "metrics": metrics,
             "derived": derived, "detailMetrics": detail_metrics,
             "total": total, "functions": functions, "workload": workload}
@@ -277,6 +311,8 @@ def load_all(folders):
 STAGE_ORDER = ["all", "jacobi", "advect", "forces"]
 STAGE_NAMES = {"all": "cijeli korak", "jacobi": "Jacobi", "advect": "advekcija", "forces": "sile"}
 OBSTACLE_NAMES = {"none": "bez prepreke", "sphere": "kugla", "blanket": "deka"}
+# smoke_prof --version. m3 and m3auto are the M3 step (commit 73ceb9e) from Solver/demo, m4 is the current solver.
+VERSION_NAMES = {"m3": "naivna (M3)", "m3auto": "M3 + auto-vektorizacija", "m4": "finalna (M4)"}
 
 
 def build_workloads(sessions):
@@ -299,15 +335,40 @@ def build_workloads(sessions):
         if workload is None:
             stage = STAGE_NAMES.get(session["stage"], session["stage"])
             obstacle = OBSTACLE_NAMES.get(session["obstacle"], session["obstacle"])
+            version = VERSION_NAMES.get(session["version"], session["version"])
+            # Runs named <date>_ver_<version> were collected together to compare the versions: same "vset".
+            vset = re.match(r"(.*)_ver_\w+$", run)
             workload = {"run": run, "grid": session["grid"], "stage": session["stage"],
-                        "obstacle": session["obstacle"],
-                        "label": f"{session['grid']}³ · {stage} · {obstacle} · {run}", "s": {}}
+                        "obstacle": session["obstacle"], "version": session["version"],
+                        "vset": vset.group(1) if vset else None,
+                        "label": f"{session['grid']}³ · {stage} · {obstacle} · {version} · {run}", "s": {}}
             by_key[key] = workload
             workloads.append(workload)
         workload["s"][session["kind"]] = index
     order = {name: position for position, name in enumerate(STAGE_ORDER)}
     workloads.sort(key=lambda w: (w["run"], order.get(w["stage"], len(order)), w["grid"]))
     return workloads
+
+
+def load_official(path):
+    """Speedups of the final version measured by the protocol D10 on the normal Release build (perf/results.csv).
+
+    The rows "M4_total_vs_B0" / "M4_total_vs_B1" compare the final M4 solver with the M3 code built without
+    vectorization (B0, here version m3) and with the default flags (B1, here m3auto). A later row for the same
+    grid and stage replaces an earlier one (the file is written in time order).
+    """
+    official = {}
+    if not path or not Path(path).exists():
+        return official
+    with open(path, newline="", encoding="utf-8", errors="replace") as handle:
+        for row in csv.DictReader(handle):
+            base = {"M4_total_vs_B0": "m3", "M4_total_vs_B1": "m3auto"}.get(row.get("technique"))
+            speedup = number(row.get("speedup_S") or "")
+            if not base or speedup is None or not (row["grid_nx"] == row["grid_ny"] == row["grid_nz"]):
+                continue
+            official.setdefault(base, {}).setdefault(row["grid_nx"], {})[row["stage"]] = {
+                "S": speedup, "id": row["entry_id"], "date": row["date"], "machine": row["machine"]}
+    return official
 
 
 def phase_shares(session):
@@ -405,6 +466,25 @@ tr.gap td { color:var(--muted); font-size:12px; padding:1px 8px; text-align:cent
 .ice .fn:hover { opacity:1; }
 #err { display:none; background:#c2453c; color:#fff; padding:8px 16px; white-space:pre-wrap; font-family:Consolas, monospace; }
 .tab { display:none; } .tab.on { display:block; }
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.seg button { font:inherit; border:0; background:none; color:var(--text); padding:6px 14px; cursor:pointer; border-right:1px solid var(--line); }
+.seg button:last-child { border-right:0; }
+.seg button.on { background:var(--accent); color:#fff; font-weight:600; }
+.cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); gap:14px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 18px; }
+.card h3 { margin:0 0 2px; font-size:16px; }
+.card .q { color:var(--muted); font-size:13px; margin:0 0 8px; }
+.card .big { font-size:26px; font-weight:650; line-height:1.2; font-variant-numeric:tabular-nums; }
+.card .unit { font-size:14px; font-weight:400; color:var(--muted); }
+.card .plain { background:var(--code); border-radius:8px; padding:8px 12px; margin-top:10px; font-size:13.5px; }
+.verdict { display:inline-block; margin:8px 0 2px; padding:2px 10px; border-radius:12px; font-size:13px; font-weight:600; border:1px solid var(--line); }
+.verdict.good { color:var(--good); border-color:var(--good); } .verdict.bad { color:var(--bad); border-color:var(--bad); }
+.boxes { display:flex; gap:4px; flex-wrap:wrap; margin:8px 0; }
+.boxes span { width:22px; height:22px; border-radius:4px; border:1px solid var(--line); }
+.boxes span.on { background:var(--accent); border-color:var(--accent); }
+.lead { font-size:17px; line-height:1.45; margin:10px 0; }
+.two { display:grid; grid-template-columns:repeat(auto-fit, minmax(420px, 1fr)); gap:14px; }
+.duo { min-width:130px; } .duo div { height:7px; border-radius:2px; min-width:1px; margin:2px 0; }
 ul { margin:6px 0; padding-left:22px; }
 </style>
 </head>
@@ -421,6 +501,40 @@ ul { margin:6px 0; padding-left:22px; }
 <main>
 <p class="muted small">AMD uProf, program <code>smoke_prof</code>, serijska verzija (jedna nit). Generisano: __GENERATED__.
 Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i šta se iz ovih podataka <b>ne može</b> dobiti: kartica "O mjerenju".</p>
+
+<div class="tab" id="t-grade">
+  <section>
+    <h2>Ocjena verzije</h2>
+    <p class="small muted">Izaberi verziju programa i veličinu mreže. Sve ispod je izračunato iz snimljenog profila te verzije i,
+    gdje piše, upoređeno s naivnom verzijom na istoj mreži. Izbor ovdje mijenja i "Mjerenje" u zaglavlju, pa ostale kartice
+    pokazuju istu verziju.</p>
+    <div class="row">
+      <span>Verzija</span><span class="seg" id="grVer"></span>
+      <span>Mreža</span><span class="seg" id="grGrid"></span>
+    </div>
+    <div id="grHead"></div>
+  </section>
+  <div class="cards" id="grCards"></div>
+  <section>
+    <h2>Kako je ocjena dobijena</h2>
+    <ul class="small">
+      <li><b>Nema školskih ocjena ni pragova.</b> Ne znamo izmjerenu granicu između "dobro" i "loše" za ovaj računar, pa je svaka
+      ocjena ili izmjeren broj ili odnos prema naivnoj verziji ("2.9 puta brže"). Zelena oznaka znači bolje od naivne, crvena lošije.</li>
+      <li><b>Brzina</b> je iz programa <code>smoke_prof</code> u profilnoj gradnji pod profilerom. Služi za odnos među verzijama snimljenim
+      isti dan. Službeno ubrzanje (obična gradnja, protokol D10) je u <code>docs/plan/PERF_LOG.md</code>, odjeljak 7, i navedeno je gdje postoji.</li>
+      <li><b>Instrukcije po koraku</b> nisu izbrojane direktno, pa je odnos dvije verzije procijenjen na dva načina: (1) iz vremena koraka
+      i CPI-ja (vrijeme = instrukcije × ciklusa po instrukciji ÷ takt, uz pretpostavku istog takta u obje sesije) i (2) iz broja uzoraka
+      brojača instrukcija po koraku (uz pretpostavku da su obje sesije uzorkovane jednako dugo). Ta dva načina se razlikuju do 30 %,
+      a uzrok nije utvrđen, pa je prikazan raspon. Poređenja "po koraku" (promašaji, grananja) koriste način (1).</li>
+      <li><b>Promašaji po koraku</b>: uProf daje promašaje na 1000 instrukcija. Verzije izvršavaju različit broj instrukcija, pa se za
+      poređenje ta stopa množi brojem instrukcija po koraku.</li>
+      <li><b>Širina instrukcija</b> (8, do 4 ili 1 broj odjednom) je određena po registrima u ispisu instrukcije (<code>ymm</code>,
+      <code>xmm</code>) i po imenu instrukcije, a udio po uzorcima vremena. Uzorak se ponekad pripiše susjednoj instrukciji ("skid"),
+      pa su udjeli približni.</li>
+      <li><b>Niti</b>: program je građen bez OpenMP-a i radi na jednoj niti (odluka D8). Broj niti računara je iz CPUID-a.</li>
+    </ul>
+  </section>
+</div>
 
 <div class="tab" id="t-summary">
   <section>
@@ -532,20 +646,38 @@ Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i 
 
 <div class="tab" id="t-cmp">
   <section>
-    <h2>Poređenje dva mjerenja</h2>
-    <p class="small muted">Npr. 64³ naspram 128³, ili bez prepreke naspram kugle. Delta je razlika udjela (B − A) u procentnim poenima;
-    apsolutne vrijednosti različitih sesija nisu direktno uporedive ako su trajale različito.</p>
-    <div class="row">
-      <label>A <select id="cmpA"></select></label>
-      <label>B <select id="cmpB"></select></label>
-      <label>Osnova <select id="cmpBasis"></select></label>
+    <h2>Poređenje verzija</h2>
+    <p class="small muted">Isti posao (cijeli korak simulacije, ista mreža, isti scenarij, bit po bit isti rezultat), dvije verzije koda.
+    A je polazna verzija, B ona s kojom se poredi. Obje su snimljene isti dan, na istom računaru, istim postupkom.</p>
+    <div id="cmpBody">
+      <div class="row">
+        <span>Mreža</span><span class="seg" id="cmpGrid"></span>
+        <label>A <select id="cmpA"></select></label>
+        <label>B <select id="cmpB"></select></label>
+      </div>
+      <div class="tiles" id="cmpTiles"></div>
+      <div id="cmpWhy"></div>
+      <h3>Po fazama koraka</h3>
+      <p class="small muted">Vrijeme faze = udio uzoraka te faze × vrijeme jednog koraka. "S" je koliko puta je B brža od A u toj fazi.
+      "Instrukcije A / B" je koliko puta manje instrukcija B izvrši za isti posao.</p>
+      <div class="scroll"><table id="cmpPhases"></table></div>
+      <h3>Koliko brojeva jedna instrukcija obradi odjednom</h3>
+      <p class="small muted">Udio vremena po širini registara koje instrukcije koriste. Ovo je paralelizam unutar jedne niti (SIMD).</p>
+      <div id="cmpWidth"></div>
+      <h3>Brojači procesora</h3>
+      <div class="scroll"><table id="cmpCounters"></table></div>
+      <h3>Najvrelije funkcije svake verzije</h3>
+      <p class="small muted">Verzije imaju različite funkcije (finalna je jezgra podijelila na redove i AVX2 fajlove), pa se ne spajaju po imenu.
+      Klik na red otvara instrukcije te funkcije.</p>
+      <div class="two">
+        <div><b id="cmpNameA"></b><div class="scroll"><table id="cmpFnA"></table></div></div>
+        <div><b id="cmpNameB"></b><div class="scroll"><table id="cmpFnB"></table></div></div>
+      </div>
+      <div id="cmpOfficial"></div>
+      <p class="warn small"><b>Kako čitati.</b> Vremena su iz profilne gradnje pod profilerom i vrijede kao odnos A prema B, ne kao
+      apsolutni rezultat. Računar nije bio posebno umiren. Službena ubrzanja se mjere na običnoj Release gradnji po protokolu D10
+      (<code>docs/plan/PERF_LOG.md</code>).</p>
     </div>
-    <div id="cmpWorkload" class="small"></div>
-    <h3>Po fazama</h3>
-    <div class="scroll"><table id="cmpPhases"></table></div>
-    <h3>Po funkcijama</h3>
-    <div class="scroll"><table id="cmpTable"></table></div>
-    <p class="small muted">Prikazane su funkcije s najmanje 0.1% u A ili B.</p>
   </section>
 </div>
 
@@ -584,7 +716,8 @@ Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i 
       <tr><td>Memory Access</td><td>Keš i memorija</td><td>L1 promašaji i punjenja L1 iz L2 / L3 / RAM-a po funkciji. Nema L3 brojača ni adresa podataka (IBS), pa nema prikaza po objektima.</td></tr>
       <tr><td>Assembly</td><td>Instrukcije</td><td>Instrukcije po adresi s toplotnom skalom, i brojači po instrukciji.</td></tr>
       <tr><td>Source</td><td>nema</td><td>Izvještaji uProf-a su pravljeni s <code>--disasm-only</code>, bez linija izvornog koda.</td></tr>
-      <tr><td>Compare</td><td>Poređenje</td><td>Dva mjerenja, delta udjela, CPI i punjenja iz RAM-a jedno pored drugog.</td></tr>
+      <tr><td>Compare</td><td>Poređenje verzija</td><td>Naivna (M3) i finalna (M4) verzija na istoj mreži: vrijeme po fazi, ubrzanje, instrukcije, CPI, keš, širina instrukcija.</td></tr>
+      <tr><td>(nema u VTune-u)</td><td>Ocjena</td><td>Jedna verzija opisana jednostavnim jezikom: brzina, niti, SIMD, keš, grananja, gdje ide vrijeme.</td></tr>
       <tr><td>Timeline, Threads</td><td>nema</td><td>Program ima jednu nit; vremenska osa uzoraka nije izvezena iz uProf-a.</td></tr>
     </table></div>
     <h3>Kolone</h3>
@@ -612,8 +745,18 @@ const PHASE_COLORS = {"Jacobi":"#4c8fd6","Projekcija (ostalo)":"#7da7d9","Advekc
 const PHASES = Object.keys(PHASE_COLORS);
 const KIND_NAME = {time:"vrijeme (tbp)", pmc:"brojači (assess_ext)", fe:"frontend (inst_access)", other:"ostalo"};
 const KIND_BASIS = {time:"vrijeme (uzorci svake 1 ms)", pmc:"ciklusi (brojač, assess_ext)", fe:"ciklusi (brojač, inst_access)"};
-const TABS = [["summary","Sažetak"],["hot","Hotspots"],["uarch","Mikroarhitektura"],["cache","Keš i memorija"],
-  ["asm","Instrukcije"],["cmp","Poređenje"],["all","Sve sesije"],["about","O mjerenju"]];
+const TABS = [["grade","Ocjena"],["cmp","Poređenje verzija"],["summary","Sažetak"],["hot","Hotspots"],["uarch","Mikroarhitektura"],
+  ["cache","Keš i memorija"],["asm","Instrukcije"],["all","Sve sesije"],["about","O mjerenju"]];
+// smoke_prof --version: m3 = the M3 step without vectorization (naive), m3auto = the same code with the default
+// compiler flags, m4 = the current optimized solver.
+const VERSIONS = ["m3", "m3auto", "m4"];
+const VSHORT = {m3:"Naivna", m3auto:"Auto-vektorizirana", m4:"Finalna"};
+const VLONG = {m3:"Naivna verzija (M3 kod, bez vektorizacije)", m3auto:"M3 kod + automatska vektorizacija kompajlera",
+  m4:"Finalna, optimizirana verzija (M4)"};
+const WIDTH_COLORS = ["#2e8b57", "#4c8fd6", "#e0913a", "#8a94a0"];
+const WIDTH_SHORT = ["8 brojeva odjednom (AVX)", "do 4 broja odjednom (SSE)", "jedan po jedan (skalarno)", "ostalo (brojači, adrese, skokovi)"];
+const OFFICIAL_STAGE = {whole_step:"cijeli korak", sources:"izvori", forces:"sile", advect_velocity:"advekcija brzine", projection:"projekcija",
+  advect_scalars:"advekcija skalara", jacobi_iteration:"jedna Jacobi iteracija"};
 const UNIT = {all:"jedno ponavljanje = jedan korak simulacije", jacobi:"jedno ponavljanje = jedna Jacobi iteracija",
   advect:"jedno ponavljanje = pet advektiranih polja", forces:"jedno ponavljanje = jedan poziv applyForces"};
 const REFILLS = [["L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","iz L2","#4c8fd6"],["L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","iz L3","#e0913a"],
@@ -664,8 +807,8 @@ const tag = (phase) => phase ? `<span class="tag"><span class="dot" style="backg
 const helpOf = (name) => METRIC_EXACT[name] || (name.startsWith("CPU_TIME") ? METRIC_HELP.CPU_TIME : "");
 
 // ---------- state (kept in the URL hash, so a view can be linked) ----------
-const state = {w: 0, tab: "summary", fn: null, basis: "time", group: "func", asmKind: "time", asmOrder: "addr",
-               heat: "share", min: 1, cmpA: 0, cmpB: 0, cmpBasis: "time"};
+const state = {w: 0, tab: "grade", fn: null, basis: "time", group: "func", asmKind: "time", asmOrder: "addr",
+               heat: "share", min: 1, cg: 64, ca: "m3", cb: "m4"};
 function readHash() {
   for (const part of location.hash.replace(/^#/, "").split("&")) {
     const [key, value] = part.split("=");
@@ -674,12 +817,10 @@ function readHash() {
     state[key] = typeof state[key] === "number" ? (+text || 0) : text;
   }
   state.w = Math.max(0, Math.min(WL.length - 1, state.w));
-  state.cmpA = Math.max(0, Math.min(WL.length - 1, state.cmpA));
-  state.cmpB = Math.max(0, Math.min(WL.length - 1, state.cmpB));
-  if (!TABS.some(([id]) => id === state.tab)) state.tab = "summary";
+  if (!TABS.some(([id]) => id === state.tab)) state.tab = "grade";
 }
 function writeHash() {
-  const keys = ["w", "tab"].concat(state.fn ? ["fn"] : []);
+  const keys = ["w", "tab"].concat(state.fn ? ["fn"] : [], state.tab === "cmp" ? ["cg", "ca", "cb"] : []);
   history.replaceState(null, "", "#" + keys.map((k) => k + "=" + encodeURIComponent(state[k])).join("&"));
 }
 
@@ -1030,43 +1171,304 @@ function renderAsm() {
   box.scrollTop = (hot && state.asmOrder === "addr") ? Math.max(0, hot.offsetTop - box.clientHeight / 2) : 0;
 }
 
-// ---------- Compare ----------
-function renderCompare() {
-  const options = WL.map((w, i) => `<option value="${i}">${esc(w.label)}</option>`).join("");
-  el("cmpA").innerHTML = options; el("cmpB").innerHTML = options;
-  el("cmpA").value = state.cmpA; el("cmpB").value = state.cmpB;
-  const wa = WL[state.cmpA], wb = WL[state.cmpB];
-  const kinds = ["time", "pmc", "fe"].filter((k) => ses(wa, k) && ses(wb, k));
-  if (!kinds.length) { el("cmpWorkload").innerHTML = missing("istom vrstom podataka u oba mjerenja"); el("cmpPhases").innerHTML = ""; el("cmpTable").innerHTML = ""; el("cmpBasis").innerHTML = ""; return; }
-  if (!kinds.includes(state.cmpBasis)) state.cmpBasis = kinds[0];
-  el("cmpBasis").innerHTML = kinds.map((k) => `<option value="${k}">${esc(KIND_BASIS[k])}</option>`).join("");
-  el("cmpBasis").value = state.cmpBasis;
-  const a = ses(wa, state.cmpBasis), b = ses(wb, state.cmpBasis), pa = ses(wa, "pmc"), pb = ses(wb, "pmc");
-  const line = (w, s) => `${esc(w.label)}: ${esc(s.workload.ms_po_ponavljanju || "–")} ms po ponavljanju, ${esc(s.workload.ponavljanja || "–")} ponavljanja (sesija ${esc(s.id)})`;
-  el("cmpWorkload").innerHTML = `<p>A = ${line(wa, a)}<br>B = ${line(wb, b)}</p>`;
-  const delta = {key: "delta", label: "delta (B − A)", num: true, get: (r) => r.sb - r.sa,
-    html: (r) => { const v = r.sb - r.sa; return `<span class="${v > 0.05 ? "pos" : v < -0.05 ? "neg" : "muted"}">${v > 0 ? "+" : ""}${fmt(v, 2)}</span>`; }};
-  const sa = phaseShares(a), sb = phaseShares(b);
-  drawTable("cmpPhases", [{key: "name", label: "Faza", get: (r) => r.name, html: (r) => tag(r.name)},
-    {key: "sa", label: "A udio %", num: true, get: (r) => r.sa}, {key: "sb", label: "B udio %", num: true, get: (r) => r.sb}, delta],
-    PHASES.filter((p) => (sa[p] || 0) + (sb[p] || 0) > 0.05).map((p) => ({name: p, sa: sa[p] || 0, sb: sb[p] || 0})), {sort: "sb"});
+// ---------- versions: data shared by "Ocjena" and "Poređenje verzija" ----------
+// Version runs are the folders named <date>_ver_<version> (perf/uprof/collect.sh with VERSION=...): the same
+// whole-step workload run by the naive M3 code, the auto-vectorized M3 code and the final solver. If there are
+// several such sets, the newest one is used.
+const VSET = WL.reduce((best, w) => (w.vset && (best === null || w.vset > best)) ? w.vset : best, null);
+const VW = WL.filter((w) => VSET !== null && w.vset === VSET && w.stage === "all");
+const findV = (version, grid) => VW.find((w) => w.version === version && w.grid === +grid) || null;
+const vGrids = () => [...new Set(VW.map((w) => w.grid))].sort((a, b) => a - b);
+const msOf = (s) => s ? parseFloat(s.workload.ms_po_ponavljanju) : NaN;
+const infoText = (s) => (DATA.infos.find((i) => i.group === s.group) || {}).text || "";
+const STEP_HZ = 60;   // one step advances the simulation by dt = 1/60 s (Solver/include/smoke/SmokeParams.h)
+const RAM = "L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)", L3 = "L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)", L2 = "L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)";
 
-  const names = new Map();
-  for (const f of a.functions) names.set(f.name, {name: f.name, phase: f.phase, fa: f, fb: null});
-  for (const f of b.functions) { const e = names.get(f.name) || {name: f.name, phase: f.phase, fa: null, fb: null}; e.fb = f; names.set(f.name, e); }
-  const counter = (s, name, metric) => { const f = byName(s, name); return f ? val(s, f, metric) : null; };
-  const rows = [...names.values()].map((e) => Object.assign(e, {sa: e.fa ? e.fa.share : 0, sb: e.fb ? e.fb.share : 0,
-    ca: counter(pa, e.name, "CPI"), cb: counter(pb, e.name, "CPI"),
-    ra: counter(pa, e.name, "L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)"), rb: counter(pb, e.name, "L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)")}))
-    .filter((r) => r.sa >= 0.1 || r.sb >= 0.1);
-  const cols = [{key: "name", label: "Funkcija", get: (r) => r.name.toLowerCase(), html: (r) => esc(r.name)},
-    {key: "phase", label: "Faza", get: (r) => r.phase, html: (r) => tag(r.phase)},
-    {key: "sa", label: "A udio %", num: true, get: (r) => r.sa}, {key: "sb", label: "B udio %", num: true, get: (r) => r.sb}, delta];
-  if (pa && pb) cols.push({key: "ca", label: "A CPI", title: helpOf("CPI"), num: true, get: (r) => r.ca}, {key: "cb", label: "B CPI", title: helpOf("CPI"), num: true, get: (r) => r.cb},
-    {key: "cr", label: "CPI B / A", title: "Koliko puta više ciklusa po instrukciji u B nego u A.", num: true, heat: true, get: (r) => (r.ca && r.cb) ? r.cb / r.ca : null},
-    {key: "ra", label: "A iz RAM-a /1000", title: helpOf("L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)"), num: true, get: (r) => r.ra},
-    {key: "rb", label: "B iz RAM-a /1000", title: helpOf("L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)"), num: true, heat: true, get: (r) => r.rb});
-  drawTable("cmpTable", cols, rows, {sort: "sb"});
+// Everything the two tabs need about one workload. Times come from the time-based session (the profiler slows
+// the program least there), counters from the assess_ext session.
+//   inst:  PROPORTIONAL to the instructions of one step. time = instructions x CPI / clock, so with the same clock
+//          in both sessions, instructions ~ (ms per step) / CPI. Only ratios of it between versions are used.
+//   instS: the same quantity estimated another way: samples of RETIRED_INST x (ms per step), i.e. samples per
+//          step when both sessions sampled for the same time. On PC-2 the two estimates differ by up to 30%
+//          (docs/plan/PROFILE.md, section 7), so the page shows both as a range.
+function metricsOf(w) {
+  const st = ses(w, "time"), sp = ses(w, "pmc"), timeBase = st || sp;
+  const m = {w, st, sp, timeBase, ms: msOf(timeBase), msP: msOf(sp), phaseMs: {}, phase: {}};
+  m.phaseShare = phaseShares(timeBase);
+  for (const p of PHASES) m.phaseMs[p] = (m.phaseShare[p] || 0) / 100 * m.ms;
+  const widths = [0, 0, 0, 0];
+  for (const f of timeBase.functions) (f.vw || []).forEach((v, i) => { widths[i] += v; });
+  m.covered = widths.reduce((a, b) => a + b, 0);
+  m.width = widths.map((v) => m.covered ? 100 * v / m.covered : 0);
+  if (!sp) return m;
+  const a = (n, fs) => agg(sp, fs || sp.functions, n);
+  Object.assign(m, {cpi: a("CPI"), misp: a("%RETIRED_BR_INST_MISP"), br: a("RETIRED_BR_INST (PTI)"), l1: a("%L1_DC_MISSES"),
+    acc: a("L1_DC_ACCESSES (PTI)"), l2: a(L2), l3: a(L3), ram: a(RAM), mis: a("MISALIGNED_LOADS (PTI)")});
+  m.inst = m.cpi ? m.msP / m.cpi : null;
+  m.instS = a("RETIRED_INST") * m.msP;
+  const cycles = phaseShares(sp);
+  for (const p of PHASES) {
+    const fs = sp.functions.filter((f) => f.phase === p);
+    if (!fs.length) continue;
+    const cpi = a("CPI", fs);
+    m.phase[p] = {cpi, inst: cpi ? (cycles[p] || 0) / 100 * m.msP / cpi : null};
+  }
+  return m;
+}
+// Events of one step, in the same arbitrary unit as m.inst: rate per 1000 instructions x instructions.
+const perStep = (m, rate) => (rate == null || m.inst == null) ? null : rate * m.inst;
+const ratio = (x, y) => (x == null || y == null || !isFinite(x) || !isFinite(y) || y === 0) ? null : x / y;
+const times = (x) => fmt(x, x >= 10 ? 1 : 2) + " puta";
+// How many times fewer instructions per step b runs than a: the two estimates, smaller first.
+function instRange(a, b) {
+  const list = [ratio(a.inst, b.inst), ratio(a.instS, b.instS)].filter((x) => x != null).sort((x, y) => x - y);
+  return list.length ? {lo: list[0], hi: list[list.length - 1], text: list.length > 1 && fmt(list[0], 1) !== fmt(list[1], 1) ? `${fmt(list[0], 1)} do ${fmt(list[1], 1)}` : fmt(list[0], 1)} : null;
+}
+// r = naive / this, for a quantity where less is better. Above 1: this version is better.
+function verdict(r, better, worse, tail) {
+  if (r == null || !isFinite(r) || r <= 0) return "";
+  if (Math.abs(r - 1) < 0.005) return `<span class="verdict">isto kao naivna verzija</span>`;
+  return r > 1 ? `<span class="verdict good">${times(r)} ${better} ${tail}</span>` : `<span class="verdict bad">${times(1 / r)} ${worse} ${tail}</span>`;
+}
+function seg(id, items, current, pick) {
+  el(id).innerHTML = items.map(([value, label]) => `<button data-v="${esc(value)}" class="${String(value) === String(current) ? "on" : ""}">${esc(label)}</button>`).join("");
+  el(id).querySelectorAll("button").forEach((b) => b.onclick = () => pick(b.dataset.v));
+}
+function widthStack(m) {
+  return `<div class="stack">` + m.width.map((v, i) => v > 0.05 ? `<div style="width:${v}%;background:${WIDTH_COLORS[i]}" title="${esc(DATA.widths[i])}: ${fmt(v, 1)}%"></div>` : "").join("") + "</div>";
+}
+// Size of the three fields one Jacobi iteration touches, against the last-level cache of this machine.
+function jacobiFit(w, s) {
+  const match = infoText(s).match(/L3 unified:\s*(\d+) KiB/);
+  if (!w.grid || !match) return null;
+  const n = w.grid + 2, mib = 3 * Math.ceil(n / 8) * 8 * n * n * 4 / 1048576, l3 = +match[1] / 1024;
+  return {mib, l3, fits: mib <= l3};
+}
+
+// ---------- Grade ("Ocjena") ----------
+const gradeList = () => VW.length ? VW : WL.filter((w) => w.stage === "all");
+// The tab describes one whole-step workload. If the header points at something else (one stage, an obstacle
+// run), move to the final version at 64^3, or to the first workload the tab can describe.
+function snapGrade() {
+  const list = gradeList();
+  if (list.length && !list.includes(W())) state.w = WL.indexOf(findV(W().version, W().grid) || findV("m4", 64) || list[0]);
+}
+const card = (title, question, body, plain) => `<div class="card"><h3>${title}</h3><p class="q">${question}</p>${body}`
+  + `<div class="plain"><b>Jednostavno rečeno.</b> ${plain}</div></div>`;
+const big = (value, unit, sub) => `<div class="big">${value} <span class="unit">${unit}</span></div>` + (sub ? `<div class="small muted">${sub}</div>` : "");
+const notMeasured = (what) => `<div class="big">nije mjereno</div><div class="small muted">${what}</div>`;
+
+function renderGrade() {
+  const list = gradeList();
+  if (!list.length) { el("grHead").innerHTML = missing("cijelim korakom simulacije"); el("grCards").innerHTML = ""; return; }
+  const w = W(), m = metricsOf(w), sp = m.sp;
+  if (VW.length) {
+    seg("grVer", VERSIONS.filter((v) => findV(v, w.grid)).map((v) => [v, VSHORT[v]]), w.version, (v) => { state.w = WL.indexOf(findV(v, w.grid)); render(); });
+    seg("grGrid", vGrids().filter((g) => findV(w.version, g)).map((g) => [g, g + "³"]), w.grid, (g) => { state.w = WL.indexOf(findV(w.version, g)); render(); });
+  } else {
+    el("grVer").innerHTML = `<button class="on">${esc(VSHORT[w.version] || w.version)}</button>`;
+    seg("grGrid", list.map((x) => [WL.indexOf(x), x.grid + "³ · " + x.run]), state.w, (i) => { state.w = +i; render(); });
+  }
+  const baseW = findV("m3", w.grid), isBase = baseW === w;
+  const bm = baseW && !isBase ? metricsOf(baseW) : null;
+  const S = bm ? ratio(bm.ms, m.ms) : null;
+  const instR = bm ? ratio(bm.inst, m.inst) : null;       // how many times fewer instructions per step than naive
+  const cpiR = bm ? ratio(bm.cpi, m.cpi) : null;          // above 1: fewer cycles per instruction than naive
+  const range = bm ? instRange(bm, m) : null;
+  const threadsMatch = infoText(m.timeBase).match(/hardware_threads:\s*(\d+)/);
+  const threads = threadsMatch ? +threadsMatch[1] : null;
+  const fit = jacobiFit(w, m.timeBase);
+  const top = PHASES.filter((p) => (m.phaseShare[p] || 0) > 0.5).sort((a, b) => m.phaseShare[b] - m.phaseShare[a]);
+  const official = (base) => ((DATA.official[base] || {})[String(w.grid)] || {}).whole_step;
+
+  // ----- headline and short assessment -----
+  let head = `<p class="lead"><b>${esc(VLONG[w.version] || w.version)}</b>, mreža ${w.grid}³ (${(w.grid ** 3).toLocaleString("de-DE")} ćelija): `
+    + `jedan korak simulacije traje <b>${fmt(m.ms, 2)} ms</b>, što je <b>${fmt(1000 / m.ms, 0)} koraka u sekundi</b>.`
+    + (S ? ` To je <b>${times(S)} ${S >= 1 ? "brže" : "sporije"}</b> od naivne verzije na istoj mreži.` : isBase ? " Ovo je polazna verzija: s njom se porede ostale." : "") + "</p>";
+  const points = [];
+  if (S && instR && cpiR) {
+    points.push(`<b>Zašto je ${S >= 1 ? "brža" : "sporija"}.</b> Za isti korak izvrši ${instR >= 1 ? "oko " + range.text + " puta manje" : times(1 / instR) + " više"} instrukcija nego naivna (procjena), `
+      + (cpiR >= 1 ? `a svaka instrukcija u prosjeku traje ${times(cpiR)} kraće` : `ali svaka instrukcija u prosjeku traje ${times(1 / cpiR)} duže`)
+      + ` (CPI ${fmt(bm.cpi)} → ${fmt(m.cpi)}). Brzinu određuje proizvod ta dva broja.`);
+  }
+  if (m.covered) points.push(`<b>Paralelizam unutar jedne niti (SIMD).</b> ${fmt(m.width[0], 0)} % vremena ide na instrukcije koje obrađuju 8 brojeva odjednom`
+    + (bm ? `; kod naivne verzije ${fmt(bm.width[0], 0)} %.` : "."));
+  if (threads) points.push(`<b>Paralelizam nitima.</b> Program koristi 1 od ${threads} niti procesora. Paralelizacija nitima nije rađena (odluka D8), pa je to neiskorišten prostor, isti u svim verzijama.`);
+  if (sp && fit) points.push(`<b>Memorija.</b> Tri polja koja Jacobi koristi odjednom imaju ${fmt(fit.mib, 1)} MiB, a L3 keš ${fmt(fit.l3, 0)} MiB: `
+    + (fit.fits ? "podaci staju u keš." : "podaci <b>ne staju</b> u keš, pa ih procesor stalno dovlači iz RAM-a.")
+    + ` Na 1000 instrukcija procesor ${fmt(m.ram, 2)} puta čeka podatak iz RAM-a.`);
+  if (top.length) points.push(`<b>Gdje ide vrijeme.</b> Najviše na: ${top.slice(0, 3).map((p) => `${esc(p)} (${fmt(m.phaseShare[p], 0)} %)`).join(", ")}. Najveća faza je mjesto gdje bi sljedeće ubrzanje najviše vrijedilo.`);
+  el("grHead").innerHTML = head + "<ul>" + points.map((p) => `<li>${p}</li>`).join("") + "</ul>";
+
+  // ----- cards -----
+  const cards = [];
+  const perSecond = 1000 / m.ms, o0 = official("m3"), o1 = official("m3auto");
+  cards.push(card("Brzina", "Koliko brzo računar izračuna jedan korak simulacije?",
+    big(fmt(perSecond, 0), "koraka u sekundi", `${fmt(m.ms, 2)} ms po koraku (profilna gradnja, pod profilerom)`)
+    + (isBase ? `<span class="verdict">polazna verzija</span>` : verdict(S, "brže", "sporije", "od naivne verzije"))
+    + `<p class="small">Jedan korak pomjera simulaciju za 1/${STEP_HZ} s. Da dim teče u stvarnom vremenu treba najmanje ${STEP_HZ} koraka u sekundi; ova verzija daje `
+    + (perSecond >= STEP_HZ ? `${times(perSecond / STEP_HZ)} toliko` : `${fmt(100 * perSecond / STEP_HZ, 0)} % toga`) + ". Računa se samo simulacija, bez crtanja.</p>"
+    + (o0 ? `<p class="small muted">Službeno mjerenje (obična gradnja, protokol D10, ${esc(o0.date)}): finalna verzija je ${fmt(o0.S, 2)}x brža od naivne`
+      + (o1 ? ` i ${fmt(o1.S, 2)}x brža od auto-vektorizirane` : "") + ` na ${w.grid}³.</p>` : ""),
+    "Ovo je broj sličica dima koje računar izračuna u jednoj sekundi. Veći broj znači da ista simulacija teče glatko, ili da za isto vrijeme stane veća i detaljnija."));
+
+  cards.push(card("Paralelizam: niti procesora", "Koliko jezgara procesora program zapošljava?",
+    (threads ? big("1 od " + threads, "niti") + `<div class="boxes">${Array.from({length: threads}, (_, i) => `<span class="${i === 0 ? "on" : ""}"></span>`).join("")}</div>` : big("1", "nit"))
+    + `<span class="verdict">nije urađeno, po planu (odluka D8)</span>`
+    + (fit && !fit.fits ? `<p class="small">Na ovoj mreži Jacobi čeka memoriju (kartica "Promašaji keša"). Memoriju dijele sva jezgra, pa dodatne niti u tom dijelu možda neće dati srazmjerno ubrzanje. To <b>nije izmjereno</b>.</p>` : ""),
+    "Procesor ovog računara može raditi više poslova istovremeno, kao više radnika u radionici. Ovaj program zapošljava jednog. To nije propust: prvo se jedan radnik nauči da radi što brže, pa se tek onda posao dijeli. Ovaj broj je isti u svim verzijama."));
+
+  cards.push(card("Paralelizam: unutar jedne niti (SIMD)", "Koliko brojeva jedna instrukcija obradi odjednom?",
+    (m.covered ? big(fmt(m.width[0], 0) + " %", "vremena u instrukcijama za 8 brojeva odjednom") + `<div style="margin:8px 0">${widthStack(m)}</div>`
+      + `<div class="small">${m.width.map((v, i) => `<div><span class="dot" style="background:${WIDTH_COLORS[i]}"></span>${esc(WIDTH_SHORT[i])}: ${fmt(v, 1)} %</div>`).join("")}</div>`
+      + (bm ? `<span class="verdict ${m.width[0] >= bm.width[0] ? "good" : "bad"}">naivna verzija: ${fmt(bm.width[0], 0)} %</span>` : isBase ? `<span class="verdict">polazna verzija</span>` : "")
+      : notMeasured("uProf za ovu sesiju nije dao instrukcije")),
+    "Obična instrukcija sabere dva broja. Vektorska (SIMD) instrukcija u istom taktu sabere osam parova, kao kasa koja jednim potezom skenira osam artikala. Što veći dio vremena program provodi u takvim instrukcijama, to bolje koristi jedno jezgro."));
+
+  cards.push(card("Količina posla", "Koliko instrukcija treba za jedan korak?",
+    (instR ? big(range.lo >= 1 ? range.text + " puta" : times(1 / instR), (range.lo >= 1 ? "manje" : "više") + " instrukcija po koraku nego naivna verzija",
+        "procjena na dva načina; broj instrukcija nije izbrojan direktno")
+      + `<span class="verdict ${range.lo >= 1 ? "good" : "bad"}">${range.lo >= 1 ? "manje" : "više"} instrukcija od naivne verzije</span>`
+      : isBase ? big("1.00", "polazna vrijednost") + `<span class="verdict">polazna verzija</span>` : notMeasured("treba sesija s brojačima za ovu i za naivnu verziju")),
+    "Do istog rezultata može se doći dužim ili kraćim putem. Optimizirana verzija isti račun obavi s manje instrukcija, najviše zato što jedna vektorska instrukcija zamijeni osam običnih. Rezultat simulacije je bit po bit isti."));
+
+  cards.push(card("Efikasnost procesora", "Koliko posla procesor završi u jednom taktu?",
+    (sp ? big(fmt(1 / m.cpi, 2), "instrukcija po taktu", `CPI = ${fmt(m.cpi, 2)} ciklusa po instrukciji (manje je bolje)`)
+      + (isBase ? `<span class="verdict">polazna verzija</span>` : verdict(cpiR, "manje ciklusa po instrukciji", "više ciklusa po instrukciji", "od naivne verzije"))
+      + (cpiR && cpiR < 1 && S > 1 ? `<p class="small">To ne znači da je verzija sporija. Instrukcija je manje (kartica "Količina posla") i svaka radi više posla, pa duže traje. Brzinu određuje proizvod ta dva broja.</p>` : "")
+      : notMeasured("nema sesije s hardverskim brojačima")),
+    "Procesor radi u taktovima, kao metronom. U jednom taktu može završiti i nekoliko instrukcija, ako ne mora čekati podatke. Kad čeka, taktovi prolaze uprazno."));
+
+  let cacheVerdict = "";
+  if (bm && sp && bm.sp) {
+    const useRam = m.ram >= 0.005 && bm.ram >= 0.005;
+    const mine = useRam ? perStep(m, m.ram) : perStep(m, m.l2 + m.l3 + m.ram), base = useRam ? perStep(bm, bm.ram) : perStep(bm, bm.l2 + bm.l3 + bm.ram);
+    cacheVerdict = verdict(ratio(base, mine), useRam ? "manje čekanja na RAM po koraku" : "manje čekanja na podatke po koraku",
+      useRam ? "više čekanja na RAM po koraku" : "više čekanja na podatke po koraku", "od naivne verzije");
+  }
+  cards.push(card("Promašaji keša", "Koliko često procesor čeka na podatke?",
+    (sp ? big(fmt(100 - m.l1, 1) + " %", "pristupa memoriji nađeno odmah (u L1 kešu)",
+        `Na 1000 instrukcija procesor čeka: ${fmt(m.l2, 1)} puta na L2, ${fmt(m.l3, 2)} puta na L3 i ${fmt(m.ram, 2)} puta na RAM.`)
+      + (isBase ? `<span class="verdict">polazna verzija</span>` : cacheVerdict)
+      + (fit ? `<p class="small">Tri polja Jacobija: ${fmt(fit.mib, 1)} MiB; L3 keš: ${fmt(fit.l3, 0)} MiB. ${fit.fits ? "Staju u keš." : "<b>Ne staju u keš.</b>"}</p>` : "")
+      : notMeasured("nema sesije s hardverskim brojačima")),
+    "Keš je mali i brz radni sto odmah uz procesor; RAM je veliko skladište dalje od njega. Podatak koji je već na stolu stiže odmah. Za svaki koji nije, procesor čeka, a najduže kad mora po njega u RAM."));
+
+  cards.push(card("Grananja", "Koliko često procesor pogrešno pogodi kuda kod ide?",
+    (sp ? big(fmt(m.misp, 2) + " %", "grananja pogrešno predviđeno", `${fmt(m.br, 0)} grananja na 1000 instrukcija`)
+      + (isBase ? `<span class="verdict">polazna verzija</span>`
+        : bm && bm.sp ? verdict(ratio(perStep(bm, bm.misp * bm.br), perStep(m, m.misp * m.br)), "manje pogrešnih predviđanja po koraku", "više pogrešnih predviđanja po koraku", "od naivne verzije") : "")
+      : notMeasured("nema sesije s hardverskim brojačima")),
+    "Na svakom \"ako\" u programu procesor unaprijed pogađa kojim putem će kod krenuti, da ne bi čekao. Kad pogodi, ne gubi ništa. Kad promaši, baca započeti posao i kreće ispočetka."));
+
+  cards.push(card("Gdje ide vrijeme", "Koji dio koraka troši najviše?",
+    stackHtml(m.timeBase) + `<div class="small" style="margin-top:8px">${top.slice(0, 5).map((p) =>
+      `<div><span class="dot" style="background:${PHASE_COLORS[p]}"></span>${esc(p)}: ${fmt(m.phaseShare[p], 1)} % (${fmt(m.phaseMs[p], 2)} ms)</div>`).join("")}</div>`,
+    "Jedan korak simulacije ima nekoliko poslova: pomjeranje dima strujom zraka (advekcija), računanje pritiska (Jacobi), sile i rubove kutije. Najšira traka je posao koji troši najviše vremena."));
+  el("grCards").innerHTML = cards.join("");
+}
+
+// ---------- Compare versions ----------
+function renderCompare() {
+  if (!VW.length) {
+    el("cmpBody").innerHTML = `<p class="warn">Među učitanim sesijama nema snimljenih verzija. Snimaju se sa <code>VERSION=m3 STAGES=all perf/uprof/collect.sh ver_m3_tbp tbp</code> `
+      + `(isto za <code>m3auto</code> i <code>m4</code>, i za <code>assess_ext</code> s oznakom <code>_ebp</code>); opis je u docs/plan/PROFILE.md, odjeljak 7.</p>`;
+    return;
+  }
+  const grids = vGrids();
+  if (!grids.includes(+state.cg)) state.cg = grids[0];
+  const versions = VERSIONS.filter((v) => findV(v, state.cg));
+  if (!versions.includes(state.ca)) state.ca = versions[0];
+  if (!versions.includes(state.cb)) state.cb = versions[versions.length - 1];
+  seg("cmpGrid", grids.map((g) => [g, g + "³"]), state.cg, (g) => { state.cg = +g; render(); });
+  const options = versions.map((v) => `<option value="${v}">${esc(VLONG[v])}</option>`).join("");
+  el("cmpA").innerHTML = options; el("cmpB").innerHTML = options;
+  el("cmpA").value = state.ca; el("cmpB").value = state.cb;
+  const wa = findV(state.ca, state.cg), wb = findV(state.cb, state.cg);
+  const ma = metricsOf(wa), mb = metricsOf(wb);
+  const S = ratio(ma.ms, mb.ms), instR = ratio(ma.inst, mb.inst), cpiR = ratio(mb.cpi, ma.cpi);
+  const off = state.cb === "m4" ? (DATA.official[state.ca] || {})[String(state.cg)] : null;
+  const range = instRange(ma, mb);
+  const l1R = ma.sp && mb.sp ? ratio(perStep(mb, mb.l1 * mb.acc), perStep(ma, ma.l1 * ma.acc)) : null;
+
+  el("cmpTiles").innerHTML = tile("A: " + esc(VSHORT[state.ca]), fmt(ma.ms, 2) + " ms", `po koraku; ${fmt(1000 / ma.ms, 0)} koraka u sekundi`)
+    + tile("B: " + esc(VSHORT[state.cb]), fmt(mb.ms, 2) + " ms", `po koraku; ${fmt(1000 / mb.ms, 0)} koraka u sekundi`)
+    + tile("Ubrzanje S = A ÷ B", fmt(S, 2) + "x", "koliko puta je B brža od A (pod profilerom)")
+    + (off && off.whole_step ? tile("Službeno S", fmt(off.whole_step.S, 2) + "x", `obična gradnja, protokol D10, ${esc(off.whole_step.date)} (PERF_LOG.md, odjeljak 7)`)
+      : tile("Službeno S", "nije mjereno", "za ovaj par verzija nema zbirnog unosa u perf/results.csv"))
+    + tile("Instrukcije po koraku A ÷ B", range ? range.text + "x" : "–", "B izvrši toliko puta manje instrukcija (procjena na dva načina)")
+    + tile("CPI: A → B", ma.cpi ? `${fmt(ma.cpi, 2)} → ${fmt(mb.cpi, 2)}` : "–", "ciklusa po instrukciji");
+  const fewer = (r) => r >= 1 ? `${fmt(r, 2)} puta manje` : `${fmt(1 / r, 2)} puta više`;
+  el("cmpWhy").innerHTML = (instR && cpiR) ? `<p class="note"><b>Odakle dolazi razlika.</b> Vrijeme koraka je broj instrukcija puta ciklusa po instrukciji. `
+    + `B izvrši ${fewer(instR)} instrukcija, a svaka u prosjeku traje ${cpiR >= 1 ? fmt(cpiR, 2) + " puta duže" : fmt(1 / cpiR, 2) + " puta kraće"}. `
+    + `Zajedno to daje S = ${fmt(instR / cpiR, 2)}x u sesijama s brojačima (vremensko uzorkovanje daje ${fmt(S, 2)}x).`
+    + (instR > 1 && cpiR > 1 && l1R ? ` Instrukcija je manje jer jedna vektorska instrukcija radi posao više skalarnih. Podataka koje korak mora proći ima isto `
+      + `(L1 promašaja po koraku B ima ${fmt(l1R, 2)} puta koliko A), pa na svaku od manjeg broja instrukcija dolazi više čekanja na memoriju.` : "")
+    + ` <span class="muted">Broj instrukcija nije izbrojan direktno: gornji odnos je izračunat iz vremena i CPI-ja, a iz broja uzoraka instrukcija izlazi `
+    + `${fewer(ratio(ma.instS, mb.instS))}. Razlika između dvije procjene nije objašnjena.</span></p>` : "";
+
+  // Phases: time of the phase in one step, for both versions.
+  // Phases under 0.5% of the step in both versions have too few samples for a ratio.
+  const phases = PHASES.filter((p) => Math.max(ma.phaseShare[p] || 0, mb.phaseShare[p] || 0) >= 0.5);
+  const maxMs = Math.max(1e-9, ...phases.map((p) => Math.max(ma.phaseMs[p], mb.phaseMs[p])));
+  const row = (name, ta, tb, pa, pb, extra) => Object.assign({name, ta, tb, s: ratio(ta, tb), ca: pa ? pa.cpi : null, cb: pb ? pb.cpi : null,
+    ir: pa && pb ? ratio(pa.inst, pb.inst) : null}, extra || {});
+  const duo = {key: "duo", label: "A / B", html: (r) => r._head ? "" : `<div class="duo"><div style="width:${100 * r.ta / maxMs}%;background:var(--bar2)" title="A: ${fmt(r.ta, 3)} ms"></div>`
+    + `<div style="width:${100 * r.tb / maxMs}%;background:var(--bar)" title="B: ${fmt(r.tb, 3)} ms"></div></div>`};
+  drawTable("cmpPhases", [{key: "name", label: "Faza", get: (r) => r.name, html: (r) => r._head ? esc(r.name) : tag(r.name)}, duo,
+    {key: "ta", label: "A ms po koraku", num: true, d: 3, get: (r) => r.ta}, {key: "tb", label: "B ms po koraku", num: true, d: 3, get: (r) => r.tb},
+    {key: "s", label: "S = A ÷ B", title: "Koliko puta je B brža od A u ovoj fazi.", num: true, get: (r) => r.s},
+    {key: "ir", label: "Instrukcije A ÷ B (procjena)", title: "Koliko puta manje instrukcija B izvrši u ovoj fazi. Procjena iz vremena i CPI-ja sesija s brojačima; nije direktno izbrojano.", num: true, wrap: true, get: (r) => r.ir},
+    {key: "ca", label: "A CPI", title: helpOf("CPI"), num: true, get: (r) => r.ca}, {key: "cb", label: "B CPI", title: helpOf("CPI"), num: true, get: (r) => r.cb}],
+    phases.map((p) => row(p, ma.phaseMs[p], mb.phaseMs[p], ma.phase[p], mb.phase[p])),
+    {sort: "ta", pinned: [row("Cijeli korak", ma.ms, mb.ms, {cpi: ma.cpi, inst: ma.inst}, {cpi: mb.cpi, inst: mb.inst}, {_head: true, _noheat: true})]});
+
+  // Register width: data parallelism inside one thread.
+  el("cmpWidth").innerHTML = "<table><tr><th>Verzija</th><th style='width:40%'></th>" + WIDTH_SHORT.map((n) => `<th class="num wrap">${esc(n)} %</th>`).join("") + "</tr>"
+    + [["A", state.ca, ma], ["B", state.cb, mb]].map(([letter, v, m]) => `<tr><td>${letter}: ${esc(VSHORT[v])}</td><td>${widthStack(m)}</td>`
+      + m.width.map((x) => `<td class="num">${fmt(x, 1)}</td>`).join("") + "</tr>").join("") + "</table>"
+    + `<div class="legend">${WIDTH_SHORT.map((n, i) => `<span><span class="dot" style="background:${WIDTH_COLORS[i]}"></span>${esc(n)}</span>`).join("")}</div>`;
+
+  // Counters. Rates per 1000 instructions are not comparable between versions that run a different number of
+  // instructions, so the last column gives the same event count per step, B relative to A.
+  if (ma.sp && mb.sp) {
+    // No ratio when A prints as zero: a ratio to (almost) nothing says nothing.
+    const line = (label, a, b, stepA, stepB, d, help) => { const r = (a != null && parseFloat(fmt(a, d)) === 0) ? null : ratio(stepB, stepA);
+      return `<tr title="${esc(help || "")}"><td>${label}</td><td class="num">${fmt(a, d)}</td><td class="num">${fmt(b, d)}</td>`
+        + `<td class="num">${r == null ? "–" : `<span class="${r < 0.995 ? "neg" : r > 1.005 ? "pos" : "muted"}">${fmt(r, 2)}x</span>`}</td></tr>`; };
+    const pti = (label, name, d) => { const a = agg(ma.sp, ma.sp.functions, name), b = agg(mb.sp, mb.sp.functions, name);
+      return line(label, a, b, perStep(ma, a), perStep(mb, b), d, helpOf(name)); };
+    el("cmpCounters").innerHTML = "<tr><th>Brojač</th><th class='num'>A</th><th class='num'>B</th><th class='num wrap' title='Isti događaj prebrojan po jednom koraku simulacije, B podijeljeno s A. Ispod 1: B ih ima manje.'>po koraku, B ÷ A (procjena)</th></tr>"
+      + line("Ciklusi procesora (vrijeme koraka u sesiji s brojačima)", ma.msP, mb.msP, ma.msP, mb.msP, 2, "ms po koraku u sesiji assess_ext")
+      + line("Instrukcije (relativno)", null, null, ma.inst, mb.inst, 2, "Izračunato iz vremena koraka i CPI-ja.")
+      + line("CPI (ciklusa po instrukciji)", ma.cpi, mb.cpi, null, null, 2, helpOf("CPI"))
+      + pti("Grananja na 1000 instrukcija", "RETIRED_BR_INST (PTI)", 1)
+      + line("Pogrešno predviđena grananja %", ma.misp, mb.misp, perStep(ma, ma.misp * ma.br), perStep(mb, mb.misp * mb.br), 2, helpOf("%RETIRED_BR_INST_MISP"))
+      + pti("Pristupi memoriji na 1000 instrukcija", "L1_DC_ACCESSES (PTI)", 0)
+      + line("L1 promašaji %", ma.l1, mb.l1, perStep(ma, ma.l1 * ma.acc), perStep(mb, mb.l1 * mb.acc), 1, helpOf("%L1_DC_MISSES"))
+      + pti("Punjenja L1 iz L2 na 1000 instrukcija", L2, 2) + pti("Punjenja L1 iz L3 na 1000 instrukcija", L3, 2) + pti("Punjenja L1 iz RAM-a na 1000 instrukcija", RAM, 2)
+      + pti("Čitanja preko linije keša na 1000 instrukcija", "MISALIGNED_LOADS (PTI)", 0);
+  } else el("cmpCounters").innerHTML = `<tr><td>${missing("hardverskim brojačima za obje verzije")}</td></tr>`;
+
+  // Hottest functions of each version, side by side.
+  const fnTable = (id, w, m) => {
+    const rows = m.timeBase.functions.slice().sort((x, y) => y.share - x.share).slice(0, 10).map((f) => {
+      const r = rowOf(m.timeBase, f), p = byName(m.sp, f.name);
+      r.ms = f.share / 100 * m.ms; r.cpi = p ? val(m.sp, p, "CPI") : null;
+      return r;
+    });
+    drawTable(id, [{key: "name", label: "Funkcija", get: (r) => r.name.toLowerCase(), html: (r) => esc(r.name)}, {key: "phase", label: "Faza", html: (r) => tag(r.phase)},
+      {key: "ms", label: "ms po koraku", num: true, d: 3, get: (r) => r.ms}, {key: "share", label: "udio %", num: true, d: 1, get: (r) => r.share},
+      {key: "cpi", label: "CPI", title: helpOf("CPI"), num: true, heat: true, get: (r) => r.cpi}],
+      rows, {sort: "ms", onPick: (name) => { state.w = WL.indexOf(w); openFunction(name, m.timeBase.kind); }});
+  };
+  el("cmpNameA").textContent = "A: " + VLONG[state.ca]; el("cmpNameB").textContent = "B: " + VLONG[state.cb];
+  fnTable("cmpFnA", wa, ma); fnTable("cmpFnB", wb, mb);
+
+  el("cmpOfficial").innerHTML = off ? `<h3>Službeno izmjereno ubrzanje (protokol D10)</h3><p class="small muted">Iz <code>perf/results.csv</code>: obična Release gradnja, `
+    + `mjereno po protokolu D10 (docs/plan/PERF_LOG.md, odjeljak 7). Ovo su brojevi za izvještaj; profil iznad objašnjava odakle dolaze.</p><table style="max-width:560px"><tr><th>Faza</th><th class="num">S = A ÷ B</th><th>Unos</th></tr>`
+    + Object.keys(OFFICIAL_STAGE).filter((k) => off[k]).map((k) => `<tr><td>${esc(OFFICIAL_STAGE[k])}</td><td class="num">${fmt(off[k].S, 2)}x</td><td class="small muted">${esc(off[k].id)}</td></tr>`).join("")
+    + "</table>" : "";
 }
 
 // ---------- All sessions, about ----------
@@ -1099,8 +1501,9 @@ function renderAbout() {
 }
 
 // ---------- shell ----------
-const RENDER = {summary: renderSummary, hot: renderHot, uarch: renderUarch, cache: renderCache, asm: renderAsm, cmp: renderCompare, all: renderAll, about: renderAbout};
+const RENDER = {grade: renderGrade, summary: renderSummary, hot: renderHot, uarch: renderUarch, cache: renderCache, asm: renderAsm, cmp: renderCompare, all: renderAll, about: renderAbout};
 function render() {
+  if (state.tab === "grade") snapGrade();
   el("wsel").value = state.w;
   const w = W();
   el("kinds").innerHTML = ["time", "pmc", "fe"].map((k) => `<span class="chip${ses(w, k) ? "" : " off"}" title="${ses(w, k) ? esc(ses(w, k).id) : "nije snimljeno"}">${esc(KIND_NAME[k])}</span>`).join("");
@@ -1112,13 +1515,14 @@ function render() {
 }
 function init() {
   el("wsel").innerHTML = WL.map((w, i) => `<option value="${i}">${esc(w.label)}</option>`).join("");
-  state.cmpA = Math.max(0, WL.findIndex((w) => w.grid === 64 && w.stage === "jacobi"));
-  state.cmpB = Math.max(0, WL.findIndex((w) => w.grid === 128 && w.stage === "jacobi"));
+  // Start on the final version at 64^3 when the version runs are there; the hash (a shared link) wins over this.
+  const start = findV("m4", 64) || VW[0];
+  if (start) state.w = WL.indexOf(start);
   readHash();
   const bind = (id, key, numeric, event) => { el(id)[event || "onchange"] = () => { state[key] = numeric ? +el(id).value : el(id).value; render(); }; };
   bind("wsel", "w", true); bind("hotBasis", "basis"); bind("hotGroup", "group");
   bind("asmFn", "fn"); bind("asmKind", "asmKind"); bind("asmOrder", "asmOrder"); bind("asmHeat", "heat");
-  bind("cmpA", "cmpA", true); bind("cmpB", "cmpB", true); bind("cmpBasis", "cmpBasis");
+  bind("cmpA", "ca"); bind("cmpB", "cb");
   bind("uarchMin", "min", true); bind("cacheMin", "min", true);
   el("hotFilter").oninput = renderHot;
   render();
@@ -1135,6 +1539,8 @@ def main():
     parser.add_argument("folders", nargs="+", help="folders made by perf/uprof/collect.sh")
     parser.add_argument("-o", "--output", default=None, help="HTML file to write (default: <first folder>/report.html)")
     parser.add_argument("--summary", action="store_true", help="print a text summary instead of writing HTML")
+    parser.add_argument("--results", default=str(Path(__file__).resolve().parent.parent / "perf" / "results.csv"),
+                        help="perf/results.csv, for the speedups measured by protocol D10 (default: the repository's file)")
     args = parser.parse_args()
 
     sessions, infos = load_all(args.folders)
@@ -1152,7 +1558,8 @@ def main():
             # Most counter cells are zero: write them as 0, not 0.0 (the page is a few megabytes).
             for item in function["ins"]:
                 item["v"] = [int(value) if value is not None and value == int(value) else value for value in item["v"]]
-    payload = {"sessions": sessions, "infos": infos, "workloads": build_workloads(sessions), "classes": CLASS_NAMES}
+    payload = {"sessions": sessions, "infos": infos, "workloads": build_workloads(sessions), "classes": CLASS_NAMES,
+               "widths": WIDTH_NAMES, "official": load_official(args.results)}
     data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     page = PAGE.replace("__GENERATED__", html.escape(datetime.now().strftime("%Y-%m-%d %H:%M"))).replace("__DATA__", data)
     output = Path(args.output) if args.output else Path(args.folders[0]) / "report.html"

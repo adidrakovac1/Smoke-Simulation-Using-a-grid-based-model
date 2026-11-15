@@ -50,6 +50,13 @@ Lanac grana (svaka polazi od prethodne, nijedna nije u `main`):
    Instrukcije, Poređenje. Ako treba još nešto, dva prikaza traže novi rad s uProf-om: **flame graph / stablo
    poziva** (novo skupljanje sa stekom poziva) i **linije izvornog koda** (novi izvoz bez `--disasm-only`).
 
+6. **Pregled prepravke izvještaja od 2026-11-15** (grana `feature/profile-report-versions`, PR otvoren
+   2026-11-15, čeka Adijev pregled): kartica "Poređenje" sada poredi verzije koda (naivna M3, M3 s auto-vektorizacijom, finalna M4) na istoj
+   mreži, a nova kartica "Ocjena" opisuje jednu verziju jednostavnim jezikom. Novo: `smoke_prof --version`,
+   `VERSION=` u `collect.sh`, 12 sesija `perf/uprof/2026-11-15_ver_*`, PROFILE.md odjeljak 7. Otvoreno: odnos broja
+   instrukcija ima dvije procjene koje se razlikuju do 30% (PROFILE.md 7.3); `Solver/build/smoke_prof.exe` je
+   2026-11-15 blokirao Device Guard (profilna gradnja `Solver/build-prof` radi), ništa nije zaobilaženo.
+
 ## Blokada Windows Smart App Control: prošla
 
 2026-11-11 Windows je odbijao pokrenuti `Solver/build/smoke_tests.exe` i `smoke_bench.exe`. 2026-11-12 isti

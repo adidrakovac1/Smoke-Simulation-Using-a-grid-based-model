@@ -12,6 +12,9 @@
 # Optional environment variables:
 #   OBSTACLE=sphere|blanket   put an obstacle into the box (smoke_prof --obstacle; only the stage "all" has
 #                             obstacles, so STAGES is then forced to "all")
+#   VERSION=m4|m3auto|m3      which code runs the measured steps (smoke_prof --version; default m4). m3 is the
+#                             naive M3 step without vectorization, m3auto the same code with the default flags.
+#                             The M3 versions only have the stage "all", so STAGES is then forced to "all".
 #   STAGES="all jacobi"       which stages to collect (default: all jacobi advect forces)
 #   GRIDS="64"                which grids to collect (default: 64 128)
 #
@@ -36,7 +39,9 @@ OUT="perf/uprof/$(date +%Y-%m-%d)_${LABEL}"
 OBSTACLE="${OBSTACLE:-none}"
 STAGES="${STAGES:-all jacobi advect forces}"
 GRIDS="${GRIDS:-64 128}"
+VERSION="${VERSION:-m4}"
 [ "$OBSTACLE" = "none" ] || STAGES="all"
+[ "$VERSION" = "m4" ] || STAGES="all"
 
 [ -x "$UPROF" ] || { echo "AMDuProfCLI not found: $UPROF" >&2; exit 1; }
 [ -x "$PROF" ] || { echo "build the profile build first: $PROF" >&2; exit 1; }
@@ -52,6 +57,7 @@ mkdir -p "$OUT"
     echo "  collect_config: $CONFIG"
     echo "  seconds_per_workload: $SECONDS_PER_RUN"
     echo "  obstacle: $OBSTACLE"
+    echo "  version: $VERSION"
     echo "  date: $(date '+%Y-%m-%d %H:%M')"
 } > "$OUT/session_info.txt" 2>&1
 
@@ -66,7 +72,7 @@ for GRID in $GRIDS; do
         RUN_SECONDS=$((SECONDS_PER_RUN + DELAY))
         "$UPROF" collect --config "$CONFIG" --start-delay "$DELAY" -o "$(cygpath -w "$SESSION")" \
             "$(cygpath -w "$PWD/$PROF")" --grid "$GRID" --seconds "$RUN_SECONDS" --stage "$STAGE" \
-            --obstacle "$OBSTACLE" \
+            --obstacle "$OBSTACLE" --version "$VERSION" \
             > "$OUT/collect_g${GRID}_${STAGE}.log" 2>&1
         if [ ! -d "$SESSION" ]; then
             echo "   collection FAILED, see $OUT/collect_g${GRID}_${STAGE}.log" >&2

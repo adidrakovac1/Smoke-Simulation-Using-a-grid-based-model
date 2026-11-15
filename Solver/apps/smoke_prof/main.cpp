@@ -12,12 +12,20 @@
 //   --obstacle sphere|blanket   (only with --stage all) puts an obstacle into the box, the same scenarios as
 //                               smoke_bench --obstacle (apps/common/ObstacleScenarios.h)
 //
+//   --version m4|m3auto|m3      (only with --stage all, no obstacle) which code runs the measured steps:
+//                               m4      the current optimized solver stages (default)
+//                               m3auto  the M3 step (commit 73ceb9e) with the default Release flags (like B1)
+//                               m3      the M3 step compiled without vectorization: the naive version (like B0)
+//                               The M3 copies are the ones smoke_demo uses (Solver/demo/M3Solver.inc).
+//
 // It uses the internal stage functions directly (like the tests and smoke_lab), so it measures the same code
 // the solver runs. Text is ASCII only (decision D7).
 
+#include "DemoM3.h"
 #include "ObstacleScenarios.h"
 #include "SmokeState.h"
 #include "smoke/SolverConfig.h"
+#include "smoke/StepTimings.h"
 #include "stages/ObstacleLists.h"
 #include "stages/Stages.h"
 
@@ -40,6 +48,7 @@ struct Options {
     double seconds = 10.0;
     std::string stage = "all";
     std::string obstacle = "none";  // only with stage "all"
+    std::string version = "m4";     // m4, m3auto or m3; the M3 versions only with stage "all" and no obstacle
     int develop = 100;     // whole steps run before the measured part (the reference scenario also runs 100)
     int resetEvery = 300;  // --stage all: start again from an empty box after this many steps (see runAll)
 };
@@ -47,12 +56,15 @@ struct Options {
 void printUsage() {
     std::cout << "Koriscenje: smoke_prof [--grid N] [--seconds S] [--stage all|jacobi|advect|forces]\n"
                  "                       [--develop N] [--reset-every N] [--obstacle none|sphere|blanket]\n"
-                 "  --grid N         kubna mreza N^3 (zadano 64)\n"
+                 "                       [--version m4|m3auto|m3]\n"
+                 "  --grid N        kubna mreza N^3 (zadano 64)\n"
                  "  --seconds S      koliko dugo se ponavlja izabrani posao (zadano 10)\n"
                  "  --stage X        all = cijeli korak; jacobi, advect, forces = samo ta faza (zadano all)\n"
                  "  --develop N      cijelih koraka prije mjerenog dijela, da polja budu stvarna (zadano 100)\n"
                  "  --reset-every N  samo za 'all': poslije N koraka kreni od prazne kutije (zadano 300)\n"
-                 "  --obstacle X     samo za 'all': prepreka u kutiji, kao smoke_bench --obstacle (zadano none)\n";
+                 "  --obstacle X     samo za 'all': prepreka u kutiji, kao smoke_bench --obstacle (zadano none)\n"
+                 "  --version X      samo za 'all' bez prepreke: m4 = optimizirani solver (zadano), m3auto = M3 kod\n"
+                 "                   sa zadanim opcijama, m3 = M3 kod bez vektorizacije (naivna verzija)\n";
 }
 
 bool parseInt(const char* text, int& out, int minValue) {
@@ -86,6 +98,9 @@ bool parseArgs(int argc, char** argv, Options& options) {
         } else if (arg == "--obstacle") {
             options.obstacle = value;
             if (!scenarios::isObstacleScenario(options.obstacle)) return false;
+        } else if (arg == "--version") {
+            options.version = value;
+            if (options.version != "m4" && options.version != "m3auto" && options.version != "m3") return false;
         } else if (arg == "--develop") {
             if (!parseInt(value, options.develop, 0)) return false;
         } else if (arg == "--reset-every") {
@@ -94,6 +109,8 @@ bool parseArgs(int argc, char** argv, Options& options) {
             return false;
         }
     }
+    // The M3 step is one function for the whole step and has no obstacles.
+    if (options.version != "m4" && (options.stage != "all" || options.obstacle != "none")) return false;
     // The single-stage loops call the kernels directly, and the kernels know nothing about obstacles.
     return options.obstacle == "none" || options.stage == "all";
 }
@@ -134,13 +151,18 @@ long long runAll(SmokeState& state, const SmokeParams& params, SlabRange all, co
                  const ObstacleLists* obstacles) {
     long long iterations = 0;
     int stepsSinceReset = options.develop;
+    StepTimings timings;  // filled by the M3 step (it has its own per-stage timers); not used here
     const auto start = Clock::now();
     while (secondsSince(start) < options.seconds) {
         if (stepsSinceReset >= options.resetEvery) {
             state.clear();
             stepsSinceReset = 0;
         }
-        wholeStep(state, params, all, obstacles);
+        // The three versions do the same arithmetic and give bit-identical fields (Solver/tests/
+        // test_demo_versions.cpp), so only the measured steps differ; the develop phase always runs m4.
+        if (options.version == "m3") smoke_demo::m3_b0::m3Step(state, params, timings);
+        else if (options.version == "m3auto") smoke_demo::m3_b1::m3Step(state, params, timings);
+        else wholeStep(state, params, all, obstacles);
         ++stepsSinceReset;
         ++iterations;
     }
@@ -246,7 +268,7 @@ int main(int argc, char** argv) {
 
     std::cout << "smoke_prof: faza=" << options.stage << " mreza=" << options.grid << "^3"
               << " razvoj_koraka=" << options.develop << " K=" << params.jacobiIterations
-              << " prepreka=" << options.obstacle << '\n'
+              << " prepreka=" << options.obstacle << " verzija=" << options.version << '\n'
               << std::fixed << std::setprecision(3) << "  trajanje_s: " << seconds << '\n'
               << "  ponavljanja: " << iterations << '\n'
               << std::setprecision(6) << "  ms_po_ponavljanju: " << (iterations ? seconds * 1000.0 / iterations : 0.0)

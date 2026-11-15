@@ -1,0 +1,959 @@
+
+"AMD uProf (Version:6.0.1520.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe"
+Command Line Arguments:,"--grid 128 --seconds 34 --stage all --obstacle none --version m3auto "
+Working Directory:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model"
+Environment Variables:
+CPU Details:,"Family(0x19), Model(0x50), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config assess_ext --start-delay 14 -o perf\uprof\2026-11-15_ver_m3auto_ebp\g128_all C:\dev\Smoke-Simulation-Using-a-grid-based-model\Solver\build-prof\smoke_prof.exe --grid 128 --seconds 34 --stage all --obstacle none --version m3auto"
+Report Command:,"AMDuProfCLI.exe report -i perf\uprof\2026-11-15_ver_m3auto_ebp\g128_all --detail --disasm-only --disasm-style att --show-percentage --cutoff 0 --report-output perf\uprof\2026-11-15_ver_m3auto_ebp\g128_all\detail.csv"
+
+PROFILE DETAILS
+Profile Session Type:,"Assess Performance (Extended)"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Sun Nov 15 15:07:47 2026"
+Profile End Time:,"Sun Nov 15 15:08:35 2026"
+Profile Duration:,"48.081 seconds"
+Start Delay:,"14 seconds"
+Data Folder:,"C:\dev\Smoke-Simulation-Using-a-grid-based-model\perf\uprof\2026-11-15_ver_m3auto_ebp\g128_all"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Overall Assessment (Extended)"
+
+MONITORED EVENTS
+PMC Events:,Name,Interval,Unitmask,Countmask,Invert Countmask,User,OS,Description
+,"CYCLES_NOT_IN_HALT (PMCx076)",250000,0x00,0x00,False,True,False,"The number of cpu cycles when the thread is not in halt state."
+,"RETIRED_INST (PMCx0C0)",250000,0x00,0x00,False,True,False,"The number of instructions retired from execution. This count includes exceptions and interrupts. Each exception or interrupt is counted as one instruction."
+,"RETIRED_BR_INST (PMCx0C2)",25000,0x00,0x00,False,True,False,"The number of branch instructions retired. This includes all types of architectural control flow changes, including exceptions and interrupts.
+            "
+,"RETIRED_BR_INST_MISP (PMCx0C3)",25000,0x00,0x00,False,True,False,"The number of retired branch instructions, that were mispredicted.Note that only EX direct mispredicts and indirect target mispredicts are counted.
+            "
+,"L1_DEMAND_DC_REFILLS_LOCAL_L2 (PMCx043)",25000,0x01,0x00,False,True,False,"The demand Data Cache (DC) fills from local L2 cache to the core."
+,"LsWcbCloseFlush.FullLine64B (PMCx050)",25000,0x01,0x00,False,True,False,"
+                UnitMask events ADDed. Multiple WCB can report events at the same time.
+            "
+,"LsBadStatus2.StliOther (PMCx024)",25000,0x02,0x00,False,True,False,"Bad Status 2"
+,"L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PMCx043)",25000,0x02,0x00,False,True,False,"The demand Data Cache (DC) fills from L3 cache of same CCX or different L2 cache in the same CCX."
+,"MISALIGNED_LOADS (PMCx047)",25000,0x03,0x00,False,True,False,"The number of misaligned loads. On Zen3, this predefined counts the 64B (cacheline crossing) and 4K (page crossing) misaligned loads."
+,"INEFFECTIVE_SW_PF (PMCx052)",25000,0x03,0x00,False,True,False,"The number of software prefetches that did not fetch data outside of the processor core. This predefined counts the Software PREFETCH instruction that saw a match on an already - allocated miss request buffer.Also counts the Software PREFETCH instruction that saw a DC hit."
+,"L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PMCx043)",25000,0x04,0x00,False,True,False,"The demand Data Cache (DC) fills from cache of CCX in the same package (node)."
+,"L1_DC_ACCESSES_ALL (PMCx029)",250000,0x07,0x00,False,True,False,"The number of load and store ops dispatched to LS unit. This counts the dispatch of single op that performs a memory load, dispatch of single op that performs a memory store, dispatch of a single op that performs a load from and store to the same memory address."
+,"L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PMCx043)",25000,0x08,0x00,False,True,False,"The demand Data Cache (DC) fills from DRAM or IO connected in the same package (node)."
+,"FpDispFaults.YmmSpillFault.YmmFillFault.XmmFillFault (PMCx00E)",25000,0x0E,0x00,False,True,False,"Floating-point Dispatch Faults."
+,"L2WcbReq.WcbClose (PMCx063)",25000,0x20,0x00,False,True,False,"For information on Write Combining see docAPM2 sections: Memory System, Memory Types, Buffering and Combining Memory Writes. "
+,"L2WcbReq.WcbWrite (PMCx063)",25000,0x40,0x00,False,True,False,"For information on Write Combining see docAPM2 sections: Memory System, Memory Types, Buffering and Combining Memory Writes. "
+,"L2_CACHE_ACCESS_FROM_L1_DC_MISS (PMCx060)",25000,0xE8,0x00,False,True,False,"The L2 cache access requests due to L1 data cache misses. This also counts hardware and software prefetches"
+
+
+DERIVED METRICS
+Metric Name,Expression,Description
+"CPI","CYCLES_NOT_IN_HALT / RETIRED_INST","The average number of CPU cycles consumed to retire an instruction. This metric is computed as the ratio of CYCLES_NOT_IN_HALT to RETIRED_INST event. The higher values means the application consumes more CPU cycles to retire an instruction due to high cache misses, branch mispredictions, pipeline stalls, I/O or any other bottlenecks. If the CPI values exceeds a threshold value, it will be highlighted in pink."
+"RETIRED_BR_INST (PTI)","( RETIRED_BR_INST * 1000 ) / RETIRED_INST","The number of retired branch instructions per thousand retired instructions."
+"%RETIRED_BR_INST_MISP","( RETIRED_BR_INST_MISP * 100 ) / RETIRED_BR_INST","The percentage of retired mispredicted branches with respect to the total number of retired branches."
+"L1_DC_ACCESSES (PTI)","( L1_DC_ACCESSES_ALL * 1000 ) / RETIRED_INST","The number of load and store operations per thousand instructions. This counts the dispatch of single op that performs a memory load, dispatch of single op that performs a memory store, dispatch of a single op that performs a load from and store to the same memory address"
+"%L1_DC_MISSES","( L2_CACHE_ACCESS_FROM_L1_DC_MISS * 100 ) / L1_DC_ACCESSES_ALL","The percentage of L2 cache access requests due to L1 data cache misses with respect to the total number of load and store operations. This also counts the hardware and software prefetches."
+"L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","( L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These DC fills are from external cache to the core."
+"L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_DRAM * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These demand DC fills are from DRAM or IO connected in the same package (node)."
+"L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_CACHE * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These demand DC fills are from same the cache of same CCX or cache of different CCX in the same package (node)."
+"L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_L2 * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These DC fills are from local L2 cache to the core."
+"MISALIGNED_LOADS (PTI)","( MISALIGNED_LOADS * 1000 ) / RETIRED_INST","The number of misaligned loads per thousand retired instructions."
+"STLI_OTHER (PTI)","( LsBadStatus2.StliOther * 1000 ) / RETIRED_INST","Store-to-load conflicts: A load was unable to complete due to a non-forwardable conflict with an older store. Most commonly, a load's address range partially but not completely overlaps with an uncompleted older store. Software can avoid this problem by using same-size and same-alignment loads and stores when accessing the same data. Vector/SIMD code is particularly susceptible to this problem; software should construct wide vector stores by manipulating vector elements in registers using shuffle/blend/swap instructions prior to storing to memory, instead of using narrow element-by-element stores."
+"WCB_WRITE (PTI)","( L2WcbReq.WcbWrite * 1000 ) / RETIRED_INST","WcbWrite per thousand retired instructions."
+"%WCB_NOT_FULLLINE64B_TO_CLOSE","(L2WcbReq.WcbClose - LsWcbCloseFlush.FullLine64B) * 100 / L2WcbReq.WcbClose","The precentage of Write Combining Buffer Close operations which did not write all 64 bytes of the WCB entry."
+"%WCB_CLOSE_TO_WRITE","(L2WcbReq.WcbClose * 100 ) / L2WcbReq.WcbWrite","The precentage of Write Combining Buffer Close operations to Write Combining Buffer Write operations."
+"SSE_AVX_STALLS (PTC)","( FpDispFaults.YmmSpillFault.YmmFillFault.XmmFillFault * 1000 ) / CYCLES_NOT_IN_HALT","SSE AVX Dispatch Stalls."
+"INEFFECTIVE_SW_PF (PTI)","( INEFFECTIVE_SW_PF * 1000 ) / RETIRED_INST","The number of ineffective software prefetches per thousand instructions."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"2"
+
+
+"HOTTEST FUNCTIONS (Sort Event - CYCLES_NOT_IN_HALT)"
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",Module
+"smoke_demo::m3_b1::advectScalar(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, float, smoke_demo::m3_b1::SlabRange)",43.09%,55.91%,0.3180,42.1139,0.2523,164.0967,2.8303,0.0000,0.0126,0.0117,0.8885,0.0310,1.4876,0.0268,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke_demo::m3_b1::SlabRange)",36.56%,27.31%,0.5525,56.8565,0.0753,426.5351,15.5744,0.0000,0.1405,0.1216,3.0308,135.9735,17.8077,0.0857,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke_demo::m3_b1::SlabRange)",10.43%,12.55%,0.3430,28.8282,0.6079,444.8007,3.8240,0.0000,0.0075,0.0186,5.4099,0.2386,42.0193,0.0224,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::setBoundary(smoke::Field3D&, smoke_demo::m3_b1::BoundaryKind) (.constprop.0)",4.07%,0.57%,2.9686,135.0703,0.9798,515.3019,32.7287,0.0000,118.2796,69.5616,25.3102,1.9851,18.8586,0.5790,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke_demo::m3_b1::SlabRange)",1.94%,2.34%,0.3409,47.6333,0.7547,582.5844,3.5276,0.0000,0.0200,0.0200,2.7362,0.1598,39.6046,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::setBoundary(smoke::Field3D&, smoke_demo::m3_b1::BoundaryKind)",1.32%,0.15%,3.5692,106.1538,0.5797,393.8462,35.4688,0.0000,175.6923,6.7692,10.1538,1.2308,21.2308,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke_demo::m3_b1::SlabRange)",1.15%,0.59%,0.8083,63.7232,0.1248,424.8210,17.2846,0.0000,0.1591,0.1591,2.0684,150.7558,25.9348,0.3978,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke_demo::m3_b1::SlabRange)",0.86%,0.46%,0.7654,81.5710,0.0000,340.3827,16.3905,0.0000,0.4028,0.1007,1.6113,128.1974,0.9063,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke::Field3D::fill(float)",0.52%,0.11%,2.0307,202.1930,0.0000,412.2807,24.7872,0.0000,1.3158,0.4386,11.8421,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke_demo::m3_b1::SlabRange)",0.03%,0.01%,0.8621,86.2069,8.0000,482.7586,2.8571,0.0000,6.8966,0.0000,3.4483,0.0000,17.2414,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::project(smoke::SmokeState&, smoke::SmokeParams const&, smoke_demo::m3_b1::SlabRange, double*)",0.01%,0.00%,1.7500,100.0000,0.0000,500.0000,25.0000,0.0000,0.0000,0.0000,25.0000,100.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x1800e1598",0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"ntdll.dll!0x1800e1590",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400cd60b",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ucrtbase.dll!0x1800ee1d0",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ucrtbase.dll"
+"smoke_prof.exe!0x1400cd604",0.00%,0.00%,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18008b278",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+"smoke_prof.exe!0x1400cd60e",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_prof.exe!0x1400cd600",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"smoke_demo::m3_b1::advectVelocity(smoke::SmokeState&, float, smoke_demo::m3_b1::SlabRange)",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"kernel32.dll!0x1800326b0",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\kernel32.dll"
+"smoke_demo::m3_b1::m3Step(smoke::SmokeState&, smoke::SmokeParams const&, smoke::StepTimings&)",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe"
+"ntdll.dll!0x18005412e",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"c:\windows\system32\ntdll.dll"
+
+"HOTTEST PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10332)",100.00%,100.00%,0.4127,45.7132,0.2436,285.7791,8.8608,0.0000,0.9880,0.4482,2.2590,38.6755,12.1934,0.0468,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST MODULES (Sort Event - CYCLES_NOT_IN_HALT)"
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe",99.99%,100.00%,0.4126,45.7132,0.2436,285.7791,8.8607,0.0000,0.9880,0.4482,2.2590,38.6755,12.1934,0.0468,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\ntdll.dll",0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\ucrtbase.dll",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\kernel32.dll",0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+"HOTTEST THREADS (Sort Event - CYCLES_NOT_IN_HALT)"
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",THREAD ID
+"Thread-12948 (PID:10332)",100.00%,100.00%,0.4127,45.7132,0.2436,285.7791,8.8608,0.0000,0.9880,0.4482,2.2590,38.6755,12.1934,0.0468,0.0000,0.0000,0.0000,0.0000,"12948"
+
+"ALL PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10332)",100.00%,100.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+
+
+PROFILE REPORT FOR PROCESS - c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10332)
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe (PID:10332)",100.00%,100.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+
+THREAD SUMMARY
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",THREAD ID
+"Thread-12948 (PID:10332)",100.00%,100.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,"12948"
+
+
+MODULE SUMMARY
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe,99.99%,100.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+c:\windows\system32\ntdll.dll,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+c:\windows\system32\ucrtbase.dll,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+c:\windows\system32\kernel32.dll,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+
+
+FUNCTION SUMMARY
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",MODULE
+"smoke_demo::m3_b1::advectScalar(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, float, smoke_demo::m3_b1::SlabRange)",43.09%,55.91%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke_demo::m3_b1::SlabRange)",36.56%,27.31%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke_demo::m3_b1::SlabRange)",10.43%,12.55%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::setBoundary(smoke::Field3D&, smoke_demo::m3_b1::BoundaryKind) (.constprop.0)",4.07%,0.57%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke_demo::m3_b1::SlabRange)",1.94%,2.34%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::setBoundary(smoke::Field3D&, smoke_demo::m3_b1::BoundaryKind)",1.32%,0.15%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke_demo::m3_b1::SlabRange)",1.15%,0.59%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke_demo::m3_b1::SlabRange)",0.86%,0.46%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke::Field3D::fill(float)",0.52%,0.11%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke_demo::m3_b1::SlabRange)",0.03%,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::project(smoke::SmokeState&, smoke::SmokeParams const&, smoke_demo::m3_b1::SlabRange, double*)",0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x1800e1598",0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"ntdll.dll!0x1800e1590",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"smoke_prof.exe!0x1400cd604",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ucrtbase.dll!0x1800ee1d0",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ucrtbase.dll
+"smoke_prof.exe!0x1400cd60b",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x18008b278",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+"smoke_prof.exe!0x1400cd60e",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_demo::m3_b1::advectVelocity(smoke::SmokeState&, float, smoke_demo::m3_b1::SlabRange)",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"smoke_prof.exe!0x1400cd600",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"kernel32.dll!0x1800326b0",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\kernel32.dll
+"smoke_demo::m3_b1::m3Step(smoke::SmokeState&, smoke::SmokeParams const&, smoke::StepTimings&)",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\dev\smoke-simulation-using-a-grid-based-model\solver\build-prof\smoke_prof.exe
+"ntdll.dll!0x18005412e",0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,c:\windows\system32\ntdll.dll
+
+Function Detail Data
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::advectScalar(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, float, smoke_demo::m3_b1::SlabRange)" (Showing only disassembly),,,,43.09%,55.91%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140004c61,"push %r15",41 57 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004c83,"movups %xmm8, 0x20(%rbp)",44 0F 11 45 20 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004d13,"pxor %xmm0, %xmm0",66 0F EF C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004df6,"mov -0xD0(%rbp), %r8",4C 8B 85 30 FF FF FF ,0.01%,0.00%,1.2000,100.0000,0.0000,400.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004dfd,"pxor %xmm13, %xmm13",66 45 0F EF ED ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e02,"mov %rcx, -0xA0(%rbp)",48 89 8D 60 FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,2000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e50,"mov -0x28(%rbp), %eax",8B 45 D8 ,0.00%,0.00%,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e53,"mov -0x60(%rbp), %rsi",48 8B 75 A0 ,0.01%,0.00%,1.6667,266.6667,0.0000,666.6667,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e57,"pxor %xmm12, %xmm12",66 45 0F EF E4 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e5c,"mov %r10, -0x30(%rbp)",4C 89 55 D0 ,0.00%,0.00%,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e60,"mov -0x90(%rbp), %rdi",48 8B BD 70 FF FF FF ,0.01%,0.01%,0.3448,20.6897,0.0000,68.9655,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e67,"cvtsi2ss %r10d, %xmm12",F3 45 0F 2A E2 ,0.00%,0.00%,0.6000,20.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e6c,"mov $0x01, %edx",BA 01 00 00 00 ,0.00%,0.00%,0.5000,50.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e71,"mov %rax, -0x20(%rbp)",48 89 45 E0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e75,"mov -0x88(%rbp), %rax",48 8B 85 78 FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e7c,"imul %r10, %rax",49 0F AF C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e84,"lea (%rdi,%rax,4), %rax",48 8D 04 87 ,0.02%,0.02%,0.3191,29.7872,0.0000,234.0426,0.9091,0.0000,0.0000,0.0000,0.0000,0.0000,2.1277,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e88,"mov -0x80(%rbp), %rdi",48 8B 7D 80 ,0.00%,0.00%,0.0000,100.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e8c,"mov %rax, -0x18(%rbp)",48 89 45 E8 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e90,"mov -0x78(%rbp), %rax",48 8B 45 88 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e94,"imul %r10, %rax",49 0F AF C2 ,0.01%,0.01%,0.4545,36.3636,0.0000,90.9091,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,9.0909,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e98,"add -0x50(%rbp), %rax",48 03 45 B0 ,0.00%,0.00%,1.0000,0.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004e9c,"lea (%rdi,%rax,4), %r12",4C 8D 24 87 ,0.00%,0.00%,0.5000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ea0,"mov -0x68(%rbp), %rax",48 8B 45 98 ,0.00%,0.00%,0.5000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ea4,"mov -0x70(%rbp), %rdi",48 8B 7D 90 ,0.01%,0.02%,0.2941,38.2353,0.0000,58.8235,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ea8,"imul %r10, %rax",49 0F AF C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004eb0,"lea (%rdi,%rax,4), %rdi",48 8D 3C 87 ,0.00%,0.00%,0.2000,40.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004eb4,"mov -0x98(%rbp), %rax",48 8B 85 68 FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ebb,"imul %r10, %rax",49 0F AF C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ebf,"add -0x40(%rbp), %rax",48 03 45 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ec3,"lea (%rsi,%rax,4), %rsi",48 8D 34 86 ,0.00%,0.00%,1.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ec7,"jmp 0x0000000140005045",E9 79 01 00 00 ,0.02%,0.02%,0.4848,42.4242,0.0000,121.2121,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,3.0303,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ed0,"movaps %xmm15, %xmm2",41 0F 28 D7 ,0.08%,0.10%,0.3192,46.0094,0.0000,93.8967,5.0000,0.0000,0.0000,0.0000,2.3474,0.0000,5.1643,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ed4,"movaps %xmm11, %xmm1",41 0F 28 CB ,0.03%,0.04%,0.3067,41.3333,0.0000,186.6667,6.4286,0.0000,0.0000,0.0000,4.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004edc,"pxor %xmm0, %xmm0",66 0F EF C0 ,0.15%,0.17%,0.3583,42.5000,0.6536,180.5556,2.6154,0.0000,0.0000,0.0000,1.1111,0.0000,0.8333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ee0,"cvttss2si %xmm2, %r8d",F3 44 0F 2C C2 ,1.29%,1.72%,0.3087,43.2418,0.0629,161.2728,2.6138,0.0000,0.0000,0.0000,1.0063,0.0816,1.5774,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ee5,"cvtsi2ss %r8d, %xmm0",F3 41 0F 2A C0 ,0.01%,0.01%,0.2632,21.0526,0.0000,105.2632,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,5.2632,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004eea,"movsxd %r8d, %r9",4D 63 C8 ,0.31%,0.39%,0.3269,40.2644,0.0000,170.6731,3.5211,0.0000,0.0000,0.0000,2.6442,0.0000,1.4423,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004eed,"add $0x01, %r8d",41 83 C0 01 ,0.02%,0.03%,0.2714,40.0000,0.0000,128.5714,3.3333,0.0000,0.0000,0.0000,1.4286,0.0000,2.8571,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ef4,"subss %xmm0, %xmm2",F3 0F 5C D0 ,0.13%,0.15%,0.3694,38.5350,0.0000,165.6051,2.1154,0.0000,0.0000,0.0000,0.0000,0.0000,2.5478,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ef8,"subss %xmm2, %xmm1",F3 0F 5C CA ,1.52%,2.02%,0.3105,41.0867,0.2814,161.3873,2.7937,0.0000,0.0462,0.0231,0.8092,0.0462,1.2717,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004efc,"movssl (%r12,%rdx,4), %xmm4",F3 41 0F 10 24 94 ,0.46%,0.52%,0.3631,42.6126,0.2114,171.1712,3.2105,0.0000,0.0000,0.0000,2.2523,0.0901,1.8018,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f02,"movaps %xmm12, %xmm0",41 0F 28 C4 ,0.02%,0.02%,0.4667,37.7778,0.0000,155.5556,0.0000,0.0000,0.0000,2.2222,2.2222,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f06,"mulss %xmm7, %xmm4",F3 0F 59 E7 ,0.02%,0.02%,0.4884,41.8605,0.0000,69.7674,0.0000,0.0000,0.0000,0.0000,2.3256,0.0000,2.3256,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f0a,"subss %xmm4, %xmm0",F3 0F 5C C4 ,0.00%,0.01%,0.3077,23.0769,0.0000,230.7692,6.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f0e,"comiss %xmm0, %xmm3",0F 2F D8 ,0.03%,0.04%,0.3867,41.3333,0.0000,133.3333,4.0000,0.0000,0.0000,0.0000,2.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f11,"jnbe 0x0000000140005098",0F 87 81 01 00 00 ,0.13%,0.14%,0.3763,48.1356,0.0000,203.3898,2.3333,0.0000,0.0000,0.0000,1.0169,0.0000,1.0169,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f17,"movaps %xmm14, %xmm5",41 0F 28 EE ,1.16%,1.55%,0.3082,45.2137,0.5326,164.3588,2.5458,0.0000,0.0000,0.0000,0.7225,0.0000,1.7158,0.0602,0.0000,0.0000,0.0000,0.0000
+,0x140004f1b,"movaps %xmm11, %xmm8",45 0F 28 C3 ,0.17%,0.20%,0.3649,41.7062,0.5682,177.7251,2.8000,0.0000,0.0000,0.0000,1.6588,0.2370,1.4218,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f23,"pxor %xmm0, %xmm0",66 0F EF C0 ,0.02%,0.01%,0.6923,19.2308,0.0000,192.3077,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f27,"cvttss2si %xmm5, %eax",F3 0F 2C C5 ,0.00%,0.00%,1.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f2b,"cvtsi2ss %eax, %xmm0",F3 0F 2A C0 ,0.13%,0.17%,0.3306,41.6667,0.0000,169.4444,3.7705,0.0000,0.0000,0.0000,0.2778,0.0000,1.1111,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f2f,"cdqe",48 98 ,1.24%,1.66%,0.3074,41.8782,0.4714,163.8466,3.0465,0.0000,0.0564,0.0000,0.8460,0.0564,1.0716,0.0282,0.0000,0.0000,0.0000,0.0000
+,0x140004f31,"imul %rbx, %rax",48 0F AF C3 ,0.18%,0.19%,0.3726,44.4712,0.5405,185.0962,2.5974,0.0000,0.0000,0.0000,1.6827,0.0000,2.4038,0.2404,0.0000,0.0000,0.0000,0.0000
+,0x140004f35,"subss %xmm0, %xmm5",F3 0F 5C E8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f39,"lea (%rbx,%rax,1), %rcx",48 8D 0C 03 ,0.19%,0.20%,0.3945,44.4954,0.5155,160.5505,2.4286,0.0000,0.0000,0.2294,1.3761,0.0000,3.2110,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f3d,"subss %xmm5, %xmm8",F3 44 0F 5C C5 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f42,"movssl (%rdi,%rdx,4), %xmm4",F3 0F 10 24 97 ,0.59%,0.72%,0.3377,44.1982,0.1475,156.4537,3.4583,0.0000,0.0000,0.0000,2.0209,0.0652,2.0860,0.0652,0.0000,0.0000,0.0000,0.0000
+,0x140004f47,"movaps %xmm13, %xmm0",41 0F 28 C5 ,0.02%,0.02%,0.5000,29.4118,0.0000,205.8824,2.8571,0.0000,0.0000,0.0000,0.0000,0.0000,2.9412,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f4b,"mulss %xmm7, %xmm4",F3 0F 59 E7 ,1.01%,1.37%,0.3041,42.6962,0.3197,170.3072,2.5050,0.0000,0.0000,0.0000,0.4778,0.0000,1.0922,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f4f,"subss %xmm4, %xmm0",F3 0F 5C C4 ,0.00%,0.00%,0.3333,83.3333,0.0000,166.6667,20.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f53,"comiss %xmm0, %xmm3",0F 2F D8 ,0.10%,0.13%,0.3123,38.9474,2.7027,178.9474,3.3333,0.0000,0.0000,0.0000,2.4561,0.0000,3.1579,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f56,"jnbe 0x0000000140005080",0F 87 24 01 00 00 ,0.02%,0.02%,0.3947,26.3158,0.0000,78.9474,6.6667,0.0000,0.0000,0.0000,2.6316,0.0000,2.6316,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f5c,"movssl -0x24(%rbp), %xmm6",F3 0F 10 75 DC ,0.01%,0.01%,0.3889,5.5556,0.0000,111.1111,10.0000,0.0000,0.0000,0.0000,22.2222,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f61,"movaps %xmm11, %xmm9",45 0F 28 CB ,0.31%,0.42%,0.3042,46.0177,0.0000,180.3097,2.8221,0.0000,0.0000,0.0000,0.9956,0.0000,1.4381,0.1106,0.0000,0.0000,0.0000,0.0000
+,0x140004f69,"pxor %xmm0, %xmm0",66 0F EF C0 ,1.07%,1.45%,0.3051,38.8171,0.1665,152.5533,3.2839,0.0000,0.0323,0.0000,0.2909,0.0323,1.5837,0.0646,0.0000,0.0000,0.0000,0.0000
+,0x140004f6d,"cvttss2si %xmm6, %r15d",F3 44 0F 2C FE ,0.00%,0.00%,0.1111,33.3333,0.0000,111.1111,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f72,"cvtsi2ss %r15d, %xmm0",F3 41 0F 2A C7 ,0.12%,0.14%,0.3543,44.3709,0.0000,178.8080,4.8148,0.0000,0.0000,0.0000,0.6623,0.0000,2.6490,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f77,"movsxd %r15d, %r15",4D 63 FF ,0.16%,0.17%,0.3730,39.1892,0.6897,172.9730,4.6875,0.0000,0.2703,0.0000,2.4324,0.0000,1.6216,0.2703,0.0000,0.0000,0.0000,0.0000
+,0x140004f7a,"imul %r13, %r15",4D 0F AF FD ,0.30%,0.37%,0.3321,41.5716,0.6098,157.1610,2.7419,0.0000,0.0000,0.0000,1.5209,0.0000,1.3942,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f7e,"subss %xmm0, %xmm6",F3 0F 5C F0 ,0.00%,0.00%,0.3000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f82,"lea (%rax,%r15,1), %r11",4E 8D 1C 38 ,1.37%,1.75%,0.3236,42.6585,0.3135,165.8197,2.7258,0.0000,0.0000,0.0267,0.7489,0.0535,1.5780,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f86,"lea (%rcx,%r15,1), %r10",4E 8D 14 39 ,0.00%,0.00%,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f8a,"add %r13, %r15",4D 01 EF ,0.08%,0.12%,0.2710,37.7863,0.0000,133.5878,4.2857,0.0000,0.0000,0.0000,2.2901,0.0000,0.3817,0.3817,0.0000,0.0000,0.0000,0.0000
+,0x140004f8d,"subss %xmm6, %xmm9",F3 44 0F 5C CE ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f92,"add %r15, %rax",4C 01 F8 ,0.79%,0.98%,0.3322,43.1644,0.2215,156.7878,3.0793,0.0000,0.0000,0.0000,0.8604,0.0000,1.9598,0.1434,0.0000,0.0000,0.0000,0.0000
+,0x140004f95,"add %r15, %rcx",4C 01 F9 ,0.01%,0.01%,0.3500,25.0000,0.0000,100.0000,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f98,"lea (%r9,%r11,1), %r15",4F 8D 3C 19 ,0.18%,0.23%,0.3237,47.6289,0.4329,185.5670,3.5556,0.0000,0.0000,0.0000,1.0309,0.0000,1.8557,0.2062,0.0000,0.0000,0.0000,0.0000
+,0x140004f9c,"add %r8, %r11",4D 01 C3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004f9f,"movssl (%r14,%r11,4), %xmm4",F3 43 0F 10 24 9E ,0.92%,1.24%,0.3058,42.5989,0.2653,155.5556,2.9782,0.0000,0.0377,0.0000,0.6403,0.0000,1.0169,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fa5,"movssl (%r14,%r15,4), %xmm0",F3 43 0F 10 04 BE ,0.10%,0.09%,0.5000,43.4066,0.0000,192.3077,4.0000,0.0000,0.0000,0.0000,9.8901,0.0000,2.1978,1.0989,0.0000,0.0000,0.0000,0.0000
+,0x140004fab,"lea (%r9,%r10,1), %r11",4F 8D 1C 11 ,0.20%,0.22%,0.3713,39.8734,2.1164,194.0928,2.6087,0.0000,0.0000,0.2110,1.8987,0.2110,1.2658,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004faf,"add %r8, %r10",4D 01 C2 ,0.01%,0.01%,0.6111,61.1111,0.0000,166.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fb2,"movssl (%r14,%r10,4), %xmm10",F3 47 0F 10 14 96 ,0.30%,0.36%,0.3463,44.8768,0.5780,167.3152,2.7132,0.0000,0.0000,0.0000,1.4267,0.0000,2.2049,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fb8,"lea (%rax,%r9,1), %r10",4E 8D 14 08 ,0.12%,0.13%,0.3792,34.9442,1.0638,148.6989,5.0000,0.0000,1.1152,0.0000,7.4349,0.0000,0.7435,0.3717,0.0000,0.0000,0.0000,0.0000
+,0x140004fbc,"add %r8, %rax",4C 01 C0 ,0.18%,0.21%,0.3533,46.2222,0.4808,182.2222,3.9024,0.0000,0.0000,0.0000,1.3333,0.2222,1.7778,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fc2,"mulss %xmm2, %xmm4",F3 0F 59 E2 ,0.84%,1.29%,0.2693,42.9140,0.0000,160.5206,2.6577,0.0000,0.0000,0.0362,0.5423,0.0000,0.7954,0.0362,0.0000,0.0000,0.0000,0.0000
+,0x140004fc6,"add %r8, %rcx",4C 01 C1 ,1.46%,1.74%,0.3483,42.3295,0.5096,176.3279,2.4465,0.0000,0.0270,0.0000,0.9437,0.0270,1.6986,0.0270,0.0000,0.0000,0.0000,0.0000
+,0x140004fc9,"mulss %xmm1, %xmm0",F3 0F 59 C1 ,0.06%,0.05%,0.4513,47.7876,0.0000,159.2920,5.0000,0.0000,0.0000,0.0000,1.7699,0.0000,4.4248,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fcd,"mulss %xmm2, %xmm10",F3 44 0F 59 D2 ,0.52%,0.59%,0.3669,41.9176,0.0000,161.6482,3.2843,0.0000,0.0000,0.0792,1.3471,0.1585,2.0602,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fd2,"addss %xmm4, %xmm0",F3 0F 58 C4 ,0.39%,0.58%,0.2762,41.5532,0.3854,156.1249,3.5897,0.0000,0.0000,0.0000,0.5604,0.0000,1.6813,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fd6,"movssl (%r14,%r11,4), %xmm4",F3 43 0F 10 24 9E ,0.41%,0.44%,0.3828,47.2135,0.2227,174.5531,2.9518,0.0000,0.0000,0.0000,0.4206,0.0000,1.5773,0.1052,0.0000,0.0000,0.0000,0.0000
+,0x140004fdc,"mulss %xmm1, %xmm4",F3 0F 59 E1 ,0.15%,0.22%,0.2809,39.2034,0.5348,134.1719,3.7500,0.0000,0.0000,0.0000,1.6771,0.0000,1.2579,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fe0,"mulss %xmm8, %xmm0",F3 41 0F 59 C0 ,0.62%,0.79%,0.3225,42.2170,0.0000,162.1462,2.8727,0.0000,0.0000,0.0000,0.8844,0.0000,1.5330,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fe5,"addss %xmm10, %xmm4",F3 41 0F 58 E2 ,4.14%,5.38%,0.3173,41.9276,0.3320,166.4057,2.7601,0.0000,0.0087,0.0087,0.6785,0.0087,1.4353,0.0261,0.0000,0.0000,0.0000,0.0000
+,0x140004fea,"mulss %xmm5, %xmm4",F3 0F 59 E5 ,0.07%,0.10%,0.2749,43.6019,0.0000,113.7441,2.0833,0.0000,0.0000,0.0000,1.4218,0.0000,1.8957,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004fee,"addss %xmm4, %xmm0",F3 0F 58 C4 ,1.96%,2.54%,0.3179,40.6152,0.1361,155.6456,2.7692,0.0000,0.0184,0.0000,0.7368,0.0368,1.5472,0.0184,0.0000,0.0000,0.0000,0.0000
+,0x140004ff2,"movssl (%r14,%r10,4), %xmm4",F3 43 0F 10 24 96 ,1.29%,1.80%,0.2961,41.5413,0.1249,164.2449,2.4329,0.0000,0.0000,0.0000,0.6227,0.0000,1.7385,0.0259,0.0000,0.0000,0.0000,0.0000
+,0x140004ff8,"mulss %xmm1, %xmm4",F3 0F 59 E1 ,0.13%,0.14%,0.3966,44.0678,0.0000,213.5593,3.0159,0.0000,0.0000,0.0000,3.0508,0.3390,2.3729,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004ffc,"mulss %xmm9, %xmm0",F3 41 0F 59 C1 ,0.08%,0.07%,0.4589,52.0548,1.3158,136.9863,5.0000,0.0000,0.0000,0.0000,3.4247,0.0000,0.6849,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005001,"movssl (%r14,%rax,4), %xmm9",F3 45 0F 10 0C 86 ,6.45%,8.60%,0.3093,42.5020,0.1920,163.0677,2.8919,0.0000,0.0109,0.0109,0.6364,0.0326,1.3326,0.0163,0.0000,0.0000,0.0000,0.0000
+,0x140005007,"mulss (%r14,%r9,4), %xmm1",F3 43 0F 59 0C 8E ,0.03%,0.02%,0.6923,61.5385,0.0000,282.0513,0.9091,0.0000,0.0000,0.0000,5.1282,0.0000,2.5641,2.5641,0.0000,0.0000,0.0000,0.0000
+,0x14000500d,"mulss %xmm2, %xmm9",F3 44 0F 59 CA ,0.24%,0.27%,0.3670,39.8261,0.4367,179.1304,2.6214,0.0000,0.0000,0.0000,3.4783,0.3478,2.7826,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005012,"mulss (%r14,%rcx,4), %xmm2",F3 41 0F 59 14 8E ,0.04%,0.04%,0.3438,43.7500,0.0000,208.3333,3.5000,0.0000,0.0000,0.0000,3.1250,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005018,"addss %xmm9, %xmm4",F3 41 0F 58 E1 ,0.12%,0.10%,0.5121,35.7488,0.0000,227.0531,2.5532,0.0000,0.0000,0.0000,4.3478,0.0000,1.9324,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000501d,"addss %xmm2, %xmm1",F3 0F 58 CA ,0.01%,0.01%,0.5625,68.7500,0.0000,187.5000,3.3333,0.0000,0.0000,0.0000,0.0000,0.0000,6.2500,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005021,"mulss %xmm8, %xmm4",F3 41 0F 59 E0 ,0.01%,0.01%,0.3600,44.0000,0.0000,280.0000,2.8571,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005026,"mulss %xmm5, %xmm1",F3 0F 59 CD ,0.10%,0.13%,0.3209,37.3134,1.0000,156.7164,3.5714,0.0000,0.0000,0.0000,3.7313,0.0000,2.6119,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000502a,"addss %xmm1, %xmm4",F3 0F 58 E1 ,1.58%,1.97%,0.3303,42.7385,0.1666,159.9431,2.5964,0.0000,0.0000,0.0000,0.6407,0.0237,1.4476,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000502e,"mulss %xmm6, %xmm4",F3 0F 59 E6 ,0.09%,0.13%,0.2889,44.8148,0.0000,211.1111,2.6316,0.0000,0.0000,0.0000,0.3704,0.0000,1.8519,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005032,"addss %xmm4, %xmm0",F3 0F 58 C4 ,2.53%,3.42%,0.3054,41.4374,0.1652,173.5797,2.5237,0.0000,0.0000,0.0137,0.8898,0.0274,1.5332,0.0274,0.0000,0.0000,0.0000,0.0000
+,0x140005036,"movss %xmm0, (%rsi,%rdx,4)",F3 0F 11 04 96 ,1.45%,1.89%,0.3166,42.1287,0.1175,157.4257,2.6730,0.0000,0.0000,0.0000,0.7178,0.0248,1.0396,0.0248,0.0000,0.0000,0.0000,0.0000
+,0x14000503b,"add $0x01, %rdx",48 83 C2 01 ,1.30%,1.79%,0.2994,41.2134,0.1904,154.2887,2.8305,0.0000,0.0000,0.0262,0.7584,0.0262,1.2291,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000503f,"cmp -0x20(%rbp), %rdx",48 3B 55 E0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005043,"jz 0x00000001400050B0",74 6B ,0.01%,0.00%,2.6667,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005045,"mov -0x18(%rbp), %rax",48 8B 45 E8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005049,"pxor %xmm0, %xmm0",66 0F EF C0 ,0.01%,0.02%,0.3824,44.1176,0.0000,117.6471,5.0000,0.0000,0.0000,0.0000,2.9412,0.0000,11.7647,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000504d,"cvtsi2ss %edx, %xmm0",F3 0F 2A C2 ,0.02%,0.02%,0.5238,47.6190,0.0000,238.0952,1.0000,0.0000,0.0000,0.0000,2.3810,0.0000,4.7619,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005051,"movssl (%rax,%rdx,4), %xmm1",F3 0F 10 0C 90 ,0.03%,0.04%,0.2796,23.6559,0.0000,150.5376,1.4286,0.0000,0.0000,0.0000,3.2258,0.0000,1.0753,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005056,"mulss %xmm7, %xmm1",F3 0F 59 CF ,0.17%,0.21%,0.3348,43.1072,0.0000,146.6083,4.6269,0.0000,0.0000,0.4376,1.0941,0.2188,2.8446,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000505a,"subss %xmm1, %xmm0",F3 0F 5C C1 ,1.35%,1.81%,0.3078,40.1445,0.3213,168.7307,2.6300,0.0000,0.0000,0.0000,0.5676,0.0258,1.5222,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000505e,"comiss %xmm0, %xmm3",0F 2F D8 ,0.02%,0.03%,0.3220,61.0169,0.0000,67.7966,5.0000,0.0000,0.0000,0.0000,1.6949,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005061,"jbe 0x0000000140004ED0",0F 86 69 FE FF FF ,0.04%,0.03%,0.5323,40.3226,0.0000,241.9355,2.0000,0.0000,0.0000,0.0000,3.2258,0.0000,1.6129,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400050b4,"add $0x01, %r10",49 83 C2 01 ,0.01%,0.01%,0.2759,41.3793,0.0000,137.9310,7.5000,0.0000,0.0000,0.0000,0.0000,0.0000,3.4483,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400050b8,"cmp %r10, -0x38(%rbp)",4C 39 55 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400050bc,"jnz 0x0000000140004E50",0F 85 8E FD FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400050c9,"add $0x01, %rcx",48 83 C1 01 ,0.00%,0.00%,3.0000,0.0000,0.0000,2000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400050d3,"jnle 0x0000000140004DF0",0F 8F 17 FD FF FF ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400050e1,"movups 0x20(%rbp), %xmm8",44 0F 10 45 20 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::jacobiIteration(smoke::Field3D&, smoke::Field3D const&, smoke::Field3D const&, smoke_demo::m3_b1::SlabRange)" (Showing only disassembly),,,,36.56%,27.31%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140005801,"mov %r9, %rdi",4C 89 CF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000584a,"cdqe",48 98 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400058a7,"mov %r10, -0x40(%rbp)",4C 89 55 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005903,"mov -0xE8(%rbp), %rdi",48 8B BD 18 FF FF FF ,0.01%,0.00%,0.6250,37.5000,0.0000,1000.0000,8.7500,0.0000,0.0000,0.0000,0.0000,212.5000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000590a,"mov %rcx, %rsi",48 89 CE ,0.00%,0.00%,1.0000,50.0000,0.0000,2000.0000,10.0000,0.0000,0.0000,0.0000,0.0000,250.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005914,"mov %rcx, -0xC0(%rbp)",48 89 8D 40 FF FF FF ,0.00%,0.00%,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000591b,"movssl 0x00000001400F2620, %xmm2",F3 0F 10 15 FD CC 0E 00 ,0.00%,0.00%,0.0000,100.0000,0.0000,500.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005923,"imul %rax, %rdi",48 0F AF F8 ,0.02%,0.01%,0.5556,55.5556,0.0000,333.3333,24.4444,0.0000,0.0000,0.0000,7.4074,70.3704,11.1111,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000592e,"imul %r11, %rsi",49 0F AF F3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,3.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000593d,"mov %rcx, %rbx",48 89 CB ,0.00%,0.00%,0.0000,100.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005948,"imul %r8, %rbx",49 0F AF D8 ,0.00%,0.00%,0.5000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000594c,"mov %rdi, -0x68(%rbp)",48 89 7D 98 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005954,"mov %rax, -0x60(%rbp)",48 89 45 A0 ,0.00%,0.00%,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005970,"mov -0x98(%rbp), %rdi",48 8B BD 68 FF FF FF ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005977,"add $0x01, %r15",49 83 C7 01 ,0.00%,0.01%,0.1818,63.6364,0.0000,545.4545,8.3333,0.0000,0.0000,0.0000,0.0000,218.1818,45.4545,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000597b,"mov -0x78(%rbp), %rcx",48 8B 4D 88 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000597f,"mov -0x80(%rbp), %rsi",48 8B 75 80 ,0.01%,0.01%,0.9091,18.1818,0.0000,454.5454,18.0000,0.0000,0.0000,0.0000,0.0000,45.4545,27.2727,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005983,"mov %rdi, %rax",48 89 F8 ,0.00%,0.00%,0.5000,225.0000,0.0000,1500.0000,13.3333,0.0000,0.0000,0.0000,0.0000,350.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005986,"imul %r15, %rax",49 0F AF C7 ,0.00%,0.00%,1.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000598a,"mov %rax, %rdx",48 89 C2 ,0.04%,0.02%,0.7209,39.5349,0.0000,255.8139,20.9091,0.0000,0.0000,0.0000,2.3256,109.3023,13.9535,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000598d,"lea (%rcx,%rax,1), %rbx",48 8D 1C 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005991,"mov -0x70(%rbp), %rcx",48 8B 4D 90 ,0.08%,0.06%,0.5966,47.0588,0.0000,512.6050,17.2131,0.0000,0.0000,0.0000,3.3613,136.9748,15.9664,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005995,"lea (%rsi,%rax,1), %r12",4C 8D 24 06 ,0.00%,0.00%,1.0000,133.3333,0.0000,1333.3334,2.5000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005999,"sub %rdi, %rdx",48 29 FA ,0.00%,0.00%,1.0000,0.0000,0.0000,500.0000,10.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000599c,"mov %rbx, -0x30(%rbp)",48 89 5D D0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,133.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059a0,"lea (%rdx,%rsi,1), %r13",4C 8D 2C 32 ,0.03%,0.03%,0.4815,77.7778,0.0000,370.3704,21.0000,0.0000,1.8519,1.8519,3.7037,177.7778,31.4815,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059a4,"add -0xA8(%rbp), %rdx",48 03 95 58 FF FF FF ,0.00%,0.00%,2.0000,200.0000,0.0000,3000.0000,6.6667,0.0000,0.0000,0.0000,0.0000,400.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059ab,"lea (%rdx,%rsi,1), %rdi",48 8D 3C 32 ,0.02%,0.01%,0.5312,46.8750,0.0000,406.2500,22.3077,0.0000,0.0000,0.0000,9.3750,134.3750,12.5000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059af,"lea (%rcx,%rax,1), %rsi",48 8D 34 01 ,0.00%,0.00%,0.5000,100.0000,0.0000,1000.0000,20.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059b3,"mov -0x90(%rbp), %rax",48 8B 85 70 FF FF FF ,0.08%,0.06%,0.5583,62.5000,0.0000,400.0000,16.6667,0.0000,0.0000,0.0000,3.3333,135.0000,18.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059ba,"mov -0x68(%rbp), %rcx",48 8B 4D 98 ,0.01%,0.00%,0.8333,66.6667,0.0000,666.6667,7.5000,0.0000,0.0000,0.0000,0.0000,83.3333,16.6667,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059be,"mov %rdi, -0x38(%rbp)",48 89 7D C8 ,0.00%,0.00%,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059c2,"imul %r15, %rax",49 0F AF C7 ,0.07%,0.07%,0.4648,57.0423,0.0000,528.1690,13.2000,0.0000,0.0000,0.0000,0.7042,164.7887,23.2394,1.4085,0.0000,0.0000,0.0000,0.0000
+,0x1400059c6,"mov %rsi, -0x28(%rbp)",48 89 75 D8 ,0.00%,0.00%,1.0000,50.0000,0.0000,1000.0000,15.0000,0.0000,0.0000,0.0000,50.0000,250.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059ca,"add %rax, %rcx",48 01 C1 ,0.00%,0.00%,0.5714,71.4286,0.0000,142.8571,30.0000,0.0000,0.0000,0.0000,0.0000,100.0000,28.5714,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059cd,"mov -0x88(%rbp), %rax",48 8B 85 78 FF FF FF ,0.03%,0.02%,0.6190,45.2381,0.0000,261.9048,21.8182,0.0000,0.0000,0.0000,4.7619,154.7619,14.2857,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059d4,"mov %rcx, -0x20(%rbp)",48 89 4D E0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059d8,"imul %r15, %rax",49 0F AF C7 ,0.14%,0.10%,0.5829,62.5592,0.0000,426.5403,13.7778,0.0000,0.0000,0.0000,2.8436,139.3365,16.1137,0.4739,0.0000,0.0000,0.0000,0.0000
+,0x1400059dc,"add -0x60(%rbp), %rax",48 03 45 A0 ,0.01%,0.00%,2.5000,350.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,450.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059e0,"mov %rax, -0x50(%rbp)",48 89 45 B0 ,0.00%,0.00%,0.2500,25.0000,0.0000,250.0000,20.0000,0.0000,0.0000,0.0000,0.0000,250.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059e4,"cmpl $0x01, -0x44(%rbp)",83 7D BC 01 ,0.00%,0.00%,0.4000,60.0000,0.0000,600.0000,10.0000,0.0000,0.0000,0.0000,0.0000,80.0000,40.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059e8,"jz 0x0000000140005CB8",0F 84 CA 02 00 00 ,0.00%,0.00%,0.5000,200.0000,0.0000,500.0000,10.0000,0.0000,0.0000,0.0000,0.0000,250.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059ee,"mov -0x40(%rbp), %rdx",48 8B 55 C0 ,0.00%,0.00%,2.0000,0.0000,0.0000,2000.0000,10.0000,0.0000,0.0000,0.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059f2,"add $0x01, %rax",48 83 C0 01 ,0.02%,0.01%,1.0000,72.7273,6.2500,727.2727,15.6250,0.0000,0.0000,0.0000,4.5455,259.0909,13.6364,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059f6,"lea 0x08(,%rdi,4), %r10",4C 8D 14 BD 08 00 00 00 ,0.00%,0.00%,0.3333,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,166.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400059fe,"lea 0x08(,%rbx,4), %r9",4C 8D 0C 9D 08 00 00 00 ,0.07%,0.06%,0.5328,61.4754,0.0000,426.2295,16.7308,0.0000,0.0000,0.0000,2.4590,135.2459,13.1148,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a06,"mov %rax, -0x58(%rbp)",48 89 45 A8 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,40.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a0a,"lea (%r14,%r10,1), %rbx",4B 8D 1C 16 ,0.05%,0.04%,0.5875,67.5000,0.0000,525.0000,13.3333,0.0000,0.0000,0.0000,3.7500,172.5000,28.7500,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a0e,"lea 0x08(,%rcx,4), %rcx",48 8D 0C 8D 08 00 00 00 ,0.00%,0.00%,0.6667,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a16,"lea (%rdx,%rax,4), %rdx",48 8D 14 82 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a1a,"lea 0x08(,%rsi,4), %r8",4C 8D 04 B5 08 00 00 00 ,0.00%,0.00%,0.3333,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,233.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a22,"mov %rdx, %rax",48 89 D0 ,0.02%,0.01%,0.7778,48.1481,0.0000,555.5555,14.0000,0.0000,0.0000,0.0000,0.0000,192.5926,29.6296,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a25,"lea 0x08(,%r13,4), %r11",4E 8D 1C AD 08 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a2d,"sub %rbx, %rax",48 29 D8 ,0.08%,0.05%,0.6036,62.1622,0.0000,459.4595,13.5294,0.0000,0.0000,0.0000,0.9009,136.0360,16.2162,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a30,"cmp $0x08, %rax",48 83 F8 08 ,0.00%,0.00%,0.1429,14.2857,0.0000,428.5714,6.6667,0.0000,0.0000,0.0000,14.2857,185.7143,14.2857,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a34,"mov -0x18(%rbp), %rax",48 8B 45 E8 ,0.01%,0.00%,0.8333,83.3333,0.0000,666.6667,12.5000,0.0000,0.0000,0.0000,0.0000,233.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a38,"setnbe %bl",0F 97 C3 ,0.00%,0.00%,1.0000,50.0000,0.0000,500.0000,20.0000,0.0000,0.0000,0.0000,0.0000,400.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a3b,"lea (%rax,%rcx,1), %rsi",48 8D 34 08 ,0.01%,0.00%,3.0000,200.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,450.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a3f,"mov %rdx, %rax",48 89 D0 ,0.00%,0.00%,0.4000,20.0000,0.0000,200.0000,20.0000,0.0000,0.0000,0.0000,0.0000,160.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a42,"sub %rsi, %rax",48 29 F0 ,0.02%,0.02%,0.3111,60.0000,0.0000,400.0000,19.4444,0.0000,0.0000,0.0000,2.2222,108.8889,15.5556,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a45,"lea (%r14,%r11,1), %rsi",4B 8D 34 1E ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a49,"cmp $0x08, %rax",48 83 F8 08 ,0.06%,0.06%,0.4135,54.8872,0.0000,368.4211,16.9388,0.0000,0.0000,0.0000,0.7519,124.8120,14.2857,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a4d,"setnbe %al",0F 97 C0 ,0.00%,0.00%,1.0000,75.0000,0.0000,250.0000,40.0000,0.0000,0.0000,0.0000,25.0000,125.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a50,"and %ebx, %eax",21 D8 ,0.00%,0.00%,0.2857,28.5714,0.0000,571.4286,12.5000,0.0000,0.0000,0.0000,0.0000,185.7143,14.2857,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a52,"mov %rdx, %rbx",48 89 D3 ,0.00%,0.00%,0.5000,0.0000,0.0000,833.3333,12.0000,0.0000,16.6667,0.0000,0.0000,150.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a55,"sub %rsi, %rbx",48 29 F3 ,0.00%,0.00%,0.2500,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,25.0000,75.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a58,"lea (%r14,%r8,1), %rsi",4B 8D 34 06 ,0.00%,0.00%,0.5000,50.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a5c,"cmp $0x08, %rbx",48 83 FB 08 ,0.02%,0.01%,0.4828,65.5172,0.0000,379.3103,22.7273,0.0000,0.0000,0.0000,0.0000,168.9655,6.8966,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a60,"setnbe %bl",0F 97 C3 ,0.00%,0.00%,0.5000,150.0000,0.0000,1000.0000,5.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a63,"and %eax, %ebx",21 C3 ,0.08%,0.05%,0.5982,66.0714,0.0000,410.7143,22.8261,0.0000,0.0000,0.0000,5.3571,133.0357,15.1786,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a65,"mov %rdx, %rax",48 89 D0 ,0.01%,0.01%,0.3571,21.4286,0.0000,71.4286,60.0000,0.0000,0.0000,0.0000,0.0000,64.2857,28.5714,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a68,"sub %rsi, %rax",48 29 F0 ,0.00%,0.00%,0.5000,150.0000,0.0000,500.0000,5.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a6b,"lea (%r14,%r9,1), %rsi",4B 8D 34 0E ,0.00%,0.00%,0.0000,0.0000,0.0000,1000.0000,5.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a6f,"cmp $0x08, %rax",48 83 F8 08 ,0.00%,0.00%,0.2500,0.0000,0.0000,250.0000,10.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a73,"setnbe %al",0F 97 C0 ,0.00%,0.00%,0.6667,66.6667,0.0000,666.6667,5.0000,0.0000,0.0000,0.0000,33.3333,200.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a76,"and %ebx, %eax",21 D8 ,0.03%,0.02%,0.5217,30.4348,0.0000,282.6087,20.7692,0.0000,0.0000,0.0000,4.3478,93.4783,19.5652,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a78,"mov %rdx, %rbx",48 89 D3 ,0.01%,0.00%,2.0000,50.0000,0.0000,1000.0000,5.0000,0.0000,0.0000,0.0000,0.0000,275.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a7b,"sub %rsi, %rbx",48 29 F3 ,0.06%,0.05%,0.5046,66.9725,0.0000,422.0183,19.7826,0.0000,0.0000,0.0000,0.9174,144.9541,12.8440,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a7e,"cmp $0x08, %rbx",48 83 FB 08 ,0.00%,0.00%,0.0000,125.0000,0.0000,500.0000,25.0000,0.0000,0.0000,0.0000,0.0000,125.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a82,"setnbe %bl",0F 97 C3 ,0.01%,0.00%,0.5000,110.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,10.0000,200.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a85,"test %bl, %al",84 D8 ,0.00%,0.00%,0.2500,25.0000,0.0000,125.0000,10.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a87,"jz 0x0000000140005CB8",0F 84 2B 02 00 00 ,0.00%,0.01%,0.1818,27.2727,0.0000,181.8182,30.0000,0.0000,0.0000,0.0000,0.0000,81.8182,18.1818,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a8d,"lea 0x04(%r14,%r12,4), %rbx",4B 8D 5C A6 04 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a92,"mov %rdx, %rax",48 89 D0 ,0.01%,0.02%,0.2703,62.1622,0.0000,324.3243,18.3333,0.0000,0.0000,0.0000,0.0000,129.7297,10.8108,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a95,"sub %rbx, %rax",48 29 D8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a98,"cmp $0x10, %rax",48 83 F8 10 ,0.06%,0.06%,0.4160,66.4000,1.2048,400.0000,16.6000,0.0000,0.0000,0.8000,3.2000,136.0000,10.4000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005a9c,"jbe 0x0000000140005CB8",0F 86 16 02 00 00 ,0.00%,0.01%,0.3636,18.1818,0.0000,181.8182,35.0000,0.0000,0.0000,0.0000,0.0000,63.6364,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005aa6,"jbe 0x0000000140005D40",0F 86 94 02 00 00 ,0.00%,0.00%,4.0000,200.0000,0.0000,2000.0000,5.0000,0.0000,0.0000,0.0000,0.0000,600.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005aac,"lea (,%r12,4), %rax",4A 8D 04 A5 00 00 00 00 ,0.00%,0.00%,0.1667,16.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,16.6667,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ab4,"lea -0x04(%r14,%r11,1), %rbx",4B 8D 5C 1E FC ,0.00%,0.00%,0.0000,50.0000,0.0000,1000.0000,10.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ab9,"lea (%r14,%rax,1), %rdi",49 8D 3C 06 ,0.02%,0.01%,0.5926,51.8519,0.0000,703.7037,16.8421,0.0000,0.0000,0.0000,7.4074,218.5185,22.2222,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005abd,"lea 0x08(%r14,%rax,1), %rsi",49 8D 74 06 08 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ac2,"mov -0x18(%rbp), %rax",48 8B 45 E8 ,0.09%,0.05%,0.6667,71.0526,0.0000,456.1404,16.9231,0.0000,0.0000,0.0000,1.7544,159.6491,12.2807,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ac6,"lea -0x04(%r14,%r10,1), %r11",4F 8D 5C 16 FC ,0.00%,0.00%,0.2500,37.5000,0.0000,375.0000,13.3333,0.0000,0.0000,0.0000,0.0000,112.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005acb,"lea -0x04(%r14,%r9,1), %r10",4F 8D 54 0E FC ,0.00%,0.00%,0.2857,28.5714,0.0000,428.5714,23.3333,0.0000,0.0000,0.0000,14.2857,128.5714,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ad0,"lea -0x04(%r14,%r8,1), %r9",4F 8D 4C 06 FC ,0.03%,0.02%,0.5714,73.8095,0.0000,452.3810,12.1053,0.0000,0.0000,0.0000,0.0000,114.2857,21.4286,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ad5,"lea -0x04(%rax,%rcx,1), %r8",4C 8D 44 08 FC ,0.07%,0.06%,0.4889,60.7407,0.0000,333.3333,19.3333,0.0000,0.0000,0.0000,1.4815,120.7407,12.5926,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ada,"mov -0xAC(%rbp), %ecx",8B 8D 54 FF FF FF ,0.01%,0.00%,1.1111,33.3333,0.0000,444.4445,15.0000,0.0000,0.0000,0.0000,0.0000,88.8889,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ae0,"xor %eax, %eax",31 C0 ,0.01%,0.01%,0.7692,38.4615,0.0000,461.5385,11.6667,0.0000,0.0000,7.6923,0.0000,153.8462,15.3846,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ae2,"shl $0x04, %rcx",48 C1 E1 04 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ae6,"nop %ax, (%rax,%rax,1)",66 2E 0F 1F 84 00 00 00 00 00 ,0.04%,0.02%,0.7750,65.0000,0.0000,475.0000,11.0526,0.0000,5.0000,0.0000,10.0000,117.5000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005af4,"movups (%rdi,%rax,1), %xmm0",0F 10 04 07 ,0.26%,0.19%,0.5542,47.7108,0.0000,395.1807,16.0366,0.0000,0.2410,0.0000,14.4578,168.4337,30.1205,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005af8,"movups (%rbx,%rax,1), %xmm4",0F 10 24 03 ,0.30%,0.25%,0.4860,51.5829,0.0000,439.4786,15.5508,0.0000,0.0000,0.1862,4.4693,138.1750,16.0149,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005afc,"addps %xmm5, %xmm0",0F 58 C5 ,0.25%,0.19%,0.5277,66.0241,0.0000,419.2771,16.3218,0.0000,0.0000,0.0000,5.5422,152.7711,25.7831,0.2410,0.0000,0.0000,0.0000,0.0000
+,0x140005aff,"movups (%r11,%rax,1), %xmm5",41 0F 10 2C 03 ,0.74%,0.58%,0.5307,53.1502,0.1520,406.3005,15.3280,0.0000,0.0000,0.0000,3.6349,134.7334,14.7011,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b04,"addps %xmm4, %xmm0",0F 58 C4 ,2.64%,1.93%,0.5623,57.2672,0.0845,440.6288,15.3074,0.0000,0.0000,0.1209,1.9831,133.9541,16.0580,0.1209,0.0000,0.0000,0.0000,0.0000
+,0x140005b07,"movups (%r10,%rax,1), %xmm4",41 0F 10 24 02 ,0.12%,0.11%,0.4800,62.6667,0.0000,453.3333,14.0196,0.0000,0.0000,0.0000,6.6667,155.5556,25.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b0c,"addps %xmm5, %xmm0",0F 58 C5 ,0.42%,0.25%,0.7004,55.7252,0.0000,450.3817,15.8898,0.0000,0.1908,0.0000,2.2901,99.0458,10.8779,0.1908,0.0000,0.0000,0.0000,0.0000
+,0x140005b0f,"movups (%r9,%rax,1), %xmm5",41 0F 10 2C 01 ,0.17%,0.13%,0.5634,61.5672,0.0000,526.1194,13.2624,0.0000,0.0000,0.0000,8.9552,147.7612,19.7761,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b14,"addps %xmm4, %xmm0",0F 58 C4 ,5.84%,4.63%,0.5205,54.8201,0.1106,398.8480,15.4345,0.0000,0.1718,0.1213,2.1423,125.1112,11.7118,0.1011,0.0000,0.0000,0.0000,0.0000
+,0x140005b17,"movups (%r8,%rax,1), %xmm4",41 0F 10 24 00 ,0.24%,0.17%,0.5734,52.1739,0.0000,358.6956,20.6818,0.0000,0.2717,0.0000,5.4348,150.0000,21.7391,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b1c,"addps %xmm5, %xmm0",0F 58 C5 ,6.53%,4.68%,0.5754,57.7181,0.0346,426.7159,15.9213,0.0000,0.2598,0.1599,4.1563,138.4354,21.7404,0.1499,0.0000,0.0000,0.0000,0.0000
+,0x140005b1f,"subps %xmm4, %xmm0",0F 5C C4 ,0.92%,0.68%,0.5546,62.5000,0.2186,414.6175,17.3970,0.0000,0.0683,0.0000,3.0055,139.9590,18.0328,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b22,"divps %xmm1, %xmm0",0F 5E C1 ,2.63%,2.06%,0.5264,56.5691,0.1604,428.8632,14.9841,0.0000,0.1815,0.1135,2.8591,136.4420,16.2469,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b25,"movups %xmm0, (%rdx,%rax,1)",0F 11 04 02 ,12.03%,8.91%,0.5574,56.2336,0.0280,433.4104,15.5180,0.0000,0.0893,0.1365,2.6888,135.1434,15.4606,0.0578,0.0000,0.0000,0.0000,0.0000
+,0x140005b29,"add $0x10, %rax",48 83 C0 10 ,1.73%,1.21%,0.5886,62.8329,0.1843,472.4045,14.3709,0.0000,0.1544,0.0772,3.1262,163.7978,48.7843,0.1544,0.0000,0.0000,0.0000,0.0000
+,0x140005b2d,"cmp %rcx, %rax",48 39 C8 ,0.02%,0.02%,0.3962,54.7170,0.0000,339.6227,18.3333,0.0000,0.0000,0.0000,1.8868,122.6415,18.8679,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b30,"jnz 0x0000000140005AF0",75 BE ,0.06%,0.04%,0.5158,64.2105,0.0000,442.1053,12.8571,0.0000,1.0526,0.0000,2.1053,123.1579,21.0526,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b38,"mov %edi, %eax",89 F8 ,0.01%,0.01%,0.8000,53.3333,0.0000,400.0000,23.3333,0.0000,0.0000,6.6667,6.6667,200.0000,13.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b3a,"cmp %edi, -0x44(%rbp)",39 7D BC ,0.00%,0.00%,0.2000,40.0000,0.0000,200.0000,60.0000,0.0000,0.0000,0.0000,0.0000,160.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005b3d,"jz 0x0000000140005C6A",0F 84 27 01 00 00 ,0.02%,0.02%,0.4314,33.3333,0.0000,352.9412,22.2222,0.0000,1.9608,0.0000,1.9608,156.8627,11.7647,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005c6a,"cmp -0xA0(%rbp), %r15",4C 3B BD 60 FF FF FF ,0.01%,0.00%,0.6667,44.4444,0.0000,333.3333,3.3333,0.0000,0.0000,0.0000,0.0000,133.3333,11.1111,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005c71,"jnz 0x0000000140005970",0F 85 F9 FC FF FF ,0.07%,0.07%,0.4714,53.5714,0.0000,350.0000,16.1224,0.0000,0.0000,0.0000,0.7143,122.8571,13.5714,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005c7e,"mov -0xD0(%rbp), %r8",4C 8B 85 30 FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005c85,"mov -0xD8(%rbp), %rdx",48 8B 95 28 FF FF FF ,0.02%,0.02%,0.6667,54.5455,0.0000,393.9394,17.6923,0.0000,0.0000,0.0000,3.0303,133.3333,6.0606,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005c8c,"mov -0xC0(%rbp), %rcx",48 8B 8D 40 FF FF FF ,0.01%,0.01%,1.0000,72.7273,0.0000,454.5454,24.0000,0.0000,0.0000,0.0000,9.0909,163.6364,9.0909,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ca4,"jle 0x0000000140005D58",0F 8E AE 00 00 00 ,0.00%,0.00%,1.0000,0.0000,0.0000,500.0000,20.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005d5f,"pop %rbx",5B ,0.00%,0.00%,1.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005d60,"pop %rsi",5E ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005d66,"pop %r14",41 5E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::applyVorticityConfinement(smoke::SmokeState&, float, float, smoke_demo::m3_b1::SlabRange)" (Showing only disassembly),,,,10.43%,12.55%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400074b4,"mov %r12, (%rbp)",4C 89 65 00 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400074c3,"mov %rcx, -0x10(%rbp)",48 89 4D F0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007530,"mov 0x28(%rbp), %rax",48 8B 45 28 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007557,"lea 0x02(%r10), %r9",4D 8D 4A 02 ,0.00%,0.00%,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000755b,"mov 0x40(%rbp), %r11",4C 8B 5D 40 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000755f,"mov 0x110(%rbp), %rdi",48 8B BD 10 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000756d,"imul %rbx, %r9",4C 0F AF CB ,0.00%,0.00%,0.1250,50.0000,0.0000,375.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,37.5000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007583,"add $0x01, %r10",49 83 C2 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007587,"imul %r10, %rdx",49 0F AF D2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000758e,"mov %r10, 0x98(%rbp)",4C 89 95 98 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,125.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000,62.5000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007595,"add %r11, %r9",4D 01 D9 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007598,"imul %r10, %r8",4D 0F AF C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075a0,"lea (%rcx,%r11,1), %r9",4E 8D 0C 19 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075a7,"mov 0x110(%rbp), %rbx",48 8B 9D 10 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075ae,"lea (%rdi,%r9,4), %rsi",4A 8D 34 8F ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075b2,"lea (%r14,%rdx,1), %r9",4D 8D 0C 16 ,0.00%,0.00%,0.3333,66.6667,0.0000,500.0000,13.3333,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075bd,"mov %rsi, 0xA0(%rbp)",48 89 B5 A0 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075c4,"add %r8, %rax",4C 01 C0 ,0.00%,0.00%,1.0000,100.0000,0.0000,1000.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075d9,"lea (%rsi,%r9,4), %r14",4E 8D 34 8E ,0.00%,0.01%,0.3636,27.2727,0.0000,454.5454,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,45.4545,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075dd,"mov 0x50(%rbp), %r9",4C 8B 4D 50 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075fb,"add %r8, %r9",4D 01 C1 ,0.00%,0.00%,0.8000,20.0000,0.0000,600.0000,6.6667,0.0000,0.0000,0.0000,0.0000,0.0000,80.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400075fe,"add 0x60(%rbp), %r8",4C 03 45 60 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007611,"add %r11, %rax",4C 01 D8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007614,"mov 0xD8(%rbp), %r11",4C 8B 9D D8 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000761b,"lea (%rsi,%r9,4), %r12",4E 8D 24 8E ,0.00%,0.00%,0.5000,0.0000,0.0000,500.0000,40.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000761f,"mov 0xE8(%rbp), %r9",4C 8B 8D E8 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007631,"lea (%rsi,%r8,4), %rsi",4A 8D 34 86 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007641,"lea (%r11,%rax,4), %r11",4D 8D 1C 83 ,0.00%,0.00%,1.3333,100.0000,0.0000,1000.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007645,"mov 0xF0(%rbp), %rax",48 8B 85 F0 00 00 00 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000764c,"imul %r10, %rax",49 0F AF C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007657,"lea (%r9,%rax,4), %rax",49 8D 04 81 ,0.00%,0.00%,1.0000,0.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000765b,"mov 0x100(%rbp), %r9",4C 8B 8D 00 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007670,"imul %r10, %rax",49 0F AF C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,600.0000,3.3333,0.0000,0.0000,0.0000,20.0000,0.0000,120.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007674,"add 0x88(%rbp), %rax",48 03 85 88 00 00 00 ,0.00%,0.00%,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000767f,"mov 0xC8(%rbp), %rax",48 8B 85 C8 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000768a,"add 0x90(%rbp), %rax",48 03 85 90 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007691,"lea (%r8,%rax,4), %r8",4D 8D 04 80 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007695,"mov $0x01, %eax",B8 01 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000769a,"mov %r8, 0x120(%rbp)",4C 89 85 20 01 00 00 ,0.00%,0.00%,0.0000,100.0000,0.0000,666.6667,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,133.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076a8,"nop %eax, (%rax,%rax,1)",0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076b0,"movssl (%r15,%rax,4), %xmm0",F3 41 0F 10 04 87 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076b6,"movssl (%r14,%rax,4), %xmm3",F3 41 0F 10 1C 86 ,0.03%,0.02%,0.4706,33.3333,0.0000,647.0588,3.9394,0.0000,0.0000,0.0000,7.8431,0.0000,52.9412,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076bc,"subss (%r10,%rax,4), %xmm0",F3 41 0F 5C 04 82 ,0.02%,0.02%,0.5789,21.0526,0.0000,842.1053,4.0625,0.0000,0.0000,0.0000,10.5263,0.0000,63.1579,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076c2,"subss (%r13,%rax,4), %xmm3",F3 41 0F 5C 5C 85 00 ,0.03%,0.05%,0.2941,23.5294,0.0000,490.1961,4.2000,0.0000,0.0000,0.9804,8.8235,0.9804,56.8627,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076c9,"movssl (%r12,%rax,4), %xmm5",F3 41 0F 10 2C 84 ,0.28%,0.28%,0.4105,34.6470,0.9479,637.1100,4.9485,0.0000,0.0000,0.0000,8.8670,0.1642,81.1166,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076cf,"subss (%rdi,%rax,4), %xmm5",F3 0F 5C 2C 87 ,0.03%,0.02%,0.8108,37.8378,0.0000,648.6486,3.3333,0.0000,0.0000,0.0000,8.1081,0.0000,56.7568,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076d4,"movssl (%rsi,%rax,4), %xmm6",F3 0F 10 34 86 ,0.02%,0.01%,0.4828,37.9310,0.0000,379.3103,8.1818,0.0000,0.0000,0.0000,0.0000,0.0000,51.7241,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076d9,"subss (%rbx,%rax,4), %xmm6",F3 0F 5C 34 83 ,0.02%,0.01%,0.6538,30.7692,0.0000,346.1538,5.5556,0.0000,0.0000,0.0000,3.8462,0.0000,69.2308,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076de,"subss %xmm3, %xmm0",F3 0F 5C C3 ,0.01%,0.01%,0.6154,38.4615,0.0000,153.8462,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,46.1538,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076e2,"movssl 0x04(%rcx,%rax,4), %xmm3",F3 0F 10 5C 81 04 ,0.00%,0.01%,0.2000,10.0000,0.0000,350.0000,10.0000,0.0000,0.0000,0.0000,5.0000,0.0000,35.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076e8,"subss -0x04(%rcx,%rax,4), %xmm3",F3 0F 5C 5C 81 FC ,0.01%,0.01%,0.4737,26.3158,0.0000,526.3158,6.0000,0.0000,0.0000,0.0000,15.7895,5.2632,68.4211,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076ee,"mov 0x128(%rbp), %r8",4C 8B 85 28 01 00 00 ,0.10%,0.10%,0.4319,28.1690,0.0000,497.6526,6.0377,0.0000,0.0000,0.0000,16.9014,0.0000,57.2770,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076f5,"subss %xmm3, %xmm5",F3 0F 5C EB ,0.27%,0.30%,0.3723,29.6923,0.5181,543.0769,4.6742,0.0000,0.0000,0.0000,6.3077,0.4615,72.4615,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076f9,"movssl 0x04(%rdx,%rax,4), %xmm3",F3 0F 10 5C 82 04 ,0.03%,0.02%,0.6591,15.9091,0.0000,522.7273,7.3913,0.0000,0.0000,0.0000,9.0909,0.0000,54.5455,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400076ff,"subss -0x04(%rdx,%rax,4), %xmm3",F3 0F 5C 5C 82 FC ,0.05%,0.04%,0.5195,33.7662,0.0000,649.3506,4.0000,0.0000,1.2987,1.2987,14.2857,0.0000,49.3507,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007705,"mulss %xmm4, %xmm0",F3 0F 59 C4 ,0.07%,0.07%,0.4177,27.2152,0.0000,474.6835,7.2000,0.0000,0.0000,0.0000,20.2532,0.0000,36.0760,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007709,"mulss %xmm4, %xmm5",F3 0F 59 EC ,0.01%,0.01%,0.5238,19.0476,0.0000,476.1905,3.0000,0.0000,0.0000,0.0000,14.2857,0.0000,61.9048,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000770d,"subss %xmm6, %xmm3",F3 0F 5C DE ,0.05%,0.04%,0.4773,30.6818,0.0000,488.6364,3.4884,0.0000,0.0000,0.0000,15.9091,3.4091,59.0909,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007711,"movss %xmm0, (%r11,%rax,4)",F3 41 0F 11 04 83 ,0.02%,0.01%,0.5000,50.0000,0.0000,678.5714,5.2632,0.0000,0.0000,0.0000,17.8571,0.0000,71.4286,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007717,"mulss %xmm0, %xmm0",F3 0F 59 C0 ,0.05%,0.05%,0.3419,26.4957,3.2258,683.7607,4.2500,0.0000,0.0000,0.0000,9.4017,0.0000,68.3761,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000771b,"mulss %xmm4, %xmm3",F3 0F 59 DC ,0.29%,0.31%,0.3880,31.4417,0.9756,593.5583,4.1344,0.0000,0.0000,0.0000,7.9755,0.3067,68.2515,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000771f,"movss %xmm5, (%r8,%rax,4)",F3 41 0F 11 2C 80 ,0.04%,0.04%,0.4318,28.4091,0.0000,545.4545,6.2500,0.0000,0.0000,0.0000,13.6364,1.1364,43.1818,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007725,"mulss %xmm5, %xmm5",F3 0F 59 ED ,0.04%,0.03%,0.4730,28.3784,0.0000,472.9730,4.8571,0.0000,1.3514,0.0000,5.4054,0.0000,63.5135,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007729,"mov 0x120(%rbp), %r8",4C 8B 85 20 01 00 00 ,0.03%,0.03%,0.5000,34.4828,0.0000,827.5862,3.3333,0.0000,0.0000,0.0000,12.0690,0.0000,84.4828,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007730,"movss %xmm3, (%r9,%rax,4)",F3 41 0F 11 1C 81 ,0.01%,0.00%,1.7500,75.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,25.0000,0.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007736,"mulss %xmm3, %xmm3",F3 0F 59 DB ,0.04%,0.03%,0.5902,24.5902,0.0000,475.4099,7.9310,0.0000,0.0000,0.0000,9.8361,1.6393,62.2951,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000773a,"addss %xmm5, %xmm0",F3 0F 58 C5 ,0.04%,0.03%,0.4429,24.2857,0.0000,471.4286,9.3939,0.0000,0.0000,0.0000,12.8571,0.0000,47.1429,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000773e,"addss %xmm3, %xmm0",F3 0F 58 C3 ,0.05%,0.04%,0.4881,21.4286,0.0000,511.9048,7.2093,0.0000,0.0000,0.0000,8.3333,1.1905,60.7143,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007742,"sqrtss %xmm0, %xmm0",F3 0F 51 C0 ,0.32%,0.33%,0.3927,28.4712,0.9852,582.0477,4.5301,0.0000,0.0000,0.0000,8.6957,0.5610,71.5288,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007746,"movss %xmm0, (%r8,%rax,4)",F3 41 0F 11 04 80 ,2.15%,2.19%,0.4053,30.6114,1.1872,612.0137,4.7118,0.0000,0.0000,0.0428,7.9094,0.4489,73.0868,0.0214,0.0000,0.0000,0.0000,0.0000
+,0x14000774c,"add $0x01, %rax",48 83 C0 01 ,0.04%,0.03%,0.6167,33.3333,0.0000,466.6667,4.6429,0.0000,0.0000,0.0000,10.0000,0.0000,90.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007750,"cmp %rax, 0x108(%rbp)",48 39 85 08 01 00 00 ,0.01%,0.01%,0.3182,36.3636,0.0000,500.0000,5.4545,0.0000,0.0000,0.0000,13.6364,0.0000,77.2727,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007757,"jnz 0x00000001400076B0",0F 85 53 FF FF FF ,0.00%,0.01%,0.3333,50.0000,0.0000,416.6667,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,83.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007764,"cmp %r10, 0xA8(%rbp)",4C 39 95 A8 00 00 00 ,0.00%,0.00%,0.2000,0.0000,0.0000,700.0000,8.5714,0.0000,0.0000,0.0000,0.0000,0.0000,80.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007775,"mov -0x18(%rbp), %r9",4C 8B 4D E8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007823,"mov %r10, %rbx",4C 89 D3 ,0.00%,0.00%,0.0000,0.0000,0.0000,666.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007835,"xor %edx, %edx",31 D2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007843,"mov %rdi, 0x90(%rbp)",48 89 BD 90 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000785f,"imul %r14, %rdi",49 0F AF FE ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000787d,"imul %r14, %rdi",49 0F AF FE ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078b7,"add $0x01, %rdx",48 83 C2 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078c2,"mov %rcx, 0x108(%rbp)",48 89 8D 08 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078c9,"mov 0xB8(%rbp), %r12",4C 8B A5 B8 00 00 00 ,0.00%,0.00%,1.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,133.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078e5,"imul %rdx, %rax",48 0F AF C2 ,0.00%,0.00%,0.5000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,50.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078f4,"lea (%rdi,%rax,1), %r9",4C 8D 0C 07 ,0.00%,0.00%,0.4286,14.2857,0.0000,285.7143,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,71.4286,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400078ff,"lea (%r15,%rax,1), %r8",4D 8D 04 07 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007903,"lea (%r9,%r15,1), %r10",4F 8D 14 39 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000790b,"lea (%rcx,%r8,4), %r8",4E 8D 04 81 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007912,"lea (%rcx,%r10,4), %rbx",4A 8D 1C 91 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007916,"lea (%rcx,%r9,4), %r11",4E 8D 1C 89 ,0.00%,0.00%,0.2000,40.0000,0.0000,600.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000791a,"lea (%rdi,%rax,1), %r9",4C 8D 0C 07 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000792c,"lea (%rcx,%r9,4), %r10",4E 8D 14 89 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007934,"mov $0x01, %eax",B8 01 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000793d,"add 0x78(%rbp), %rdi",48 03 7D 78 ,0.00%,0.00%,2.0000,200.0000,0.0000,4000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007941,"nop %eax, (%rax)",0F 1F 40 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007957,"movssl (%rbx,%rax,4), %xmm5",F3 0F 10 2C 83 ,0.05%,0.05%,0.4272,38.8350,0.0000,436.8932,6.2222,0.0000,0.0000,0.0000,23.3010,0.9709,25.2427,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000795c,"subss -0x04(%r8,%rax,4), %xmm0",F3 41 0F 5C 44 80 FC ,0.06%,0.07%,0.3247,26.6234,2.4390,363.6364,2.6786,0.0000,0.0000,0.0000,6.4935,0.0000,20.7792,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007963,"subss (%r11,%rax,4), %xmm5",F3 41 0F 5C 2C 83 ,0.05%,0.05%,0.4200,40.0000,2.5000,410.0000,3.9024,0.0000,0.0000,0.0000,28.0000,0.0000,31.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007969,"movssl (%r10,%rax,4), %xmm3",F3 41 0F 10 1C 82 ,0.01%,0.01%,1.0000,18.1818,0.0000,1181.8182,1.5385,0.0000,0.0000,0.0000,27.2727,0.0000,54.5455,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000796f,"subss (%r9,%rax,4), %xmm3",F3 41 0F 5C 1C 81 ,0.03%,0.03%,0.4308,30.7692,0.0000,492.3077,2.8125,0.0000,0.0000,0.0000,3.0769,0.0000,23.0769,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007975,"mulss %xmm4, %xmm0",F3 0F 59 C4 ,0.21%,0.31%,0.2812,26.7477,0.0000,378.4195,3.0924,0.0000,0.0000,0.0000,1.5198,0.1520,27.6596,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007979,"mulss %xmm4, %xmm5",F3 0F 59 EC ,0.03%,0.03%,0.5455,27.2727,0.0000,490.9091,3.7037,0.0000,0.0000,0.0000,30.9091,0.0000,16.3636,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000797d,"mulss %xmm4, %xmm3",F3 0F 59 DC ,0.00%,0.01%,0.0000,15.3846,0.0000,76.9231,10.0000,0.0000,0.0000,0.0000,7.6923,0.0000,7.6923,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007981,"movaps %xmm0, %xmm6",0F 28 F0 ,0.00%,0.01%,0.3333,16.6667,0.0000,166.6667,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007984,"mulss %xmm0, %xmm6",F3 0F 59 F0 ,0.05%,0.06%,0.3182,37.1212,0.0000,507.5757,2.6866,0.0000,0.0000,0.0000,3.7879,0.0000,35.6061,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007988,"movaps %xmm5, %xmm8",44 0F 28 C5 ,0.03%,0.02%,0.5000,30.4348,0.0000,260.8696,5.8333,0.0000,0.0000,0.0000,13.0435,0.0000,36.9565,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000798c,"mulss %xmm5, %xmm8",F3 44 0F 59 C5 ,0.00%,0.00%,0.3000,20.0000,0.0000,200.0000,5.0000,0.0000,0.0000,0.0000,30.0000,0.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007991,"addss %xmm8, %xmm6",F3 41 0F 58 F0 ,0.01%,0.02%,0.3023,44.1860,5.2632,558.1395,3.3333,0.0000,0.0000,0.0000,4.6512,0.0000,34.8837,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007996,"movaps %xmm3, %xmm8",44 0F 28 C3 ,0.21%,0.33%,0.2578,25.6410,1.1111,310.5413,2.9817,0.0000,0.0000,0.0000,4.2735,0.1425,27.6353,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000799a,"mulss %xmm3, %xmm8",F3 44 0F 59 C3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000799f,"addss %xmm8, %xmm6",F3 41 0F 58 F0 ,0.00%,0.00%,0.7500,0.0000,0.0000,1000.0000,2.5000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079a4,"sqrtss %xmm6, %xmm6",F3 0F 51 F6 ,0.04%,0.03%,0.5441,47.0588,0.0000,441.1765,5.0000,0.0000,0.0000,0.0000,13.2353,0.0000,35.2941,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079a8,"comiss %xmm7, %xmm6",0F 2F F7 ,0.74%,0.85%,0.3626,28.1924,0.0000,368.1592,2.9129,0.0000,0.0000,0.0000,5.6938,0.1106,25.2626,0.1106,0.0000,0.0000,0.0000,0.0000
+,0x1400079ab,"jbe 0x0000000140007AB0",0F 86 FF 00 00 00 ,0.07%,0.12%,0.2419,31.4516,0.0000,383.0645,3.3684,0.0000,0.0000,0.0000,1.2097,0.0000,26.6129,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079b1,"mov 0xE0(%rbp), %r15",4C 8B BD E0 00 00 00 ,0.83%,1.14%,0.3010,26.5214,1.0853,347.0395,3.3531,0.0000,0.0000,0.0000,2.3438,0.2467,29.5641,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079b8,"mov 0x128(%rbp), %rcx",48 8B 8D 28 01 00 00 ,0.04%,0.06%,0.2701,21.8978,0.0000,299.2701,2.4390,0.0000,0.0000,0.0000,5.8394,0.0000,21.1679,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079bf,"movaps %xmm1, %xmm8",44 0F 28 C1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079c3,"movaps %xmm3, %xmm12",44 0F 28 E3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079c7,"mulss %xmm2, %xmm8",F3 44 0F 59 C2 ,0.00%,0.00%,0.4286,0.0000,0.0000,142.8571,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,14.2857,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079cc,"imul %rdx, %r15",4C 0F AF FA ,0.01%,0.01%,0.2222,14.8148,0.0000,370.3704,5.0000,0.0000,0.0000,0.0000,7.4074,0.0000,40.7407,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079d0,"add %rax, %rcx",48 01 C1 ,0.01%,0.00%,1.6667,100.0000,0.0000,1333.3334,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079d3,"add %r15, %rcx",4C 01 F9 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079d6,"mov 0xD8(%rbp), %r15",4C 8B BD D8 00 00 00 ,0.24%,0.36%,0.2763,28.9474,0.0000,357.8947,2.3529,0.0000,0.0000,0.0000,1.9737,0.0000,24.8684,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079dd,"divss %xmm6, %xmm8",F3 44 0F 5E C6 ,0.05%,0.06%,0.3361,21.8487,0.0000,310.9244,1.8919,0.0000,0.0000,0.0000,1.6807,0.0000,21.0084,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079e2,"movaps %xmm5, %xmm6",0F 28 F5 ,1.14%,1.65%,0.2850,28.1294,0.5045,358.5013,2.8187,0.0000,0.0000,0.0000,2.1573,0.1419,28.0159,0.0284,0.0000,0.0000,0.0000,0.0000
+,0x1400079e5,"movssl (%r15,%rcx,4), %xmm9",F3 45 0F 10 0C 8F ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,3.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079eb,"mov 0xF0(%rbp), %r15",4C 8B BD F0 00 00 00 ,0.01%,0.01%,0.4643,46.4286,0.0000,250.0000,12.8571,0.0000,0.0000,0.0000,7.1429,0.0000,21.4286,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079f2,"mov 0x120(%rbp), %rcx",48 8B 8D 20 01 00 00 ,0.01%,0.01%,0.3158,15.7895,0.0000,105.2632,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,26.3158,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400079f9,"imul %rdx, %r15",4C 0F AF FA ,0.00%,0.00%,0.5000,75.0000,0.0000,500.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a02,"mulss %xmm9, %xmm5",F3 41 0F 59 E9 ,0.01%,0.01%,0.3846,7.6923,0.0000,538.4615,2.8571,0.0000,0.0000,0.0000,0.0000,0.0000,30.7692,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a07,"add %rax, %rcx",48 01 C1 ,0.02%,0.03%,0.2258,17.7419,0.0000,467.7419,2.4138,0.0000,0.0000,0.0000,6.4516,0.0000,20.9677,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a0a,"add %r15, %rcx",4C 01 F9 ,0.27%,0.37%,0.3023,30.4786,0.0000,369.0176,2.5256,0.0000,0.0000,0.0000,1.8892,0.1259,28.7154,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a0d,"mov 0xE8(%rbp), %r15",4C 8B BD E8 00 00 00 ,0.00%,0.00%,0.5000,100.0000,0.0000,2500.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a14,"movssl (%r15,%rcx,4), %xmm10",F3 45 0F 10 14 8F ,0.00%,0.00%,0.0000,28.5714,0.0000,285.7143,5.0000,0.0000,0.0000,0.0000,14.2857,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a1a,"mov 0xF8(%rbp), %r15",4C 8B BD F8 00 00 00 ,0.02%,0.02%,0.4324,24.3243,0.0000,486.4865,1.6667,0.0000,0.0000,0.0000,8.1081,0.0000,16.2162,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a21,"lea (%rax,%r14,1), %rcx",4A 8D 0C 30 ,0.00%,0.00%,1.0000,50.0000,0.0000,1000.0000,5.0000,0.0000,0.0000,0.0000,75.0000,0.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a29,"mulss %xmm10, %xmm12",F3 45 0F 59 E2 ,0.01%,0.00%,0.5556,33.3333,0.0000,555.5555,2.0000,0.0000,0.0000,0.0000,44.4444,0.0000,11.1111,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a2e,"add %r15, %rcx",4C 01 F9 ,0.03%,0.03%,0.4143,22.8571,0.0000,342.8571,4.1667,0.0000,0.0000,0.0000,8.5714,0.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a31,"mov 0x100(%rbp), %r15",4C 8B BD 00 01 00 00 ,0.28%,0.36%,0.3218,29.6010,0.0000,414.4144,2.5155,0.0000,0.0000,0.0000,2.9601,0.2574,32.3037,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a38,"movssl (%r15,%rcx,4), %xmm11",F3 45 0F 10 1C 8F ,0.00%,0.00%,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a3e,"mov 0xD0(%rbp), %r15",4C 8B BD D0 00 00 00 ,0.01%,0.01%,0.6316,31.5789,0.0000,157.8947,10.0000,0.0000,0.0000,0.0000,5.2632,0.0000,42.1053,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a45,"lea (%r13,%rax,1), %rcx",49 8D 4C 05 00 ,0.00%,0.00%,0.1429,71.4286,0.0000,142.8571,40.0000,0.0000,0.0000,0.0000,14.2857,0.0000,85.7143,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a4a,"mulss %xmm11, %xmm6",F3 41 0F 59 F3 ,0.00%,0.00%,0.1111,0.0000,0.0000,111.1111,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a4f,"mulss %xmm0, %xmm11",F3 44 0F 59 D8 ,0.01%,0.01%,0.9167,33.3333,0.0000,750.0000,6.6667,0.0000,0.0000,0.0000,8.3333,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a54,"mulss %xmm10, %xmm0",F3 41 0F 59 C2 ,0.01%,0.03%,0.2182,32.7273,0.0000,490.9091,4.4444,0.0000,0.0000,0.0000,3.6364,0.0000,27.2727,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a59,"subss %xmm12, %xmm6",F3 41 0F 5C F4 ,0.26%,0.36%,0.2974,30.6410,1.2552,376.9231,2.5850,0.0000,0.0000,0.0000,2.0513,0.1282,25.3846,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a5e,"subss %xmm11, %xmm3",F3 41 0F 5C DB ,0.00%,0.00%,1.0000,200.0000,0.0000,1000.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a63,"subss %xmm5, %xmm0",F3 0F 5C C5 ,0.01%,0.00%,0.8333,66.6667,0.0000,666.6667,7.5000,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a67,"mulss %xmm8, %xmm6",F3 41 0F 59 F0 ,0.00%,0.01%,0.1875,12.5000,0.0000,312.5000,8.0000,0.0000,0.0000,0.0000,12.5000,0.0000,6.2500,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a6c,"addss (%r15,%rcx,4), %xmm6",F3 41 0F 58 34 8F ,0.06%,0.08%,0.2784,17.6136,0.0000,363.6364,2.3438,0.0000,0.0000,0.0000,1.7045,0.0000,23.8636,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a72,"mulss %xmm8, %xmm3",F3 41 0F 59 D8 ,0.26%,0.38%,0.2761,24.0491,0.0000,407.3620,2.7711,0.0000,0.0000,0.0000,1.9632,0.1227,30.0613,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a77,"mulss %xmm8, %xmm0",F3 41 0F 59 C0 ,0.02%,0.03%,0.3167,28.3333,0.0000,450.0000,4.4444,0.0000,0.0000,0.0000,8.3333,1.6667,41.6667,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a7c,"movss %xmm6, (%r15,%rcx,4)",F3 41 0F 11 34 8F ,0.08%,0.14%,0.2365,29.3919,1.1494,415.5405,3.1707,0.0000,0.0000,0.0000,4.0541,0.0000,29.7297,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a82,"mov 0x118(%rbp), %r15",4C 8B BD 18 01 00 00 ,0.21%,0.28%,0.3059,27.7961,0.5917,363.4868,2.7149,0.0000,0.0000,0.0000,4.2763,0.0000,22.6974,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a89,"lea (%r12,%rax,1), %rcx",49 8D 0C 04 ,0.01%,0.01%,0.2963,29.6296,0.0000,407.4074,4.5455,0.0000,0.0000,0.0000,22.2222,0.0000,59.2593,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a8d,"addss (%r15,%rcx,4), %xmm3",F3 41 0F 58 1C 8F ,0.00%,0.00%,1.0000,50.0000,0.0000,500.0000,10.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a93,"movss %xmm3, (%r15,%rcx,4)",F3 41 0F 11 1C 8F ,0.05%,0.05%,0.3981,29.1262,0.0000,436.8932,3.3333,0.0000,0.0000,0.0000,7.7670,0.0000,34.9515,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007a99,"mov 0x110(%rbp), %r15",4C 8B BD 10 01 00 00 ,0.27%,0.35%,0.3226,22.3118,0.0000,384.4086,3.6713,0.0000,0.0000,0.0000,6.1828,0.1344,27.8226,0.1344,0.0000,0.0000,0.0000,0.0000
+,0x140007aa0,"lea (%rdi,%rax,1), %rcx",48 8D 0C 07 ,0.01%,0.01%,0.5000,33.3333,0.0000,83.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007aa4,"addss (%r15,%rcx,4), %xmm0",F3 41 0F 58 04 8F ,0.00%,0.01%,0.1765,11.7647,0.0000,117.6471,20.0000,0.0000,0.0000,0.0000,11.7647,0.0000,11.7647,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007aaa,"movss %xmm0, (%r15,%rcx,4)",F3 41 0F 11 04 8F ,0.09%,0.11%,0.3502,31.6456,0.0000,405.0633,3.5417,0.0000,0.0000,0.0000,8.0169,0.0000,19.4093,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ab0,"add $0x01, %rax",48 83 C0 01 ,0.26%,0.32%,0.3256,34.1534,0.0000,387.8437,3.1343,0.0000,0.0000,0.1447,3.6179,0.1447,27.9305,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ab4,"cmp %rax, %rsi",48 39 C6 ,0.00%,0.00%,0.1429,28.5714,0.0000,142.8571,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,14.2857,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ab7,"jnz 0x0000000140007950",0F 85 93 FE FF FF ,0.00%,0.00%,0.3333,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ac4,"mov 0xA0(%rbp), %r15",4C 8B BD A0 00 00 00 ,0.01%,0.00%,0.8333,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,16.6667,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007acb,"cmp %rdx, 0xA8(%rbp)",48 39 95 A8 00 00 00 ,0.00%,0.00%,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007ad2,"jnz 0x00000001400078B0",0F 85 D8 FD FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007adc,"mov 0x58(%rbp), %r11",4C 8B 5D 58 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007af9,"jle 0x0000000140007B04",7E 09 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::setBoundary(smoke::Field3D&, smoke_demo::m3_b1::BoundaryKind) (.constprop.0)" (Showing only disassembly),,,,4.07%,0.57%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400041c1,"push %r15",41 57 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400041d8,"mov %rax, %rsi",48 89 C6 ,0.00%,0.00%,0.5000,0.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004202,"movsxdl 0x0C(%rdx), %rsi",48 63 72 0C ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004244,"nop %eax, (%rax,%rax,1)",0F 1F 44 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004249,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004254,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004286,"add $0x01, %r14d",41 83 C6 01 ,1.04%,0.13%,3.3321,127.0073,2.2989,441.6058,42.3967,0.0000,179.1971,94.1606,19.7080,4.0146,1.8248,0.7299,0.0000,0.0000,0.0000,0.0000
+,0x14000428a,"movss %xmm0, (%r8)",F3 41 0F 11 00 ,0.01%,0.00%,2.6667,33.3333,0.0000,333.3333,60.0000,0.0000,100.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000428f,"movssl (%r8,%r9,4), %xmm0",F3 43 0F 10 04 88 ,0.04%,0.00%,4.8750,200.0000,0.0000,1125.0000,31.1111,0.0000,187.5000,112.5000,37.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004295,"movss %xmm0, 0x04(%r8,%r9,4)",F3 43 0F 11 44 88 04 ,1.83%,0.22%,3.3920,125.7862,0.8333,540.8805,34.2636,0.0000,163.7317,97.9036,13.2075,1.4675,2.9350,0.6289,0.0000,0.0000,0.0000,0.0000
+,0x14000429c,"add %r11, %r8",4D 01 D8 ,0.05%,0.01%,2.3889,122.2222,0.0000,611.1111,26.3636,0.0000,155.5556,100.0000,22.2222,0.0000,5.5556,5.5556,0.0000,0.0000,0.0000,0.0000
+,0x14000429f,"cmp %r10d, %r14d",45 39 D6 ,0.01%,0.00%,4.3333,266.6667,0.0000,333.3333,100.0000,0.0000,233.3333,66.6667,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400042a2,"jnz 0x0000000140004280",75 DC ,0.01%,0.00%,3.6667,233.3333,0.0000,1666.6666,10.0000,0.0000,200.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400042a8,"cmp %r13, %rbx",4C 39 EB ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000432c,"and %r10d, %r9d",45 21 D1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400043aa,"cmp %rcx, %rax",48 39 C8 ,0.00%,0.00%,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400043ad,"lea (,%r9,4), %r8",4E 8D 04 8D 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400043bd,"cmp %r8, %rax",4C 39 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400043d0,"jz 0x00000001400044C0",0F 84 EA 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400043e0,"lea (%rdx,%r12,4), %rbx",4A 8D 1C A2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400043ea,"xor %eax, %eax",31 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004400,"movups (%rbx,%rax,1), %xmm0",0F 10 04 03 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004404,"movups %xmm0, (%r8,%rax,1)",41 0F 11 04 00 ,0.19%,0.03%,2.5606,121.2121,0.0000,393.9394,32.6923,0.0000,42.4242,31.8182,37.8788,0.0000,7.5758,1.5152,0.0000,0.0000,0.0000,0.0000
+,0x140004409,"movups (%rcx,%rax,1), %xmm0",0F 10 04 01 ,0.02%,0.01%,1.5000,71.4286,0.0000,285.7143,25.0000,0.0000,14.2857,28.5714,50.0000,0.0000,21.4286,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000440d,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.35%,0.05%,2.9524,160.0000,1.1905,647.6190,25.0000,0.0000,44.7619,36.1905,36.1905,0.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004412,"add $0x10, %rax",48 83 C0 10 ,0.11%,0.01%,3.3571,192.8571,0.0000,357.1429,49.0000,0.0000,17.8571,42.8571,57.1429,0.0000,10.7143,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004419,"jnz 0x0000000140004400",75 E5 ,0.00%,0.00%,2.0000,250.0000,0.0000,0.0000,0.0000,0.0000,50.0000,50.0000,50.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004422,"jz 0x0000000140004788",0F 84 60 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004431,"jz 0x0000000140004468",74 35 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004456,"mov %r8d, %eax",44 89 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004459,"and $-0x02, %eax",83 E0 FE ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004460,"jz 0x0000000140004770",0F 84 0A 03 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000449f,"imul %r13, %r9",4D 0F AF CD ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400044a7,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400044ab,"lea (%r14,%r9,1), %rdi",4B 8D 3C 0E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000450f,"mov -0x4C(%rbp), %eax",8B 45 B4 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400045e4,"lea 0x10(,%r9,4), %rax",4A 8D 04 8D 10 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400045ec,"cmp %rax, %r8",49 39 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400045ef,"lea 0x10(%r8), %rcx",49 8D 48 10 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400045fb,"setnl %al",0F 9D C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004601,"setnl %cl",0F 9D C1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004620,"lea (%rdx,%r12,4), %rbx",4A 8D 1C A2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004644,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.07%,0.03%,1.1667,118.5185,0.0000,500.0000,21.4815,0.0000,5.5556,0.0000,29.6296,0.0000,24.0741,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004649,"movups (%r8,%rax,1), %xmm0",41 0F 10 04 00 ,0.08%,0.01%,2.5000,207.1429,0.0000,571.4286,30.0000,0.0000,14.2857,0.0000,78.5714,3.5714,307.1429,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000464e,"movups %xmm0, (%rcx,%rax,1)",0F 11 04 01 ,0.12%,0.03%,1.8167,150.0000,1.1111,600.0000,22.2222,0.0000,8.3333,0.0000,43.3333,1.6667,73.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004652,"add $0x10, %rax",48 83 C0 10 ,0.07%,0.02%,1.2200,144.0000,0.0000,420.0000,23.3333,0.0000,2.0000,2.0000,38.0000,0.0000,42.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004656,"cmp %rax, %rsi",48 39 C6 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004659,"jnz 0x0000000140004640",75 E5 ,0.00%,0.00%,2.0000,300.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004662,"jz 0x00000001400046F8",0F 84 90 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000466e,"cmp $-0x01, %ebx",83 FB FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004677,"lea (%rax,%r12,1), %r11",4E 8D 1C 20 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000467f,"lea (%rax,%r9,1), %r11",4E 8D 1C 08 ,0.00%,0.00%,2.0000,500.0000,0.0000,1000.0000,10.0000,0.0000,100.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004683,"mov %rbx, (%rdx,%r11,4)",4A 89 1C 9A ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004687,"lea (%rax,%rdi,1), %r11",4C 8D 1C 38 ,0.01%,0.00%,2.5000,350.0000,0.0000,1500.0000,3.3333,0.0000,0.0000,0.0000,100.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004692,"mov %r11, (%rdx,%rax,4)",4C 89 1C 82 ,0.00%,0.00%,1.5000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004696,"mov %r8d, %eax",44 89 C0 ,0.00%,0.00%,1.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000469c,"and $0x01, %r8d",41 83 E0 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400046d7,"mov -0x28(%rbp), %rax",48 8B 45 D8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400046df,"lea (%r9,%rax,1), %r12",4D 8D 24 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400046e7,"lea (%r9,%r14,1), %rdi",4B 8D 3C 31 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004774,"cmp -0x38(%rbp), %r13",4C 3B 6D C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::subtractPressureGradient(smoke::Field3D&, smoke::Field3D&, smoke::Field3D&, smoke::Field3D const&, smoke_demo::m3_b1::SlabRange)" (Showing only disassembly),,,,1.94%,2.34%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140005e67,"mov %rcx, %r12",49 89 CC ,0.00%,0.00%,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005e79,"imul %rax, %rdi",48 0F AF F8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005e84,"mov %rdx, -0x98(%rbp)",48 89 95 68 FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005eb1,"mov %rdi, -0x28(%rbp)",48 89 7D D8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ed4,"mov %r14, %rax",4C 89 F0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005edb,"imul %rdi, %rax",48 0F AF C7 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ee3,"lea (%r14,%rax,1), %rdx",49 8D 14 06 ,0.00%,0.00%,0.0000,25.0000,0.0000,250.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ee7,"lea (%r15,%rcx,4), %r9",4D 8D 0C 8F ,0.00%,0.00%,0.2000,20.0000,0.0000,1200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005eeb,"mov -0x60(%rbp), %rcx",48 8B 4D A0 ,0.00%,0.00%,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005eef,"imul %rdi, %rcx",48 0F AF CF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ef3,"add -0x38(%rbp), %rcx",48 03 4D C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005ef7,"lea (%rsi,%rcx,4), %r8",4C 8D 04 8E ,0.00%,0.00%,0.1667,50.0000,0.0000,166.6667,20.0000,0.0000,0.0000,0.0000,16.6667,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005efb,"lea (%rdx,%r12,1), %rcx",4A 8D 0C 22 ,0.00%,0.00%,2.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f03,"add %r12, %rdx",4C 01 E2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f06,"lea (%r15,%rcx,4), %rsi",49 8D 34 8F ,0.00%,0.00%,0.0000,200.0000,0.0000,2000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f0e,"lea (%r15,%rdx,4), %rbx",49 8D 1C 97 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f12,"mov -0x50(%rbp), %rdx",48 8B 55 B0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f16,"imul %rdi, %rdx",48 0F AF D7 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f1a,"add -0x30(%rbp), %rdx",48 03 55 D0 ,0.00%,0.00%,0.3333,66.6667,0.0000,666.6667,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,66.6667,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f1e,"lea (%rcx,%rdx,4), %rcx",48 8D 0C 91 ,0.00%,0.00%,0.0000,75.0000,0.0000,1250.0000,4.0000,0.0000,0.0000,0.0000,0.0000,0.0000,125.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f22,"mov -0x28(%rbp), %rdx",48 8B 55 D8 ,0.00%,0.00%,0.6667,33.3333,0.0000,333.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f26,"add %rax, %rdx",48 01 C2 ,0.00%,0.00%,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f29,"add -0x20(%rbp), %rax",48 03 45 E0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f2d,"lea (%r15,%rax,4), %r10",4D 8D 14 87 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f31,"mov -0x40(%rbp), %rax",48 8B 45 C0 ,0.00%,0.00%,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f35,"lea (%r15,%rdx,4), %r11",4D 8D 1C 97 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f39,"mov -0x48(%rbp), %rdx",48 8B 55 B8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f41,"add -0x18(%rbp), %rax",48 03 45 E8 ,0.00%,0.00%,0.4000,80.0000,0.0000,400.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f45,"lea (%rdx,%rax,4), %rdx",48 8D 14 82 ,0.00%,0.00%,2.0000,200.0000,0.0000,3000.0000,3.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f49,"mov $0x01, %eax",B8 01 00 00 00 ,0.00%,0.00%,0.5000,25.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f57,"subss -0x04(%r9,%rax,4), %xmm0",F3 41 0F 5C 44 81 FC ,0.01%,0.00%,0.5556,55.5556,0.0000,444.4445,7.5000,0.0000,0.0000,0.0000,0.0000,0.0000,77.7778,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f5e,"movssl (%r8,%rax,4), %xmm1",F3 41 0F 10 0C 80 ,0.21%,0.26%,0.3303,48.0944,0.3774,533.5753,3.5374,0.0000,0.0000,0.0000,1.4519,0.0000,34.8457,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f64,"mulss %xmm2, %xmm0",F3 0F 59 C2 ,0.06%,0.06%,0.4016,48.3607,0.0000,655.7377,3.0000,0.0000,0.0000,0.0000,3.2787,0.8197,75.4098,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f68,"subss %xmm0, %xmm1",F3 0F 5C C8 ,0.36%,0.43%,0.3474,47.2313,0.2299,637.3507,3.2027,0.0000,0.0000,0.0000,1.6287,0.2172,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f6c,"movss %xmm1, (%r8,%rax,4)",F3 41 0F 11 0C 80 ,0.14%,0.20%,0.2948,42.4528,1.1111,514.1509,3.4862,0.0000,0.0000,0.0000,1.4151,0.0000,30.1887,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f72,"movssl (%rsi,%rax,4), %xmm0",F3 0F 10 04 86 ,0.26%,0.28%,0.3847,50.3390,0.6734,589.8305,3.8793,0.0000,0.0000,0.0000,5.5932,0.1695,40.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f77,"subss (%rbx,%rax,4), %xmm0",F3 0F 5C 04 83 ,0.01%,0.01%,0.4762,42.8571,0.0000,619.0476,4.6154,0.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f7c,"movssl (%rcx,%rax,4), %xmm1",F3 0F 10 0C 81 ,0.02%,0.01%,0.5312,40.6250,0.0000,937.5000,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,46.8750,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f81,"mulss %xmm2, %xmm0",F3 0F 59 C2 ,0.04%,0.06%,0.3223,56.1983,0.0000,644.6281,2.9487,0.0000,0.0000,0.8264,4.1322,0.8264,89.2562,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f85,"subss %xmm0, %xmm1",F3 0F 5C C8 ,0.09%,0.12%,0.3077,43.0769,0.8929,484.6154,3.4127,0.0000,0.0000,0.0000,1.5385,0.0000,43.4615,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f89,"movss %xmm1, (%rcx,%rax,4)",F3 0F 11 0C 81 ,0.04%,0.06%,0.3058,31.4050,0.0000,438.0165,4.7170,0.0000,0.0000,0.0000,0.0000,0.0000,32.2314,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f8e,"movssl (%r11,%rax,4), %xmm0",F3 41 0F 10 04 83 ,0.09%,0.11%,0.3450,46.2882,0.0000,646.2882,4.1216,0.0000,0.0000,0.0000,14.4105,0.8734,51.9651,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f94,"movssl (%rdx,%rax,4), %xmm1",F3 0F 10 0C 82 ,0.05%,0.04%,0.4688,47.9167,0.0000,666.6667,3.5938,0.0000,0.0000,0.0000,0.0000,0.0000,22.9167,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f99,"subss (%r10,%rax,4), %xmm0",F3 41 0F 5C 04 82 ,0.23%,0.27%,0.3508,51.4834,1.6949,579.4066,3.3434,0.0000,0.1745,0.0000,2.6178,0.0000,32.4607,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005f9f,"mulss %xmm2, %xmm0",F3 0F 59 C2 ,0.02%,0.01%,0.6364,45.4545,0.0000,863.6364,4.7368,0.0000,0.0000,0.0000,0.0000,0.0000,36.3636,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005fa3,"subss %xmm0, %xmm1",F3 0F 5C C8 ,0.09%,0.08%,0.4261,55.1136,1.0309,664.7727,3.3333,0.0000,0.0000,0.0000,2.2727,0.0000,57.9545,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005fa7,"movss %xmm1, (%rdx,%rax,4)",F3 0F 11 0C 82 ,0.06%,0.11%,0.2363,41.7722,0.0000,514.7679,3.1148,0.0000,0.0000,0.0000,1.2658,0.0000,42.6160,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005fac,"add $0x01, %rax",48 83 C0 01 ,0.12%,0.17%,0.2911,50.6739,2.6596,590.2965,3.8813,0.0000,0.0000,0.0000,1.3477,0.2695,36.6577,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005fb0,"cmp %rax, %r13",49 39 C5 ,0.00%,0.00%,0.5000,75.0000,0.0000,250.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005fb3,"jnz 0x0000000140005F50",75 9B ,0.01%,0.03%,0.2281,47.3684,0.0000,438.5965,5.6000,0.0000,0.0000,0.0000,1.7544,0.0000,61.4035,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005fb9,"jnz 0x0000000140005ED0",0F 85 11 FF FF FF ,0.00%,0.01%,0.2727,45.4545,0.0000,818.1818,3.3333,0.0000,0.0000,0.0000,0.0000,0.0000,54.5455,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005fc6,"mov -0x90(%rbp), %r9",4C 8B 8D 70 FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005fd4,"mov -0x80(%rbp), %rcx",48 8B 4D 80 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006002,"pop %r14",41 5E ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::setBoundary(smoke::Field3D&, smoke_demo::m3_b1::BoundaryKind)" (Showing only disassembly),,,,1.32%,0.15%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140006028,"mov %rax, %rdi",48 89 C7 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400060c9,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006105,"add $0x01, %r8d",41 83 C0 01 ,0.37%,0.04%,4.1795,105.1282,1.2195,320.5128,58.4000,0.0000,285.8974,11.5385,2.5641,0.0000,2.5641,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006109,"mulss %xmm0, %xmm1",F3 0F 59 C8 ,0.00%,0.00%,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000610d,"movss %xmm1, (%rdx)",F3 0F 11 0A ,0.02%,0.00%,3.3333,0.0000,0.0000,333.3333,10.0000,0.0000,200.0000,16.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006111,"movssl (%rdx,%r9,4), %xmm1",F3 42 0F 10 0C 8A ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006117,"mulss %xmm0, %xmm1",F3 0F 59 C8 ,0.56%,0.06%,3.8605,103.8760,0.7463,379.8450,34.2857,0.0000,209.3023,5.4264,0.7752,3.1008,0.7752,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000611b,"movss %xmm1, 0x04(%rdx,%r9,4)",F3 42 0F 11 4C 8A 04 ,0.03%,0.00%,4.0000,50.0000,0.0000,166.6667,130.0000,0.0000,366.6667,16.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006122,"add %rbx, %rdx",48 01 DA ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006125,"cmp %r10d, %r8d",45 39 D0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006128,"jnz 0x0000000140006100",75 D6 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006270,"jbe 0x000000014000673B",0F 86 C5 04 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400062c4,"mulps %xmm1, %xmm0",0F 59 C1 ,0.05%,0.00%,4.6000,190.0000,0.0000,500.0000,52.0000,0.0000,90.0000,10.0000,40.0000,0.0000,10.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400062c7,"movups %xmm0, (%r9,%rax,1)",41 0F 11 04 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400062cc,"movups (%rcx,%rax,1), %xmm0",0F 10 04 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400062d0,"mulps %xmm1, %xmm0",0F 59 C1 ,0.13%,0.01%,3.8966,120.6897,0.0000,551.7241,19.3750,0.0000,62.0690,6.8966,17.2414,0.0000,6.8966,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400062d3,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400062d8,"add $0x10, %rax",48 83 C0 10 ,0.02%,0.00%,2.0000,128.5714,0.0000,285.7143,20.0000,0.0000,71.4286,14.2857,28.5714,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400062dc,"cmp %rsi, %rax",48 39 F0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006399,"movssl 0x00000001400F2630, %xmm2",F3 0F 10 15 8F C2 0E 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400064c6,"lea (,%r8,4), %r9",4E 8D 0C 85 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400064eb,"setnl %al",0F 9D C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006504,"jbe 0x000000014000672B",0F 86 21 02 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006544,"mulps %xmm1, %xmm0",0F 59 C1 ,0.03%,0.01%,1.5789,84.2105,0.0000,631.5789,12.5000,0.0000,15.7895,0.0000,15.7895,0.0000,47.3684,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006547,"movups %xmm0, (%r11,%rax,1)",41 0F 11 04 03 ,0.00%,0.00%,2.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000654c,"movups (%r9,%rax,1), %xmm0",41 0F 10 04 01 ,0.03%,0.00%,2.5556,188.8889,0.0000,444.4445,25.0000,0.0000,11.1111,0.0000,44.4444,0.0000,444.4445,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006551,"mulps %xmm1, %xmm0",0F 59 C1 ,0.03%,0.01%,2.4545,154.5455,0.0000,454.5454,28.0000,0.0000,9.0909,0.0000,54.5455,0.0000,18.1818,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006554,"movups %xmm0, (%rcx,%rax,1)",0F 11 04 01 ,0.00%,0.00%,3.0000,100.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006558,"add $0x10, %rax",48 83 C0 10 ,0.01%,0.01%,1.0000,66.6667,0.0000,166.6667,60.0000,0.0000,0.0000,0.0000,33.3333,0.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000655f,"jnz 0x0000000140006540",75 DF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006568,"jz 0x0000000140006718",0F 84 AA 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006587,"lea (%rax,%r10,1), %r11",4E 8D 1C 10 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006593,"lea (%rax,%r8,1), %r11",4E 8D 1C 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400065a7,"mov %r9d, %eax",44 89 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400065ad,"and $0x01, %r9d",41 83 E1 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400065f8,"mov -0x28(%rbp), %rax",48 8B 45 D8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000667e,"pop %r13",41 5D ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006708,"jnz 0x00000001400065F4",0F 85 E6 FE FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::computeDivergence(smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D const&, smoke::Field3D&, smoke_demo::m3_b1::SlabRange)" (Showing only disassembly),,,,1.15%,0.59%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400053c4,"mov %r9, %rbx",4C 89 CB ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400053de,"imul %rax, %rsi",48 0F AF F0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400053f2,"mov -0x70(%rbp), %rsi",48 8B 75 90 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005437,"mov (%rbp), %rsi",48 8B 75 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000543b,"mov %rcx, 0x30(%rbp)",48 89 4D 30 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000543f,"lea 0x02(%rdi), %rax",48 8D 47 02 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005447,"mov -0x30(%rbp), %rdx",48 8B 55 D0 ,0.00%,0.00%,0.8000,60.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000544b,"imul %rbx, %rax",48 0F AF C3 ,0.00%,0.00%,0.0000,0.0000,0.0000,500.0000,20.0000,0.0000,0.0000,0.0000,50.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005457,"lea (%rax,%rsi,1), %r10",4C 8D 14 30 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000545e,"imul %rbx, %rax",48 0F AF C3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005466,"mov %r10, 0x48(%rbp)",4C 89 55 48 ,0.01%,0.00%,5.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000546a,"lea (%rax,%rsi,1), %rdi",48 8D 3C 30 ,0.00%,0.00%,0.1250,25.0000,0.0000,750.0000,5.0000,0.0000,0.0000,0.0000,0.0000,150.0000,75.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000547a,"imul %rcx, %rax",48 0F AF C1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000547e,"add %rax, %rbx",48 01 C3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005484,"mov -0x18(%rbp), %rax",48 8B 45 E8 ,0.00%,0.00%,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,400.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005488,"mov %rbx, 0x58(%rbp)",48 89 5D 58 ,0.00%,0.00%,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000548c,"imul %rcx, %rax",48 0F AF C1 ,0.00%,0.00%,0.6667,50.0000,0.0000,666.6667,10.0000,0.0000,0.0000,0.0000,0.0000,183.3333,83.3333,16.6667,0.0000,0.0000,0.0000,0.0000
+,0x140005498,"mov %rax, 0x28(%rbp)",48 89 45 28 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000549c,"cmpl $0x01, 0x3C(%rbp)",83 7D 3C 01 ,0.00%,0.00%,1.3333,0.0000,0.0000,333.3333,40.0000,0.0000,0.0000,0.0000,0.0000,166.6667,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400054a6,"mov 0x40(%rbp), %r11",4C 8B 5D 40 ,0.00%,0.00%,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400054aa,"add $0x01, %rax",48 83 C0 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400054c6,"lea (%r14,%rsi,1), %r12",4D 8D 24 36 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400054ce,"lea 0x08(,%rdi,4), %r11",4C 8D 1C BD 08 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400054d6,"mov %rax, %r8",49 89 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400054e7,"cmp $0x08, %r8",49 83 F8 08 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400054f2,"lea (%r15,%r11,1), %r12",4F 8D 24 1F ,0.00%,0.00%,1.0000,0.0000,0.0000,500.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400054f6,"cmp $0x08, %r9",49 83 F9 08 ,0.00%,0.00%,0.5000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005501,"mov %rax, %r8",49 89 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005504,"sub %r12, %r8",4D 29 E0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000550f,"setnbe %r8b",41 0F 97 C0 ,0.00%,0.00%,0.3333,0.0000,0.0000,1000.0000,3.3333,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005513,"and %r9d, %r8d",45 21 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000551c,"cmp $0x08, %r9",49 83 F9 08 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005520,"setnbe %r9b",41 0F 97 C1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005524,"test %r9b, %r8b",45 84 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005531,"mov %rax, %r8",49 89 C0 ,0.00%,0.00%,0.5000,0.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005534,"lea 0x04(%r9,%rdx,4), %r9",4D 8D 4C 91 04 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005540,"jbe 0x0000000140005720",0F 86 DA 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005554,"lea -0x04(%r15,%r10,1), %r10",4F 8D 54 17 FC ,0.00%,0.00%,2.0000,100.0000,0.0000,1000.0000,10.0000,0.0000,0.0000,0.0000,0.0000,600.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005561,"lea -0x04(%r14,%rbx,1), %rbx",49 8D 5C 1E FC ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005566,"lea -0x04(%r14,%rsi,1), %rsi",49 8D 74 36 FC ,0.00%,0.00%,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000556b,"lea 0x08(%r9,%rdx,4), %rdi",49 8D 7C 91 08 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005570,"lea (%r9,%rdx,4), %r9",4D 8D 0C 91 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005574,"nop",90 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005575,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005580,"movups (%r9,%r8,1), %xmm5",43 0F 10 2C 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005585,"movups (%rdi,%r8,1), %xmm0",42 0F 10 04 07 ,0.02%,0.01%,0.9091,54.5455,0.0000,454.5454,18.0000,0.0000,0.0000,0.0000,4.5455,159.0909,27.2727,4.5455,0.0000,0.0000,0.0000,0.0000
+,0x14000558a,"subps %xmm5, %xmm0",0F 5C C5 ,0.19%,0.09%,0.9022,68.4783,0.0000,472.8261,16.3218,0.0000,0.0000,0.0000,1.0870,161.4130,13.0435,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000558d,"movups (%r10,%r8,1), %xmm5",43 0F 10 2C 02 ,0.01%,0.01%,0.5714,35.7143,0.0000,71.4286,70.0000,0.0000,0.0000,0.0000,0.0000,114.2857,57.1429,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005592,"addps %xmm5, %xmm0",0F 58 C5 ,0.21%,0.09%,0.9154,75.1244,0.0000,537.3134,15.1852,0.0000,0.4975,0.4975,2.4876,155.7214,10.4478,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140005595,"movups (%r11,%r8,1), %xmm5",43 0F 10 2C 03 ,0.05%,0.03%,0.5811,50.0000,0.0000,391.8919,13.4483,0.0000,0.0000,0.0000,5.4054,102.7027,18.9189,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000559a,"subps %xmm5, %xmm0",0F 5C C5 ,0.02%,0.01%,0.7500,67.8571,0.0000,178.5714,36.0000,0.0000,0.0000,0.0000,3.5714,160.7143,28.5714,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000559d,"movups (%rbx,%r8,1), %xmm5",42 0F 10 2C 03 ,0.02%,0.01%,0.6000,50.0000,0.0000,333.3333,16.0000,0.0000,0.0000,0.0000,0.0000,110.0000,16.6667,3.3333,0.0000,0.0000,0.0000,0.0000
+,0x1400055a2,"addps %xmm5, %xmm0",0F 58 C5 ,0.18%,0.09%,0.8247,51.0309,1.0101,365.9794,21.2676,0.0000,0.5155,0.0000,0.5155,146.9072,13.9175,0.5155,0.0000,0.0000,0.0000,0.0000
+,0x1400055a5,"movups (%rsi,%r8,1), %xmm5",42 0F 10 2C 06 ,0.03%,0.01%,0.7931,72.4138,0.0000,310.3448,28.8889,0.0000,0.0000,0.0000,3.4483,196.5517,51.7241,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400055aa,"subps %xmm5, %xmm0",0F 5C C5 ,0.08%,0.04%,0.8734,58.2278,0.0000,329.1139,20.3846,0.0000,0.0000,1.2658,2.5316,98.7342,32.9114,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400055ad,"mulps %xmm1, %xmm0",0F 59 C1 ,0.05%,0.03%,0.7500,66.0714,0.0000,428.5714,14.1667,0.0000,0.0000,0.0000,0.0000,137.5000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400055b0,"movups %xmm0, (%rax,%r8,1)",42 0F 11 04 00 ,0.13%,0.07%,0.7838,76.3513,0.0000,439.1892,16.0000,0.0000,0.0000,0.0000,3.3784,156.7568,33.1081,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400055b5,"add $0x10, %r8",49 83 C0 10 ,0.11%,0.06%,0.7037,69.6296,0.0000,444.4445,16.5000,0.0000,0.0000,0.0000,1.4815,188.1481,63.7037,0.7407,0.0000,0.0000,0.0000,0.0000
+,0x1400055b9,"cmp %r13, %r8",4D 39 E8 ,0.01%,0.00%,1.0000,37.5000,0.0000,625.0000,18.0000,0.0000,0.0000,0.0000,0.0000,125.0000,25.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400055bc,"jnz 0x0000000140005580",75 C2 ,0.01%,0.00%,1.6667,100.0000,0.0000,333.3333,40.0000,0.0000,0.0000,0.0000,0.0000,366.6667,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400055c1,"mov %edi, %eax",89 F8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400055c3,"cmp %edi, 0x3C(%rbp)",39 7D 3C ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400055c6,"jz 0x00000001400056DE",0F 84 12 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400056e2,"cmp %rdx, 0x30(%rbp)",48 39 55 30 ,0.00%,0.00%,0.0000,0.0000,0.0000,666.6667,0.0000,0.0000,0.0000,0.0000,0.0000,200.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400056e6,"jnz 0x0000000140005430",0F 85 44 FD FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400056f0,"mov -0x50(%rbp), %r8",4C 8B 45 B0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::applyBuoyancy(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke_demo::m3_b1::SlabRange)" (Showing only disassembly),,,,0.86%,0.46%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140006771,"push %r15",41 57 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068d0,"mov -0x60(%rbp), %eax",8B 45 A0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068d3,"mov %rdx, -0x68(%rbp)",48 89 55 98 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400068f2,"mov -0x78(%rbp), %rax",48 8B 45 88 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006914,"mov -0x40(%rbp), %r11",4C 8B 5D C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,5.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006920,"add -0x28(%rbp), %rsi",48 03 75 D8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006924,"imul %r10, %r11",4D 0F AF DA ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006934,"cmp $0x01, %r12d",41 83 FC 01 ,0.00%,0.00%,1.0000,400.0000,0.0000,3000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,300.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006942,"lea 0x08(,%rsi,4), %rax",48 8D 04 B5 08 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000694e,"lea (%r13,%rax,1), %r9",4D 8D 4C 05 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006959,"cmp $0x08, %r8",49 83 F8 08 ,0.00%,0.00%,0.5000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,150.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006968,"mov %rdx, %r8",49 89 D0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000696b,"sub %r9, %r8",4D 29 C8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006972,"jbe 0x0000000140006B30",0F 86 B8 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006982,"mov -0x50(%rbp), %ecx",8B 4D B0 ,0.00%,0.00%,0.5000,33.3333,0.0000,333.3333,5.0000,0.0000,0.0000,0.0000,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000698e,"movaps %xmm13, %xmm5",41 0F 28 ED ,0.00%,0.00%,0.0000,33.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x14000699b,"movaps %xmm9, %xmm3",41 0F 28 D9 ,0.00%,0.00%,1.0000,100.0000,0.0000,1000.0000,10.0000,0.0000,0.0000,0.0000,0.0000,400.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069aa,"nop %ax, (%rax,%rax,1)",66 66 2E 0F 1F 84 00 00 00 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069c5,"movups (%r9,%rax,1), %xmm1",41 0F 10 0C 01 ,0.16%,0.09%,0.7730,79.4595,0.0000,389.1892,14.3056,0.0000,0.0000,0.0000,2.1622,147.5676,2.7027,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069ca,"subps %xmm5, %xmm0",0F 5C C5 ,0.21%,0.12%,0.7297,84.9421,0.0000,320.4633,15.6627,0.0000,0.3861,0.0000,1.9305,123.5521,0.3861,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069cd,"mulps %xmm2, %xmm1",0F 59 CA ,0.01%,0.01%,0.4545,63.6364,0.0000,90.9091,50.0000,0.0000,0.0000,0.0000,0.0000,118.1818,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069d0,"mulps %xmm4, %xmm0",0F 59 C4 ,0.06%,0.03%,0.8909,87.2727,0.0000,436.3636,14.1667,0.0000,0.0000,0.0000,0.0000,147.2727,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069d3,"addps %xmm1, %xmm0",0F 58 C1 ,0.02%,0.01%,0.5185,96.2963,0.0000,407.4074,11.8182,0.0000,0.0000,0.0000,3.7037,96.2963,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069d6,"movups (%rdx,%rax,1), %xmm1",0F 10 0C 02 ,0.05%,0.03%,0.8333,72.2222,0.0000,351.8518,17.8947,0.0000,0.0000,0.0000,1.8519,98.1481,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069da,"mulps %xmm3, %xmm0",0F 59 C3 ,0.17%,0.11%,0.6696,72.6872,0.0000,312.7753,16.4789,0.0000,1.3216,0.0000,1.7621,114.0969,0.8811,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069dd,"addps %xmm1, %xmm0",0F 58 C1 ,0.08%,0.03%,1.0635,88.8889,0.0000,365.0794,19.5652,0.0000,0.0000,0.0000,0.0000,160.3175,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069e0,"movups %xmm0, (%rdx,%rax,1)",0F 11 04 02 ,0.03%,0.01%,0.8966,62.0690,0.0000,206.8965,41.6667,0.0000,0.0000,0.0000,3.4483,131.0345,3.4483,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069e4,"add $0x10, %rax",48 83 C0 10 ,0.06%,0.03%,0.8485,98.4848,0.0000,272.7273,22.7778,0.0000,0.0000,0.0000,0.0000,122.7273,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069eb,"jnz 0x00000001400069C0",75 D3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069f0,"mov %eax, %edx",89 C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x1400069f2,"cmp %r12d, %eax",44 39 E0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006aa8,"cmp -0x30(%rbp), %r10",4C 3B 55 D0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006ab6,"add $0x01, %rdx",48 83 C2 01 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006ac0,"jnle 0x00000001400068D0",0F 8F 0A FE FF FF ,0.00%,0.00%,0.0000,100.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke::Field3D::fill(float)" (Showing only disassembly),,,,0.52%,0.11%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140007f93,"add $0x20, %rax",48 83 C0 20 ,0.16%,0.03%,2.4561,264.9123,0.0000,421.0526,21.6667,0.0000,1.7544,0.0000,21.0526,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007f97,"movups %xmm0, -0x10(%rax)",0F 11 40 F0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007f9b,"cmp %rcx, %rax",48 39 C8 ,0.36%,0.08%,1.8772,181.2865,0.0000,409.3567,25.7143,0.0000,1.1696,0.5848,8.7719,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140007f9e,"jnz 0x0000000140007F90",75 F0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::addSources(smoke::SmokeState&, smoke::SmokeParams const&, float, smoke_demo::m3_b1::SlabRange)" (Showing only disassembly),,,,0.03%,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140004a04,"cvtsi2ss %eax, %xmm0",F3 0F 2A C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a08,"subss %xmm5, %xmm0",F3 0F 5C C5 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a0c,"mulss %xmm0, %xmm0",F3 0F 59 C0 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a10,"addss %xmm1, %xmm0",F3 0F 58 C1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a14,"addss %xmm3, %xmm0",F3 0F 58 C3 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a18,"comiss %xmm0, %xmm4",0F 2F E0 ,0.00%,0.00%,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a1b,"jb 0x0000000140004A71",72 54 ,0.00%,0.00%,1.0000,0.0000,0.0000,2000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a1d,"movsxdl 0x10(%rcx), %rdx",48 63 51 10 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a25,"imul %r9, %rdx",49 0F AF D1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a3d,"addss %xmm6, %xmm0",F3 0F 58 C6 ,0.01%,0.01%,0.6842,94.7368,5.5556,368.4211,2.8571,0.0000,10.5263,0.0000,0.0000,0.0000,15.7895,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a4f,"imul %r9, %rdx",49 0F AF D1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a61,"movssl (%r12,%rdx,4), %xmm0",F3 41 0F 10 04 94 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a67,"addss %xmm2, %xmm0",F3 0F 58 C2 ,0.00%,0.00%,1.5000,150.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a6b,"movss %xmm0, (%r12,%rdx,4)",F3 41 0F 11 04 94 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a71,"add $0x01, %rax",48 83 C0 01 ,0.00%,0.00%,1.0000,66.6667,0.0000,333.3333,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140004a75,"cmp %eax, %r10d",41 39 C2 ,0.00%,0.00%,0.0000,0.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::project(smoke::SmokeState&, smoke::SmokeParams const&, smoke_demo::m3_b1::SlabRange, double*)" (Showing only disassembly),,,,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140006c5f,"call 0x0000000140007F30",E8 CC 12 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006c68,"test %r15, %r15",4D 85 FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006e28,"pop %r13",41 5D ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006eb5,"mov %rdx, %r14",49 89 D6 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006ec6,"movdl 0x198(%rbx), %xmm1",66 0F 6E 8B 98 01 00 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006f4e,"mov -0x18(%rbp), %rcx",48 8B 4D E8 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006f52,"call 0x00000001400041C0",E8 69 D2 FF FF ,0.00%,0.00%,1.5000,100.0000,0.0000,1000.0000,20.0000,0.0000,0.0000,0.0000,0.0000,200.0000,50.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006f5b,"mov %r13d, %ecx",44 89 E9 ,0.00%,0.00%,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+,0x140006f7c,"jl 0x0000000140006EB0",0F 8C 2E FF FF FF ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"ntdll.dll!0x1800e1598" (DEBUG INFO NOT FOUND),,,,0.01%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800e1598,"mov %rax, (%rcx)",48 89 01 ,0.01%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"ntdll.dll!0x1800e1590" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800e1590,"mov 0x000000007FFE0300, %rax",48 8B 04 25 00 03 FE 7F ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_prof.exe!0x1400cd604" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400cd604,"mov 0x00000001400F9040, %rcx",48 8B 0D 35 BA 02 00 ,0.00%,0.00%,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"ucrtbase.dll!0x1800ee1d0" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800ee1d0,"sub %rcx, %rdx",48 2B D1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_prof.exe!0x1400cd60b" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400cd60b,"mov (%rcx), %rdx",48 8B 11 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"ntdll.dll!0x18008b278" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x18008b278,"test %r9, %r9",4D 85 C9 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_prof.exe!0x1400cd60e" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400cd60e,"mov %rdx, 0x38(%rsp)",48 89 54 24 38 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::advectVelocity(smoke::SmokeState&, float, smoke_demo::m3_b1::SlabRange)" (Showing only disassembly),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140007240,"mov %r12, %r9",4D 89 E1 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_prof.exe!0x1400cd600" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1400cd600,"sub $0x48, %rsp",48 83 EC 48 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"kernel32.dll!0x1800326b0" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x1800326b0,"jmp *0x000000018008BBD0",48 FF 25 19 95 05 00 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"smoke_demo::m3_b1::m3Step(smoke::SmokeState&, smoke::SmokeParams const&, smoke::StepTimings&)" (Showing only disassembly),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x140007d13,"movaps %xmm7, %xmm2",0F 28 D7 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+Function,Address,Instruction,CodeByte,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_EXTERNAL_CACHE_LOCAL (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","WCB_WRITE (PTI)","%WCB_NOT_FULLLINE64B_TO_CLOSE","%WCB_CLOSE_TO_WRITE","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"ntdll.dll!0x18005412e" (DEBUG INFO NOT FOUND),,,,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%,0.00%
+,0x18005412e,"mov 0x08(%rax), %r9",4C 8B 48 08 ,0.00%,0.00%,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
