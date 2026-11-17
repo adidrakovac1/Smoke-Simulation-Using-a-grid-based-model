@@ -362,6 +362,9 @@ def apply_symbols(info, metrics, functions, detail):
 
 # The final optimized version: the configuration the visualization uses (Integration/src/SmokeScene.cpp, D20).
 FINAL_VERSION = "d20_rb15_k6_warm_block_t6"
+# The version before it in the report's CPI card: the same 6 sleeping threads with the reference solver
+# (Jacobi K = 40 from p = 0); CPI 0.69 at 64^3 (PERF_LOG.md, P-005).
+PREVIOUS_VERSION = "d20_jac_k40_block_t6"
 
 
 # D19/D20 versions, from the smoke_prof line (smoke_prof --version d19 [--niti T] [--solver ...]).
@@ -1434,6 +1437,10 @@ function renderGrade() {
   const instR = bm ? ratio(bm.inst, m.inst) : null;       // how many times fewer instructions per step than naive
   const cpiR = bm ? ratio(bm.cpi, m.cpi) : null;          // above 1: fewer cycles per instruction than naive
   const range = bm ? instRange(bm, m) : null;
+  // The final optimized version is also compared with the version before it (DATA.previousVersion: the same threads
+  // that sleep, but the reference Jacobi K = 40 from p = 0), for the CPI card.
+  const prevW = w.version === DATA.finalVersion && DATA.previousVersion ? findV(DATA.previousVersion, w.grid) : null;
+  const prevM = prevW && prevW !== w ? metricsOf(prevW) : null;
   const threadsMatch = infoText(m.timeBase).match(/hardware_threads:\s*(\d+)/);
   const threads = threadsMatch ? +threadsMatch[1] : null;
   const fit = jacobiFit(w, m.timeBase);
@@ -1502,6 +1509,8 @@ function renderGrade() {
   cards.push(card("Efikasnost procesora", "Koliko posla procesor završi u jednom taktu?",
     (sp ? big(fmt(1 / m.cpi, 2), "instrukcija po taktu", `CPI = ${fmt(m.cpi, 2)} ciklusa po instrukciji (manje je bolje)`)
       + (isBase ? `<span class="verdict">polazna verzija</span>` : verdict(cpiR, "manje ciklusa po instrukciji", "više ciklusa po instrukciji", "od naivne verzije"))
+      + (prevM && prevM.cpi ? " " + verdict(ratio(prevM.cpi, m.cpi), "manje ciklusa po instrukciji", "više ciklusa po instrukciji",
+          `od prethodne verzije (${esc(VSHORT[DATA.previousVersion] || DATA.previousVersion)}, CPI ${fmt(prevM.cpi, 2)})`) : "")
       + (cpiR && cpiR < 1 && S > 1 ? `<p class="small">To ne znači da je verzija sporija. Instrukcija je manje (kartica "Količina posla") i svaka radi više posla, pa duže traje. Brzinu određuje proizvod ta dva broja.</p>` : "")
       : notMeasured("nema sesije s hardverskim brojačima")),
     "Procesor radi u taktovima, kao metronom. U jednom taktu može završiti i nekoliko instrukcija, ako ne mora čekati podatke. Kad čeka, taktovi prolaze uprazno."));
@@ -1747,7 +1756,8 @@ def main():
     version_ids = sorted({s["version"] for s in sessions}, key=version_order)
     versions = [{"id": vid, "short": version_label(vid)[0], "long": version_label(vid)[1]} for vid in version_ids]
     payload = {"sessions": sessions, "infos": infos, "workloads": build_workloads(sessions), "classes": CLASS_NAMES,
-               "widths": WIDTH_NAMES, "official": load_official(args.results), "versions": versions}
+               "widths": WIDTH_NAMES, "official": load_official(args.results), "versions": versions,
+               "finalVersion": FINAL_VERSION, "previousVersion": PREVIOUS_VERSION}
     data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     page = PAGE.replace("__GENERATED__", html.escape(datetime.now().strftime("%Y-%m-%d %H:%M"))).replace("__DATA__", data)
     output = Path(args.output) if args.output else Path(args.folders[0]) / "report.html"
