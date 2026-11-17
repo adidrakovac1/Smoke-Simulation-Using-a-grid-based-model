@@ -99,12 +99,14 @@ bool SmokeScene::Setup() {
     return true;
 }
 
-void SmokeScene::PlaceBox(const smoke::GridSize& grid) {
+void SmokeScene::PlaceBox(const smoke::GridSize& grid, bool preserveCenter) {
+    const glm::vec3 oldCenter = m_boxMin + 0.5f * m_boxSize;
     // Cells are cubes, so the box has the same proportions as the grid; it stands on the floor, centred in x and z.
     const float longest = static_cast<float>(std::max({grid.nx, grid.ny, grid.nz}));
     m_boxSize = kBoxLongestSide * glm::vec3(static_cast<float>(grid.nx), static_cast<float>(grid.ny),
                                             static_cast<float>(grid.nz)) / longest;
-    m_boxMin  = glm::vec3(-0.5f * m_boxSize.x, 0.0f, -0.5f * m_boxSize.z);
+    m_boxMin = preserveCenter ? oldCenter - 0.5f * m_boxSize
+                              : glm::vec3(-0.5f * m_boxSize.x, 0.0f, -0.5f * m_boxSize.z);
 }
 
 void SmokeScene::BuildFloor() {
@@ -185,10 +187,13 @@ void SmokeScene::ReadAutoShotSettings() {
 
 void SmokeScene::ApplyObstacle() {
     std::string error;
-    if (!m_obstacle.Load(m_obstacleSettings.path, &error)) {
+    if (m_loadedObstaclePath != m_obstacleSettings.path || !m_obstacle.RenderMesh()) {
+      if (!m_obstacle.Load(m_obstacleSettings.path, &error)) {
         m_state.obstacleMessage = "Greska: " + error;
         spdlog::warn("[SmokeScene] obstacle: {}", error);
         return;
+      }
+      m_loadedObstaclePath = m_obstacleSettings.path;
     }
     // One transform for both sides: world-space triangles for drawing, box-space triangles for the solver.
     m_obstacle.Place(m_obstacleSettings, m_boxMin, m_boxSize);
@@ -289,7 +294,7 @@ void SmokeScene::OnUpdate(float deltaTime, IInputProvider& input) {
     // One simulation step per frame with the solver's own dt (not the frame time), so the result is the same
     // on a slow and on a fast frame (decision D17; determinism rule in ARCHITECTURE.md, section 5).
     const bool autoShotPending = m_autoShotSteps > 0 && !m_autoShotTaken;
-    if (!m_state.paused && !(autoShotPending && m_solver->stepCount() >= m_autoShotSteps)) {
+    if (m_state.enabled && !m_state.paused && !(autoShotPending && m_solver->stepCount() >= m_autoShotSteps)) {
         m_solver->step();
         m_densityDirty = true;
     }
@@ -302,6 +307,8 @@ void SmokeScene::OnUpdate(float deltaTime, IInputProvider& input) {
 }
 
 void SmokeScene::OnPostRender() {
+    if (!m_state.enabled) return;
+
     // Called by Application after the opaque objects are in the HDR framebuffer and before tone mapping.
     if (m_densityDirty) {
         const auto start = std::chrono::steady_clock::now();
@@ -317,12 +324,15 @@ void SmokeScene::OnPostRender() {
 }
 
 void SmokeScene::OnImGuiRender() {
-    const SmokeUiActions actions = m_ui.Draw(*m_solver, m_view, m_state, m_obstacleSettings);
+    const SmokeUiActions actions = m_ui.Draw(*m_solver, m_view, m_state, m_obstacleSettings,
+                                             true, "Dim (simulacija)", &m_boxMin, &m_boxSize);
 
     if (actions.applyGrid) {
         // resize() reallocates all fields and restarts the simulation; the texture follows on the next upload.
         m_solver->resize(smoke::GridSize{actions.newGrid, actions.newGrid, actions.newGrid});
-        PlaceBox(m_solver->gridSize());
+        PlaceBox(m_solver->gridSize(), true);
+        m_cameraAnchor = m_boxMin + 0.5f * m_boxSize;
+        GetCamera().SetOrbitTarget(m_cameraAnchor);
         m_densityDirty = true;
         // resize() dropped the obstacles with the old grid: voxelize the same object for the new one.
         if (m_state.obstacleActive) ApplyObstacle();
@@ -344,6 +354,14 @@ void SmokeScene::OnImGuiRender() {
         m_screenshotPath      = "smoke_screenshot_" + std::to_string(m_screenshotIndex++) + ".png";
         m_screenshotCountdown = 2;
     }
+    if (actions.boxTransformChanged) {
+        m_cameraAnchor = m_boxMin + 0.5f * m_boxSize;
+        GetCamera().SetOrbitTarget(m_cameraAnchor);
+        if (m_state.obstacleActive)
+            m_obstacle.Place(m_obstacleSettings, m_boxMin, m_boxSize);
+    }
+    if (actions.boxTransformCommitted && m_state.obstacleActive)
+        ApplyObstacle();
 }
 
 } // namespace smokeviz

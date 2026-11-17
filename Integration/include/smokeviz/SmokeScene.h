@@ -48,7 +48,7 @@ public:
     void OnImGuiRender() override;
 
 private:
-    void PlaceBox(const smoke::GridSize& grid);
+    void PlaceBox(const smoke::GridSize& grid, bool preserveCenter = false);
     void BuildFloor();
     void ReadAutoShotSettings();
     void ApplyObstacle();
@@ -84,6 +84,7 @@ private:
     ObstacleObject                    m_obstacle;
     ObstacleSettings                  m_obstacleSettings;
     bool                              m_obstaclePorous = false;
+    std::string                       m_loadedObstaclePath;
     std::unique_ptr<MaterialInstance> m_obstacleMaterial;
     std::unique_ptr<ShaderProgram>    m_obstacleShader;
     long long                         m_obstacleItem = -1;  // index of its RenderItem, -1 = not added yet

@@ -2,6 +2,8 @@
 
 #include "smoke/Diagnostics.h"
 
+#include <glm/glm.hpp>
+
 #include <string>
 
 namespace smoke {
@@ -23,10 +25,13 @@ struct SmokeUiActions {
     bool screenshot = false;
     bool applyObstacle  = false;  ///< load the .obj in ObstacleSettings, voxelize it, hand it to the solver
     bool removeObstacle = false;
+    bool boxTransformChanged = false;
+    bool boxTransformCommitted = false;
 };
 
 /// State owned by the scene that the panel shows and edits.
 struct SmokeUiState {
+    bool   enabled     = true;
     bool   paused      = false;
     bool   showOutline = true;
     double uploadMs    = 0.0;  ///< time of the last density upload to the GPU
@@ -40,11 +45,17 @@ struct SmokeUiState {
 class SmokeUI {
 public:
     SmokeUiActions Draw(smoke::SmokeSolver& solver, VolumeSettings& view, SmokeUiState& state,
-                        ObstacleSettings& obstacle);
+                        ObstacleSettings& obstacle, bool showObstacleControls = true,
+                        const char* windowTitle = "Dim (simulacija)",
+                        glm::vec3* boxMin = nullptr, glm::vec3* boxSize = nullptr);
 
 private:
+    bool DrawStepValue(const char* label, const char* id, float& value, float step,
+                       float minimum, float maximum, bool& committed);
+
     int                m_gridChoice = 1;  // index into {32, 64, 96, 128}
     bool               m_gridSynced = false;
+    int                m_stepChoice = 1;   // 0.01, 0.1, 1.0 world units
     smoke::Diagnostics m_diagnostics;
 };
 

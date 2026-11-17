@@ -10,6 +10,7 @@ endif()
 
 add_library(SmokeIntegration STATIC
   src/SmokeScene.cpp
+  src/SmokeVolume.cpp
   src/Texture3D.cpp
   src/VolumeRaymarchPass.cpp
   src/BoxOutline.cpp

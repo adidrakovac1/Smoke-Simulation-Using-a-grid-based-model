@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <algorithm>
 
 namespace smokeviz {
 
@@ -17,6 +18,8 @@ constexpr int         kGridSizes[]  = {32, 64, 96, 128};
 constexpr const char* kGridLabels[] = {"32^3", "64^3", "96^3", "128^3"};
 constexpr int         kGridCount    = 4;
 constexpr const char* kObstacleModes[] = {"Puni (zatvoren mesh)", "Ljuska", "Porozni (deka)"};
+constexpr float kTransformSteps[] = {0.01f, 0.1f, 1.0f};
+constexpr const char* kTransformStepLabels[] = {"0.01", "0.1", "1.0"};
 
 // The generated test meshes (tools/make_test_meshes.py), with settings that show each of them well.
 void usePreset(ObstacleSettings& o, const char* file, int mode, float y, float size) {
@@ -28,8 +31,37 @@ void usePreset(ObstacleSettings& o, const char* file, int mode, float y, float s
 }
 } // namespace
 
+bool SmokeUI::DrawStepValue(const char* label, const char* id, float& value, float step,
+                            float minimum, float maximum, bool& committed) {
+    bool changed = false;
+    ImGui::PushID(id);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted(label);
+    ImGui::SameLine();
+    if (ImGui::Button("-", ImVec2(24.0f, 0.0f))) {
+        value = std::clamp(value - step, minimum, maximum);
+        changed = true;
+        committed = true;
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(96.0f);
+    const float dragSpeed = std::max(step * 0.1f, 0.001f);
+    const bool dragged = ImGui::DragFloat("##value", &value, dragSpeed, minimum, maximum, "%.2f");
+    changed |= dragged;
+    committed |= ImGui::IsItemDeactivatedAfterEdit();
+    ImGui::SameLine();
+    if (ImGui::Button("+", ImVec2(24.0f, 0.0f))) {
+        value = std::clamp(value + step, minimum, maximum);
+        changed = true;
+        committed = true;
+    }
+    ImGui::PopID();
+    return changed;
+}
+
 SmokeUiActions SmokeUI::Draw(smoke::SmokeSolver& solver, VolumeSettings& view, SmokeUiState& state,
-                             ObstacleSettings& obstacle) {
+                             ObstacleSettings& obstacle, bool showObstacleControls, const char* windowTitle,
+                             glm::vec3* boxMin, glm::vec3* boxSize) {
     SmokeUiActions actions;
     smoke::SmokeParams& params = solver.params();
     const smoke::GridSize grid = solver.gridSize();
@@ -44,7 +76,9 @@ SmokeUiActions SmokeUI::Draw(smoke::SmokeSolver& solver, VolumeSettings& view, S
     const ImVec2 display = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(display.x - 15.0f, 60.0f), ImGuiCond_FirstUseEver, ImVec2(1.0f, 0.0f));
     ImGui::SetNextWindowSize(ImVec2(360.0f, 0.0f), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Dim (simulacija)");
+    ImGui::Begin(windowTitle);
+    ImGui::Checkbox("Dim ukljucen", &state.enabled);
+    ImGui::SameLine();
 
     // ── Run control ──────────────────────────────────────────────────────────
     if (ImGui::Button(state.paused ? "Nastavi" : "Pauza")) state.paused = !state.paused;
@@ -84,7 +118,29 @@ SmokeUiActions SmokeUI::Draw(smoke::SmokeSolver& solver, VolumeSettings& view, S
     ImGui::SliderFloat("Jacina (gustina/s)", &params.source.densityRate, 0.0f, 50.0f, "%.1f");
     ImGui::SliderFloat("Temperatura/s", &params.source.temperatureRate, 0.0f, 50.0f, "%.1f");
 
+    if (boxMin != nullptr && boxSize != nullptr) {
+        ImGui::SeparatorText("Polozaj dima u sceni");
+        ImGui::SetNextItemWidth(110.0f);
+        ImGui::Combo("Korak (jedinice scene)", &m_stepChoice, kTransformStepLabels, 3);
+        const float step = kTransformSteps[m_stepChoice];
+        ImGui::TextUnformatted("Pozicija");
+        actions.boxTransformChanged |= DrawStepValue("X", "positionX", boxMin->x, step, -2048.0f, 2048.0f,
+                                                      actions.boxTransformCommitted);
+        actions.boxTransformChanged |= DrawStepValue("Y", "positionY", boxMin->y, step, -2048.0f, 2048.0f,
+                                                      actions.boxTransformCommitted);
+        actions.boxTransformChanged |= DrawStepValue("Z", "positionZ", boxMin->z, step, -2048.0f, 2048.0f,
+                                                      actions.boxTransformCommitted);
+        ImGui::TextUnformatted("Dimenzije");
+        actions.boxTransformChanged |= DrawStepValue("X", "sizeX", boxSize->x, step, 1.0f, 512.0f,
+                                                      actions.boxTransformCommitted);
+        actions.boxTransformChanged |= DrawStepValue("Y", "sizeY", boxSize->y, step, 1.0f, 512.0f,
+                                                      actions.boxTransformCommitted);
+        actions.boxTransformChanged |= DrawStepValue("Z", "sizeZ", boxSize->z, step, 1.0f, 512.0f,
+                                                      actions.boxTransformCommitted);
+    }
+
     // ── Obstacle: an .obj mesh turned into solid or porous cells (docs/plan/OBSTACLES.md) ──
+    if (showObstacleControls) {
     ImGui::SeparatorText("Prepreka (.obj)");
     if (ImGui::Button("Kugla")) {
         usePreset(obstacle, "sphere.obj", 0, 0.50f, 0.30f);
@@ -114,6 +170,7 @@ SmokeUiActions SmokeUI::Draw(smoke::SmokeSolver& solver, VolumeSettings& view, S
     // Voxelization and the solver's lists are rebuilt only on this button, not while a slider moves.
     if (ImGui::Button("Primijeni prepreku")) actions.applyObstacle = true;
     if (!state.obstacleMessage.empty()) ImGui::TextWrapped("%s", state.obstacleMessage.c_str());
+    }
 
     // ── Display only: these do not change the simulation ─────────────────────
     ImGui::SeparatorText("Prikaz");
