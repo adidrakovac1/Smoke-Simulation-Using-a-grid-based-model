@@ -60,11 +60,11 @@ int main()
     if (captureMaterialSweepOk) scenes.push_back(&captureMaterialSweep);
     if (captureCullingOk) scenes.push_back(&captureCulling);
 
-    // The smoke scene is added last, so the existing scenes keep their number keys, and it is the one shown first.
+    // Keep the standalone smoke scene available after the existing scenes. Terrain is the startup view and also
+    // demonstrates SmokeVolume as a component inside an ordinary renderer scene.
     std::size_t initialScene = 0;
     if (smokeOk)
     {
-        initialScene = scenes.size();
         scenes.push_back(&smokeScene);
     }
 

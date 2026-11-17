@@ -6,6 +6,7 @@
 #include "terrain/TerrainMeshBuilder.h"
 #include "core/Material.h"
 #include "terrain/TerrainVegetation.h"
+#include "smokeviz/SmokeVolume.h"
 
 #include <memory>
 #include <vector>
@@ -37,6 +38,7 @@ public:
     bool Setup();
     void OnUpdate(float deltaTime, IInputProvider &input) override;
     void OnPostRender() override;
+    void OnImGuiRender() override;
     bool HasTerrainTab() const override { return true; }
     void OnTerrainTabUI() override;
     void OnTerrainTabFooter() override;
@@ -74,6 +76,7 @@ private:
 
     // ── Vegetation ─────────────────────────────────────────────────────────
     TerrainVegetation m_vegetation;
+    smokeviz::SmokeVolume m_smokeVolume;
 
     // ── Atmosphere ─────────────────────────────────────────────────────────
     float     m_fogDensity = 0.0015f;

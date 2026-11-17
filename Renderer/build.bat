@@ -1,10 +1,16 @@
 @echo off
 setlocal
+pushd "%~dp0"
+
+REM MSYS2 is often installed but not added to the shell's PATH.
+if exist "C:\msys64\ucrt64\bin\cmake.exe" set "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%"
+if exist "C:\msys64\mingw64\bin\cmake.exe" set "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%"
 
 REM ==============================
 REM CONFIGURATION
 REM ==============================
-set "BUILD_DIR=build"
+for %%I in ("%CD%") do set "SHORT_DIR=%%~sI"
+set "BUILD_DIR=%SHORT_DIR%\build-short"
 set "CONFIG=%1"
 if "%CONFIG%"=="" set "CONFIG=Release"
 
@@ -25,10 +31,9 @@ REM CONFIGURE (LET CMAKE DECIDE GENERATOR)
 REM ==============================
 echo Configuring CMake (%CONFIG%)...
 
-cmake -S . -B "%BUILD_DIR%" ^ -G "MinGW Makefiles" ^
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake -S "%SHORT_DIR%" -B "%BUILD_DIR%" -G "MinGW Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-if errorlevel 1 exit /b 1
+if errorlevel 1 goto :failed
 
 REM ==============================
 REM BUILD
@@ -37,7 +42,7 @@ echo Building (%CONFIG%)...
 
 cmake --build "%BUILD_DIR%" --config "%CONFIG%" --parallel
 
-if errorlevel 1 exit /b 1
+if errorlevel 1 goto :failed
 
 REM ==============================
 REM FIND EXECUTABLE (FLEXIBLE)
@@ -52,10 +57,18 @@ for /R "%BUILD_DIR%" %%F in (*.exe) do (
 )
 
 echo Error: TestApp.exe not found.
-exit /b 1
+goto :failed
 
 :run
 echo Running: %RUN_EXE%
 "%RUN_EXE%"
 
 endlocal
+popd
+exit /b 0
+
+:failed
+set "EXIT_CODE=%ERRORLEVEL%"
+if "%EXIT_CODE%"=="0" set "EXIT_CODE=1"
+popd
+endlocal & exit /b %EXIT_CODE%
