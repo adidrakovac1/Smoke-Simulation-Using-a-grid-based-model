@@ -14,6 +14,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
+#include <imgui.h>
 
 #include <algorithm>
 #include <chrono>
@@ -46,6 +47,7 @@ bool SmokeScene::Setup() {
     // One box = one solver instance (docs/plan/ARCHITECTURE.md, section 8). Default grid is 64^3.
     m_solver = std::make_unique<smoke::SmokeSolver>(smoke::SolverConfig{});
     PlaceBox(m_solver->gridSize());
+    m_newSmokePosition = m_boxMin;
 
     if (!m_volumePass.Init(ShaderDir())) {
         spdlog::error("[SmokeScene] volume_raymarch shader failed to load");
@@ -298,6 +300,7 @@ void SmokeScene::OnUpdate(float deltaTime, IInputProvider& input) {
         m_solver->step();
         m_densityDirty = true;
     }
+    for (auto& smoke : m_extraSmokeVolumes) smoke->Update();
     if (autoShotPending && m_solver->stepCount() >= m_autoShotSteps && m_screenshotCountdown == 0) {
         m_autoShotTaken       = true;
         m_closeAfterShot      = true;
@@ -321,9 +324,39 @@ void SmokeScene::OnPostRender() {
     if (m_state.showOutline) m_outline.Draw(camera, m_boxMin, m_boxSize, {0.55f, 0.62f, 0.70f});
     m_volumePass.Draw(camera, m_densityTexture, m_boxMin, m_boxSize, m_view, -m_lightDirection, m_lightColor);
     DrawPorousObstacle();
+    for (auto& smoke : m_extraSmokeVolumes)
+        smoke->Render(camera, -m_lightDirection, m_lightColor);
 }
 
 void SmokeScene::OnImGuiRender() {
+}
+
+void SmokeScene::OnGlobalSmokeUI(bool visible) {
+    if (!visible) return;
+    ImGui::Begin("Dimovi##manager");
+    ImGui::InputFloat3("Pozicija novog (X Y Z)", &m_newSmokePosition.x, "%.2f");
+    ImGui::InputFloat3("Dimenzije novog", &m_newSmokeSize.x, "%.2f");
+    if (ImGui::Button("Dodaj dim")) {
+        auto smoke = std::make_unique<SmokeVolume>();
+        if (smoke->Initialize(m_newSmokePosition, glm::max(m_newSmokeSize, glm::vec3(0.01f))))
+            m_extraSmokeVolumes.push_back(std::move(smoke));
+    }
+    ImGui::SameLine();
+    ImGui::Text("%d dodatnih", static_cast<int>(m_extraSmokeVolumes.size()));
+    int removeIndex = -1;
+    for (int i = 0; i < static_cast<int>(m_extraSmokeVolumes.size()); ++i) {
+        ImGui::PushID(i);
+        ImGui::Text("Dim %d", i + 2);
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Ukloni")) removeIndex = i;
+        ImGui::PopID();
+        char title[64];
+        std::snprintf(title, sizeof(title), "Dim %d##extra-smoke-%d", i + 2, i);
+        m_extraSmokeVolumes[i]->DrawUI(title);
+    }
+    if (removeIndex >= 0)
+        m_extraSmokeVolumes.erase(m_extraSmokeVolumes.begin() + removeIndex);
+    ImGui::End();
     const SmokeUiActions actions = m_ui.Draw(*m_solver, m_view, m_state, m_obstacleSettings,
                                              true, "Dim (simulacija)", &m_boxMin, &m_boxSize);
 

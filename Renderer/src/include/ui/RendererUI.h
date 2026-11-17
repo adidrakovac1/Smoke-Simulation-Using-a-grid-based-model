@@ -69,6 +69,7 @@ public:
     bool frustumCullingEnabled = true;
     bool showHelpWindow = false;
     bool showSidebar = true;
+    bool showSmokePanel = false;
 
 private:
     // Viewport rect in framebuffer pixels (updated every Draw call).

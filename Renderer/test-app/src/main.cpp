@@ -9,6 +9,7 @@
 #include "TerrainScene.h"
 #include "smokeviz/Screenshot.h"
 #include "smokeviz/SmokeScene.h"
+#include "smokeviz/SmokeSystem.h"
 
 int main()
 {
@@ -66,6 +67,26 @@ int main()
     if (smokeOk)
     {
         scenes.push_back(&smokeScene);
+    }
+
+    // Attach the renderer-owned smoke menu to every ordinary scene. Terrain and the dedicated smoke
+    // scene already host their own multi-volume collections, so they keep those scene-aware defaults.
+    std::vector<std::unique_ptr<smokeviz::SmokeSystem>> sceneSmokeSystems;
+    for (Scene* scene : scenes)
+    {
+        if (scene == &terrainScene || scene == &smokeScene) continue;
+        auto system = std::make_unique<smokeviz::SmokeSystem>();
+        if (!system->Initialize()) {
+            spdlog::warn("[TestApp] Smoke extension unavailable for {}", scene->GetName());
+            continue;
+        }
+        smokeviz::SmokeSystem* systemPtr = system.get();
+        Scene* scenePtr = scene;
+        scene->SetSmokeCallbacks(
+            [systemPtr]() { systemPtr->Update(); },
+            [systemPtr, scenePtr]() { systemPtr->Render(scenePtr->GetCameraForExtensions()); },
+            [systemPtr](bool visible) { systemPtr->DrawUI(visible); });
+        sceneSmokeSystems.push_back(std::move(system));
     }
 
     for (std::size_t i = 0; i < scenes.size(); ++i)

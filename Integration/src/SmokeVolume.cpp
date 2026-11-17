@@ -64,12 +64,12 @@ void SmokeVolume::Render(const Camera& camera, const glm::vec3& toLight, const g
         DrawObstacle(camera, toLight, true);
 }
 
-void SmokeVolume::DrawUI() {
+void SmokeVolume::DrawUI(const char* windowTitle) {
     if (!m_solver)
         return;
 
     const SmokeUiActions actions = m_ui.Draw(*m_solver, m_view, m_state, m_obstacleSettings,
-                                             true, "Dim na terenu", &m_boxMin, &m_boxSize);
+                                             true, windowTitle, &m_boxMin, &m_boxSize);
     if (actions.applyGrid) {
         m_solver->resize({actions.newGrid, actions.newGrid, actions.newGrid});
         m_densityDirty = true;

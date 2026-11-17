@@ -9,6 +9,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <functional>
 
 class IInputProvider;
 struct FrameSubmission;
@@ -48,6 +49,23 @@ public:
 
     /// Called during the ImGui frame. Override to draw custom debug UI for the scene.
     virtual void OnImGuiRender() {}
+
+    /// Main-menu smoke panel hook. The renderer owns the menu; scenes with a smoke system
+    /// can expose its controls here without adding another scene-specific menu entry.
+    virtual void OnGlobalSmokeUI(bool visible) { (void)visible; }
+
+    /// Optional renderer extension callbacks; kept type-erased so RendererLib does not depend on smoke code.
+    void SetSmokeCallbacks(std::function<void()> update,
+                           std::function<void()> render,
+                           std::function<void(bool)> ui) {
+        m_smokeUpdate = std::move(update);
+        m_smokeRender = std::move(render);
+        m_smokeUI = std::move(ui);
+    }
+    void UpdateSmokeExtension() { if (m_smokeUpdate) m_smokeUpdate(); }
+    void RenderSmokeExtension() { if (m_smokeRender) m_smokeRender(); }
+    void DrawSmokeExtensionUI(bool visible) { if (m_smokeUI) m_smokeUI(visible); }
+    Camera& GetCameraForExtensions() { return m_camera; }
 
     /// Returns true if this scene exposes a Terrain tab in the sidebar.
     virtual bool HasTerrainTab() const { return false; }
@@ -139,6 +157,9 @@ private:
     glm::vec4 m_clearColor = {0.08f, 0.09f, 0.12f, 1.0f};
     std::string m_sceneName = "Untitled Scene";
     mutable bool m_reportedInvalidLights = false;
+    std::function<void()> m_smokeUpdate;
+    std::function<void()> m_smokeRender;
+    std::function<void(bool)> m_smokeUI;
 
     friend class Application;
     friend class RendererUI;

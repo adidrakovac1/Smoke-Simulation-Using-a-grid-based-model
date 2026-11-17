@@ -227,6 +227,7 @@ void Application::RunFrame(Scene &scene,
     m_lastFrameTime = now;
 
     scene.InternalUpdate(dt, *m_input, fbW, fbH);
+    scene.UpdateSmokeExtension();
 
     // Build submission
     FrameSubmission sub;
@@ -271,6 +272,7 @@ void Application::RunFrame(Scene &scene,
     // which EndFrame unbinds to.
     m_renderer->RebindHdrFramebuffer();
     scene.OnPostRender();
+    scene.RenderSmokeExtension();
     // RenderPostProcess immediately binds its own FBOs and reads the HDR texture
     // by GL texture ID, so the HDR FBO being bound here is not a problem.
     const auto postProcessStart = CpuClock::now();
@@ -294,6 +296,8 @@ void Application::RunFrame(Scene &scene,
                    scenes, activeSceneIndex);
 
         scene.OnImGuiRender();
+        scene.OnGlobalSmokeUI(m_ui->showSmokePanel);
+        scene.DrawSmokeExtensionUI(m_ui->showSmokePanel);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -383,6 +383,12 @@ void RendererUI::DrawTopbar(int fbW,
 
         ImGui::SameLine(0, 8);
 
+        // Smoke controls live in the application menu and follow whichever scene is active.
+        if (MenuButton("Smoke", showSmokePanel, nullptr))
+            showSmokePanel = !showSmokePanel;
+
+        ImGui::SameLine(0, 8);
+
         // --- Help ---
         if (MenuButton("Help", showHelpWindow, "H"))
             showHelpWindow = !showHelpWindow;

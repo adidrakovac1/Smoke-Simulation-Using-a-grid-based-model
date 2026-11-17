@@ -117,7 +117,11 @@ bool TerrainScene::Setup()
         const uint32_t centerX = m_heightfield.width / 2;
         const uint32_t centerZ = m_heightfield.height / 2;
         const float smokeBaseY = m_heightfield.At(centerX, centerZ).height + m_terrainVerticalOffset + 2.0f;
-        if (!m_smokeVolume.Initialize({-20.0f, smokeBaseY, -20.0f}, {40.0f, 48.0f, 40.0f}))
+        m_newSmokePosition = {-20.0f, smokeBaseY, -20.0f};
+        auto smoke = std::make_unique<smokeviz::SmokeVolume>();
+        if (smoke->Initialize({-20.0f, smokeBaseY, -20.0f}, {40.0f, 48.0f, 40.0f}))
+            m_smokeVolumes.push_back(std::move(smoke));
+        else
             spdlog::warn("[TerrainScene] Smoke volume could not be initialized");
     }
 
@@ -253,7 +257,7 @@ void TerrainScene::ApplyMaterialUniforms() const
 
 void TerrainScene::OnUpdate(float deltaTime, IInputProvider& input)
 {
-    m_smokeVolume.Update();
+    for (auto& smoke : m_smokeVolumes) smoke->Update();
     UpdateStandardCameraAndPlayer(deltaTime, input, m_playerPos, m_moveDirXZ);
     ApplyMaterialUniforms();
 
@@ -274,12 +278,41 @@ void TerrainScene::OnUpdate(float deltaTime, IInputProvider& input)
 void TerrainScene::OnPostRender()
 {
     m_vegetation.DrawAll();
-    m_smokeVolume.Render(GetCamera(), {0.5f, 1.0f, 0.4f}, {1.0f, 0.97f, 0.88f});
+    for (auto& smoke : m_smokeVolumes)
+        smoke->Render(GetCamera(), {0.5f, 1.0f, 0.4f}, {1.0f, 0.97f, 0.88f});
 }
 
 void TerrainScene::OnImGuiRender()
 {
-    m_smokeVolume.DrawUI();
+}
+
+void TerrainScene::OnGlobalSmokeUI(bool visible)
+{
+    if (!visible) return;
+    ImGui::Begin("Dimovi##manager");
+    ImGui::InputFloat3("Pozicija novog (X Y Z)", &m_newSmokePosition.x, "%.2f");
+    ImGui::InputFloat3("Dimenzije novog", &m_newSmokeSize.x, "%.2f");
+    if (ImGui::Button("Dodaj dim")) {
+        auto smoke = std::make_unique<smokeviz::SmokeVolume>();
+        if (smoke->Initialize(m_newSmokePosition, glm::max(m_newSmokeSize, glm::vec3(0.01f))))
+            m_smokeVolumes.push_back(std::move(smoke));
+    }
+    ImGui::SameLine();
+    ImGui::Text("%d aktivnih", static_cast<int>(m_smokeVolumes.size()));
+    int removeIndex = -1;
+    for (int i = 0; i < static_cast<int>(m_smokeVolumes.size()); ++i) {
+        ImGui::PushID(i);
+        ImGui::Text("Dim %d", i + 1);
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Ukloni")) removeIndex = i;
+        ImGui::PopID();
+        char title[64];
+        std::snprintf(title, sizeof(title), "Dim %d##smoke-%d", i + 1, i);
+        m_smokeVolumes[i]->DrawUI(title);
+    }
+    if (removeIndex >= 0)
+        m_smokeVolumes.erase(m_smokeVolumes.begin() + removeIndex);
+    ImGui::End();
 }
 
 void TerrainScene::OnTerrainTabUI()

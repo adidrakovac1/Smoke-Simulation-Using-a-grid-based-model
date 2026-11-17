@@ -36,7 +36,7 @@ public:
 
     void Update();
     void Render(const Camera& camera, const glm::vec3& toLight, const glm::vec3& lightColor);
-    void DrawUI();
+    void DrawUI(const char* windowTitle = "Dim na terenu");
 
     void SetEnabled(bool enabled) { m_state.enabled = enabled; }
     [[nodiscard]] bool IsEnabled() const { return m_state.enabled; }

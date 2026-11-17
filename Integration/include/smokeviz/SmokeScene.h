@@ -3,6 +3,7 @@
 #include "smokeviz/BoxOutline.h"
 #include "smokeviz/ObstacleObject.h"
 #include "smokeviz/SmokeUI.h"
+#include "smokeviz/SmokeVolume.h"
 #include "smokeviz/Texture3D.h"
 #include "smokeviz/VolumeRaymarchPass.h"
 
@@ -46,6 +47,7 @@ public:
     void OnUpdate(float deltaTime, IInputProvider& input) override;
     void OnPostRender() override;
     void OnImGuiRender() override;
+    void OnGlobalSmokeUI(bool visible) override;
 
 private:
     void PlaceBox(const smoke::GridSize& grid, bool preserveCenter = false);
@@ -98,6 +100,9 @@ private:
     std::string m_autoShotFile;
     bool        m_autoShotTaken   = false;
     bool        m_closeAfterShot  = false;
+    std::vector<std::unique_ptr<SmokeVolume>> m_extraSmokeVolumes;
+    glm::vec3 m_newSmokePosition{0.0f, 2.0f, 0.0f};
+    glm::vec3 m_newSmokeSize{12.0f, 18.0f, 12.0f};
 };
 
 } // namespace smokeviz

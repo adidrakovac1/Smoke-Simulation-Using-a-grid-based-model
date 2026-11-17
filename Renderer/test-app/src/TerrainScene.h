@@ -39,6 +39,7 @@ public:
     void OnUpdate(float deltaTime, IInputProvider &input) override;
     void OnPostRender() override;
     void OnImGuiRender() override;
+    void OnGlobalSmokeUI(bool visible) override;
     bool HasTerrainTab() const override { return true; }
     void OnTerrainTabUI() override;
     void OnTerrainTabFooter() override;
@@ -76,7 +77,9 @@ private:
 
     // ── Vegetation ─────────────────────────────────────────────────────────
     TerrainVegetation m_vegetation;
-    smokeviz::SmokeVolume m_smokeVolume;
+    std::vector<std::unique_ptr<smokeviz::SmokeVolume>> m_smokeVolumes;
+    glm::vec3 m_newSmokePosition{0.0f, 2.0f, 0.0f};
+    glm::vec3 m_newSmokeSize{12.0f, 18.0f, 12.0f};
 
     // ── Atmosphere ─────────────────────────────────────────────────────────
     float     m_fogDensity = 0.0015f;

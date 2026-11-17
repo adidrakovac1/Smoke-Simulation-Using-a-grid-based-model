@@ -21,7 +21,8 @@ build\test-app\TestApp.exe
 - `-DFETCHCONTENT_FULLY_DISCONNECTED=ON` kaže CMake-u da koristi već preuzete biblioteke. Bez toga Rendererov
   CMake pri svakom konfigurisanju pokušava osvježiti `stb` (prati granu `master`) i na PC-2 pada na git
   konfliktu. Pri **prvoj** gradnji na novom računaru opcija se izostavlja, da se biblioteke preuzmu.
-- Terrain scena se otvara prva i prikazuje dim kao komponentu. Samostalna scena dima ostaje dostupna iz menija Scenes.
+- Terrain scena se otvara prva i prikazuje dim kao komponentu. Kontrole su dostupne iz stavke Smoke u glavnom meniju.
+- Svaka scena u aplikaciji dobija globalni sistem dima; u meniju Smoke moguće je dodati više nezavisnih volumena i zadati im XYZ poziciju i dimenzije.
 
 Upravljanje: desna tipka miša i pomjeranje rotira kameru oko kutije, točkić približava, WASD pomjera centar,
 F12 snima sliku (`smoke_screenshot_N.png` u radnom folderu).
@@ -31,7 +32,7 @@ F12 snima sliku (`smoke_screenshot_N.png` u radnom folderu).
 | Fajl | Šta je | Odakle dolazi | Ko ga koristi |
 | :--- | :--- | :--- | :--- |
 | `SmokeScene` | Scena: drži jedan `SmokeSolver`, pod, svjetlo i kameru | Rendererova klasa `Scene` (tri "kuke": `OnUpdate`, `OnPostRender`, `OnImGuiRender`); ARCHITECTURE.md, odjeljak 8 | `Renderer/test-app/src/main.cpp` je registruje |
-| `SmokeVolume` | Ponovo upotrebljiva komponenta: solver, 3D tekstura, ray-marching dima i `.obj` prepreke u pomjerljivoj kutiji | Host scena joj prosljeđuje svoju kameru i svjetlo | `TerrainScene` je koristi kroz `OnUpdate`, `OnPostRender` i `OnImGuiRender`; isti obrazac radi i za druge scene |
+| `SmokeVolume` | Ponovo upotrebljiva komponenta: solver, 3D tekstura, ray-marching dima i `.obj` prepreke u pomjerljivoj kutiji | Host scena joj prosljeđuje svoju kameru i svjetlo | `TerrainScene`, `SmokeScene` i globalni `SmokeSystem` |
 | `Texture3D` | 3D tekstura s jednim float kanalom; u njoj je gustina dima na grafičkoj kartici | Renderer ima samo 2D teksture, pa je pišemo sami | `SmokeScene` je puni svaki frejm, shader iz nje čita |
 | `VolumeRaymarchPass` | Crta dim: zraka kroz kutiju, uzorkovanje, prozirnost | [Crane07] (GPU Gems 3, pogl. 30), Beer-Lambertov zakon | `SmokeScene::OnPostRender` |
 | `BoxOutline` | 12 ivica kutije kao linije | pomoć pri razvoju: kutija je inače nevidljiva | `SmokeScene::OnPostRender` |
