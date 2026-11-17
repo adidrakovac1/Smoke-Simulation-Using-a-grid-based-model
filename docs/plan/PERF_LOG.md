@@ -254,9 +254,12 @@ napomena o profileru kao u P-004; vrijeme pod profilerom se ne koristi):
 | `rb15w6_block` | **0.414** | 0.8% | **0.742** | 0.2% |
 
 - Spavanje skida cikluse čekanja (CPI oko 7 do 8 po instrukciji `pause`) iz brojanja: CPI pada za 0.1 do 0.4.
-- Red-black jezgro ima CPI 0.29 do 0.38: računa novu vrijednost za svaku ćeliju reda i zadržava polovinu (blend,
-  `omp simd`), pa izvrši više jeftinih instrukcija po ćeliji. To spušta CPI, a ne ubrzava program; i to je primjer
-  da CPI nije mjera brzine.
+- Red-black jezgro ima CPI 0.29 do 0.38. **Ispravka (2026-11-17, pregled izvještaja v2):** jezgro NIJE
+  vektorizirano, iako ima `#pragma omp simd`: g++ uslovni upis pretvori u skok ("not vectorized: unsupported control
+  flow in loop", `-fopt-info-vec-all`; objdump: samo `vaddss` / `vdivss`, nijedan `ymm`). Nizak CPI je zato CPI
+  skalarnog koda: mnogo jeftinih instrukcija po ćeliji, a ne bolja upotreba procesora. I to je primjer da CPI nije
+  mjera brzine. Prava vektorska verzija bi tražila ručni blend (intrinsics) i vjerovatno bila brža, uz viši CPI;
+  nije urađeno ni izmjereno.
 - Zaključak: **ZADRŽATI kao opcije**; vizualizacija koristi `rb15w6_block` (Ermin: CPI prije brzine). Najbrža
   varijanta s kvalitetom iznad reference je `warm10_spin`. Oznake u CSV-u: `PC2-20261117-D20-*`.
 

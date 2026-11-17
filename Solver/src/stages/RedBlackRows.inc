@@ -9,12 +9,14 @@
 // the other cells keep their value. All 6 neighbours of an updated cell have the OTHER colour, so no cell of
 // the sweep reads a value written in the same sweep, and the order of the cells does not matter.
 //
-// Vectorization (lab technique T8, #pragma omp simd): the loop computes the new value for EVERY cell of the row
-// and then keeps it only for cells of the colour (a blend, no branch). Read in scalar order, cell i reads
-// p[i - 1], which iteration i - 1 has just "written"; but iteration i - 1 either kept the old value (other
-// colour) or cell i is of the other colour and its own result is thrown away. So the vector order gives exactly
-// the same values as the scalar order, and the pragma's promise holds. Half of the arithmetic is wasted, but the
-// sweep is limited by memory, not by arithmetic.
+// Vectorization (lab technique T8, #pragma omp simd): the loop computes the new value for every cell of the row
+// and keeps it only for cells of the colour. The pragma's promise holds (cell i reads p[i - 1], which iteration
+// i - 1 either left unchanged, or cell i is of the other colour and its own result is thrown away), BUT g++ 16
+// does NOT vectorize it: it turns the conditional store into a jump and reports "not vectorized: unsupported
+// control flow in loop" (-fopt-info-vec-all, checked 2026-11-17; objdump shows only vaddss / vdivss). So this
+// kernel runs scalar, also in its -mavx2 copy. That is also why its CPI is low (0.29 to 0.38, PERF_LOG.md, P-005):
+// scalar code executes many cheap instructions. A real vector version would need a blend written by hand
+// (intrinsics); not done.
 template <bool Relax>
 SMOKE_NOINLINE void redBlackRow(float* SMOKE_RESTRICT p, const float* SMOKE_RESTRICT div, int nx, int odd, float omega,
                                 std::ptrdiff_t sJ, std::ptrdiff_t sK) {
