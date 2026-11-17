@@ -360,6 +360,10 @@ def apply_symbols(info, metrics, functions, detail):
     return merged, renamed
 
 
+# The final optimized version: the configuration the visualization uses (Integration/src/SmokeScene.cpp, D20).
+FINAL_VERSION = "d20_rb15_k6_warm_block_t6"
+
+
 # D19/D20 versions, from the smoke_prof line (smoke_prof --version d19 [--niti T] [--solver ...]).
 def version_id(workload, info):
     version = workload.get("verzija", "m4")  # sessions made before --version existed ran the solver now called m4
@@ -381,10 +385,13 @@ def version_label(vid):
     """(short, long) names of a version id for the page."""
     fixed = {"m3": ("Naivna", "Naivna verzija (M3 kod, bez vektorizacije)"),
              "m3auto": ("Auto-vektorizirana", "M3 kod + automatska vektorizacija kompajlera"),
-             "m4": ("Finalna M4", "Finalna serijska verzija (M4), profilna gradnja"),
-             "m4_rel": ("M4 (Release)", "Finalna serijska verzija (M4), Release gradnja")}
+             "m4": ("Serijska M4", "Serijska optimizirana verzija (M4), profilna gradnja"),
+             "m4_rel": ("Serijska M4 (Release)", "Serijska optimizirana verzija (M4), Release gradnja")}
     if vid in fixed:
         return fixed[vid]
+    if vid == FINAL_VERSION:
+        return ("Finalna optimizirana", "Finalna optimizirana verzija (D20: red-black SOR ω = 1.5, K = 6, topli start, "
+                                        "6 niti koje spavaju; ista kao u vizualizaciji)")
     threads = re.search(r"_t(\d+)$", vid)
     t = int(threads.group(1)) if threads else 1
     niti = "1 nit" if t == 1 else f"{t} niti"
@@ -478,10 +485,12 @@ def build_workloads(sessions):
             # Runs named <date>_ver_<version> (and since D19/D20 <date>_d19cmp_... / <date>_d20cpi_...) were
             # collected together to compare versions: same "vset" (the date).
             vset = re.match(r"(.*?)_(?:ver|d19cmp|d20cpi)_\w+$", run)
+            label = f"{session['grid']}³ · {stage} · {obstacle} · {version} · {run}"
+            if session["version"] == FINAL_VERSION and session["stage"] == "all" and session["obstacle"] == "none":
+                label = f"{session['grid']}³ · finalna optimizirana verzija"
             workload = {"run": run, "grid": session["grid"], "stage": session["stage"],
                         "obstacle": session["obstacle"], "version": session["version"],
-                        "vset": vset.group(1) if vset else None,
-                        "label": f"{session['grid']}³ · {stage} · {obstacle} · {version} · {run}", "s": {}}
+                        "vset": vset.group(1) if vset else None, "label": label, "s": {}}
             by_key[key] = workload
             workloads.append(workload)
         workload["s"][session["kind"]] = index
@@ -816,7 +825,7 @@ Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i 
       <h3>Brojači procesora</h3>
       <div class="scroll"><table id="cmpCounters"></table></div>
       <h3>Najvrelije funkcije svake verzije</h3>
-      <p class="small muted">Verzije imaju različite funkcije (finalna je jezgra podijelila na redove i AVX2 fajlove), pa se ne spajaju po imenu.
+      <p class="small muted">Verzije imaju različite funkcije (optimizirane su jezgra podijelile na redove i AVX2 fajlove), pa se ne spajaju po imenu.
       Klik na red otvara instrukcije te funkcije.</p>
       <div class="two">
         <div><b id="cmpNameA"></b><div class="scroll"><table id="cmpFnA"></table></div></div>
@@ -1463,7 +1472,7 @@ function renderGrade() {
     + (isBase ? `<span class="verdict">polazna verzija</span>` : verdict(S, "brže", "sporije", "od naivne verzije"))
     + `<p class="small">Jedan korak pomjera simulaciju za 1/${STEP_HZ} s. Da dim teče u stvarnom vremenu treba najmanje ${STEP_HZ} koraka u sekundi; ova verzija daje `
     + (perSecond >= STEP_HZ ? `${times(perSecond / STEP_HZ)} toliko` : `${fmt(100 * perSecond / STEP_HZ, 0)} % toga`) + ". Računa se samo simulacija, bez crtanja.</p>"
-    + (o0 ? `<p class="small muted">Službeno mjerenje (obična gradnja, protokol D10, ${esc(o0.date)}): finalna verzija je ${fmt(o0.S, 2)}x brža od naivne`
+    + (o0 ? `<p class="small muted">Službeno mjerenje (obična gradnja, protokol D10, ${esc(o0.date)}): serijska M4 verzija je ${fmt(o0.S, 2)}x brža od naivne`
       + (o1 ? ` i ${fmt(o1.S, 2)}x brža od auto-vektorizirane` : "") + ` na ${w.grid}³.</p>` : ""),
     "Ovo je broj sličica dima koje računar izračuna u jednoj sekundi. Veći broj znači da ista simulacija teče glatko, ili da za isto vrijeme stane veća i detaljnija."));
 
@@ -1634,7 +1643,7 @@ function renderCompare() {
   fnTable("cmpFnA", wa, ma); fnTable("cmpFnB", wb, mb);
 
   el("cmpOfficial").innerHTML = off ? `<h3>Službeno izmjereno ubrzanje (protokol D10)</h3><p class="small muted">Iz <code>perf/results.csv</code>: obična Release gradnja, `
-    + `mjereno po protokolu D10 (docs/plan/PERF_LOG.md, odjeljak 7). Ovo su brojevi za izvještaj; profil iznad objašnjava odakle dolaze.</p><table style="max-width:560px"><tr><th>Faza</th><th class="num" title="Koliko puta je B (finalna verzija) brža od A.">S = A ÷ B</th><th>Unos</th></tr>`
+    + `mjereno po protokolu D10 (docs/plan/PERF_LOG.md, odjeljak 7). Ovo su brojevi za izvještaj; profil iznad objašnjava odakle dolaze.</p><table style="max-width:560px"><tr><th>Faza</th><th class="num" title="Koliko puta je B (serijska M4) brža od A.">S = A ÷ B</th><th>Unos</th></tr>`
     + Object.keys(OFFICIAL_STAGE).filter((k) => off[k]).map((k) => `<tr><td>${esc(OFFICIAL_STAGE[k])}</td><td class="num">${fmt(off[k].S, 2)}x</td><td class="small muted">${esc(off[k].id)}</td></tr>`).join("")
     + "</table>" : "";
 }
