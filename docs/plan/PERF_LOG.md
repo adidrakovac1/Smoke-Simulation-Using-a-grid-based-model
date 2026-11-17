@@ -77,6 +77,7 @@ Komanda za procesor (PowerShell):
 | P-001 | 2026-11-09 | PC-1 | M3 / bez vektorizacije | svi koraci | 32³–128³ | 1 | — | — | baseline |
 | P-002 | 2026-11-09 | PC-1 | M3 / compiler default | svi koraci | 32³–128³ | 1 | 1.58–1.64x | 36.55–38.89% | baseline |
 | P-003 | 2026-11-15 | PC-1 | CPU / std::thread slojevi | cijeli korak | 32³–128³ | 2, 4, 6, 10 | 0.90–3.25x | -10.92–69.25% | brže na 64³–128³; mali grid zavisi od niti |
+| P-004 | 2026-11-17 | PC-2 | D19: tim niti za cijeli korak, wavefront Jacobi, fuzija | cijeli korak | 32³–128³ | 1, 6, 12 | 2.08–3.00x (6 niti, zadano); 2.38–3.59x (12) | 52.0–66.7% (6) | brže na svim mrežama, bit po bit isto; serijski 128³ 1.45x |
 
 (Ispod tabele idu puni unosi po šablonu, najnoviji na kraju.)
 
@@ -120,6 +121,93 @@ ne prolaze prag protiv šuma. Neki pojedinačni koraci imali su vanjske skokove 
 ovi medijani ne prenose na druge računare. Ovo nije dokaz za Ryzen/Windows; treba ponoviti na PC-2.
 Testovi tačnosti porede cijelo polje gustoće bit po bit za 32³, 64³, 96³ i 128³, nekubne mreže i čvrste/porozne ćelije.
 Mjerenje barijere nije izolovano; Jacobi vrijeme u sirovim CSV-ovima uključuje samu barijeru i ostali rad iteracije.
+
+### P-004: D19, najbrža verzija koja ostaje bit po bit ista (PC-2)
+
+- Datum / autor / računar: 2026-11-17 / Ermin (Claude CLI) / PC-2 (Ryzen 5 5500, 6 jezgara / 12 niti, L3 16 MiB,
+  DDR4-2400 dvokanalno; Windows 11, Smart App Control uključen)
+- Commit: `81a6949-dirty` (osnova: `81a6949`, isti kod na `main`, izgrađen iz čistog git worktree-a)
+- Nivo i tehnika: niti (`std::thread`, D19) + nivo 2 sekvencijalno (vremensko blokiranje, fuzija jezgara) + T8 `omp simd`
+- Gradnja: Release, g++ 16.2.0 (MSYS2 UCRT64), `-O3 -DNDEBUG`, AVX2 po fajlu kao u M4, `-fopenmp-simd` za solver,
+  oba `smoke_bench` statički linkovana (`-static`, kao `smoke_demo`; dinamički linkovan program je Smart App Control
+  blokirao). Bez `-ffast-math`, bez FMA, bez `-march=native`.
+- Uslovi: računar u upotrebi (nije umiren), plan napajanja High performance.
+- Tačnost: 68/68 testova (uključujući novi `D19 step matches the pre-D19 serial step bit for bit`: 7 mreža, s
+  preprekama i bez, 1/2/3/6 niti, 7 oblika talasa, K = 0, 1, parno, neparno); `smoke_bench --verify
+  serial_64_100steps_pc2.bin` daje 0 različitih ćelija za 0, 1, 2, 5, 6 i 12 niti.
+
+**Izmjene** (redom kako su urađene; svaka je provjerena testovima prije mjerenja):
+
+1. **Cijeli korak u jednom timu niti** (`runStep` u `SmokeSolver.cpp`, `ThreadPool.h`). Prije: oko 8 buđenja niti po
+   koraku (mutex + condition variable) i `std::barrier` u Jacobiju. Sada: jedno buđenje po koraku, faze odvojene spin
+   barijerom (atomski brojač + `pause`; poslije 4096 pokušaja `yield`). Radne niti se vežu za jezgra
+   (`pinCurrentThread`): bez toga je Windows stavljao dvije niti na isto jezgro (64³, 6 niti: 3.13 → 2.76 ms).
+2. **Rubni uslovi po slojevima** (`setBoundarySlab`): svaka nit popunjava ghost ćelije svojih planova; prije je
+   `setBoundary` cijelog polja bio serijski dio (CPI 2.2 na 128³).
+3. **Vorticity confinement paralelno i s manje prometa**: prolaz 1 piše samo |ω|, prolaz 2 ponovo računa ω iz u, v, w
+   (isti izrazi) i piše novu brzinu u u0, v0, w0. 11 tokova podataka umjesto 17.
+4. **Gradijent pritiska spojen s advekcijom skalara** (`correctAdvectRow2`): advekcija čita brzinu samo u svojoj
+   ćeliji, pa se ispravka računa u istom prolazu. Vrijeme gradijenta se zato sada broji u "advekciju skalara"
+   (zato je ta faza serijski sporija u tabeli, a projekcija brža).
+5. **Jacobi s vremenskim blokiranjem** (`jacobiWavefront`): talas od D iteracija ide kroz mrežu po z, svaka iteracija
+   L ravni iza prethodne; P ravni po "ticku", barijera poslije svakog ticka. Prva iteracija ne čita stari pritisak
+   (`(+0 − div)/6`, isti bitovi), pa `pressure.fill(0)` otpada. S preprekama se `extendIntoSolids` radi po ravni, s
+   kašnjenjem od jednog bloka. Oblik (D, P) je izmjeren (tabela ispod).
+6. **Izvor**: ghost ćelije se osvježavaju samo za ravni koje je izvor promijenio.
+
+**Podešavanje oblika talasa** (Jacobi iteracija, medijan 20 koraka, ms; jedno pokretanje po obliku, orijentaciono):
+
+| Mreža, niti | D=1, P=nz (obična petlja) | D=4, P=4 | D=8, P=1 | D=8, P=2 | D=12, P=2 | D=20, P=1 |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 64³, 6 niti | 0.0416 | **0.0344** | 0.0386 | 0.0383 | 0.0429 | 0.0391 |
+| 128³, 6 niti | 0.924 | 0.530 | 0.338 | 0.344 | 0.312 | **0.276** |
+| 128³, 1 nit (D=1..40, P=1) | 1.201 (D=1) | 0.696 (D=4) | 0.630 | — | 0.634 | **0.621** |
+
+Izabrano: tri polja ≤ 8 MiB (staju u L3) → D=4, P=4; inače D=20, P=1 (`chooseShape`).
+
+**Mjerenje po D10** (5 naizmjeničnih rundi, rotiran redoslijed, 100 koraka + 10 zagrijavanja po pokretanju; sirovi
+podaci `perf/rounds/2026-11-17_d19_max_performance/`; osnova `base_ser` = serijska M4 verzija na `main`):
+
+| Mreža | `base_par6` (stari backend, 6 niti) | `new_ser` (nova, 1 nit) | `new_par6` | `new_par12` | Šum osnove (ms) |
+| :--- | :--- | :--- | :--- | :--- | ---: |
+| 32³ | 0.44x (sporije) | 1.00x (šum) | 2.08x | **2.52x** (0.913 → 0.363 ms) | 0.041 |
+| 64³ | 2.03x | 1.04x (šum) | 2.91x | **3.59x** (7.37 → 2.05 ms) | 0.375 |
+| 96³ | 1.95x | 1.01x (šum) | 2.30x | **2.38x** (27.8 → 11.7 ms) | 2.05 |
+| 128³ | 1.40x | **1.45x** | **3.00x** (89.8 → 29.9 ms) | 2.82x | 1.40 |
+
+Sve presude za `new_par6` i `new_par12` su "faster" (veće od šuma i brže u svakoj rundi). Jacobi iteracija na 128³:
+osnova 1.169 ms, nova serijska 0.569 ms (2.05x), nova 6 niti 0.264 ms (4.43x). Nova serijska je na 32³ do 96³
+jednaka osnovi (šum): tamo polja staju u keš, pa blokiranje nema šta da uštedi.
+
+**Šta nije pomoglo (zapisano po pravilu):**
+- **Ručni AVX2 `vgatherdps` za advekciju** (`Advection_gather_avx2.cpp`, bit po bit isto): na Zen 3 sporiji od g++-ove
+  emulacije (skalarna učitavanja): advekcija brzine 64³ 1.79 → 2.42 ms, 128³ 14.9 → 20.1 ms (3 runde, uvijek sporije).
+  Ostavljeno isključeno (`SMOKE_ADVECTION_GATHER=OFF`), dostupno kao `KernelIsa::Avx2Intrinsics`.
+- **`-mno-gather`**: bez efekta, g++ ni bez njega ne koristi `vgatherdps` (objdump: 0 instrukcija).
+- **12 niti (svi logički procesori)**: medijan je na 64³ bolji (2.05 prema 2.53 ms), na 128³ lošiji (2.82x prema
+  3.00x), ali su se u rundama 2, 4 i 5 pojavili pojedinačni koraci od 0.5 do 2.1 s (96³ i 128³): kad drugi program
+  treba procesor, mora istisnuti jednu vezanu nit tima, pa cijeli tim čeka na barijeri. Sa 6 niti takvog koraka nije
+  bilo. **Zadano je zato 6 niti (jedna po fizičkom jezgru)**; 12 se bira sa `--niti 12`.
+
+**CPI (uProf `assess_ext`, 2026-11-17, Release `smoke_prof --version m4|d19`, iste mreže):**
+
+| Verzija | 64³ CPI cijeli program | 64³ bez čekanja na barijeri | 128³ CPI | 128³ bez čekanja | Jacobi CPI 128³ |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| M4 (stara serijska) | 0.479 | 0.479 | 0.859 | 0.859 | 1.31 |
+| D19, 1 nit | 0.474 | 0.474 | 0.768 | 0.768 | 1.19 |
+| D19, 6 niti | 1.226 | 0.737 | 1.202 | 1.013 | 0.88 |
+| D19, 12 niti | 2.262 | 1.061 | 2.327 | 1.763 | 1.60 |
+
+- Pod profilerom (Hyper-V) korak traje mnogo duže nego bez njega (128³ M4: 125 ms prema 90 ms; D19 1 nit 113 ms
+  prema 62 ms; 64³ 6 niti 6.0 ms prema 2.5 ms), pa ovi brojevi opisuju rad pod profilerom, ne stvarni rad.
+- S nitima CPI **raste**: dio ciklusa su niti koje čekaju na barijeri (`pause`, CPI oko 8; 64³ sa 6 niti 44%
+  ciklusa), a ostatak čeka dijeljeni L3 i RAM. CPI nije mjera brzine: verzija s najvećim CPI je najbrža.
+- Funkcije su nađene preko tabele simbola `.exe` (`nm`), jer Release gradnja nema `-g`; profilna gradnja (`-g`) je
+  u ovoj sesiji bila blokirana (Smart App Control).
+
+- Zaključak: **ZADRŽATI**. Oznake u CSV-u: `PC2-20261117-D19-*`.
+- Šta smo naučili: na 128³ je usko grlo bilo pomjeranje podataka (Jacobi kroz RAM 40 puta po koraku), pa je
+  vremensko blokiranje dalo više od niti; na 64³ je granica propusnost L3 keša, koju dijele sve niti.
 
 ### P-001: B0 serijska osnova bez vektorizacije
 

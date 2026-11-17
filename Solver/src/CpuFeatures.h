@@ -9,4 +9,16 @@ namespace smoke {
 /// asked once per kernel call, not once per cell.
 bool avx2Supported();
 
+/// Number of physical processor cores (decision D19): on Windows from GetLogicalProcessorInformation (one
+/// RelationProcessorCore entry per core), elsewhere std::thread::hardware_concurrency(). Never less than 1.
+/// The default team size of the CpuParallel backend (ThreadPool::defaultThreadCount).
+int physicalCoreCount();
+
+/// Pins the CALLING thread, member `index` of a team of `teamSize` threads, so that the team is spread evenly
+/// over the processor (D19). Team no larger than the number of physical cores: thread i may run on both
+/// logical processors of core i. Larger team (SMT): thread i runs only on logical processor (i / cores) of
+/// core (i % cores), so no logical processor gets two threads of the team. Windows only; elsewhere it does
+/// nothing. Returns true when the affinity was set.
+bool pinCurrentThread(int index, int teamSize);
+
 } // namespace smoke

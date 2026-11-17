@@ -22,6 +22,11 @@ void jacobiSlabAvx2(float* pNew, const float* pOld, const float* div, int nx, in
     jacobiSlab(pNew, pOld, div, nx, ny, k0, k1, sJ, sK);  // the internal copy compiled with -mavx2
 }
 
+void jacobiPlaneRowsAvx2(float* pNew, const float* pOld, const float* div, int nx, int j0, int j1, int k,
+                         std::ptrdiff_t sJ, std::ptrdiff_t sK, bool fromZero) {
+    jacobiPlaneRows(pNew, pOld, div, nx, j0, j1, k, sJ, sK, fromZero);  // copy compiled with -mavx2
+}
+
 // T9 (M4-010): the same Jacobi row written by hand with AVX2 intrinsics, 8 floats per instruction, like
 // saxpy_avx2 in the lab example. The six neighbours are added in the SAME ORDER as the scalar code and the
 // division by 6 is kept (no FMA, no reciprocal), so the result is bit-identical. Loads are unaligned

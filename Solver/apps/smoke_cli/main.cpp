@@ -36,6 +36,7 @@ struct Options {
     float dt     = 0.0f;       // > 0: override SmokeParams::dt
     float vorticityEps = -1.0f;
     int  jacobi  = 0;          // > 0: override SmokeParams::jacobiIterations
+    int  threads = 0;          // --niti T: CpuParallel backend with T threads (D19); 0 = serial
 };
 
 bool parseInt(const char* text, int& out, int minValue = 1) {
@@ -65,6 +66,7 @@ bool parseNonnegativeFloat(const char* text, float& out) {
 void printUsage() {
     std::cout << "Koriscenje: smoke_cli [--grid N] [--nx N --ny N --nz N] [--steps N] [--warmup N] [--quiet]\n"
               << "                      [--dt X] [--jacobi K] [--vorticity-eps X] [--dump-slices FOLDER] [--every N]\n"
+              << "                      [--niti T]   (T niti, paralelni backend; bez opcije: serijski)\n"
               << "            smoke_cli --selftest   (pokrece iste testove tacnosti kao smoke_tests)\n"
               << "            smoke_cli --demo advect [--dump-slices FOLDER] [--every N]\n"
               << "                                    (M1: kugla gustoce nosena konstantnom brzinom)\n";
@@ -95,6 +97,7 @@ bool parseArgs(int argc, char** argv, Options& o) {
         else if (a == "--every")       { if (!next(o.every)) return false; }
         else if (a == "--dt")          { if (i + 1 >= argc || !parseFloat(argv[++i], o.dt)) return false; }
         else if (a == "--jacobi")      { if (!next(o.jacobi)) return false; }
+        else if (a == "--niti" || a == "--threads") { if (!next(o.threads)) return false; }
         else if (a == "--vorticity-eps") {
             if (i + 1 >= argc || !parseNonnegativeFloat(argv[++i], o.vorticityEps)) return false;
         }
@@ -137,9 +140,15 @@ int main(int argc, char** argv) {
     if (opt.dt > 0.0f) cfg.params.dt = opt.dt;
     if (opt.jacobi > 0) cfg.params.jacobiIterations = opt.jacobi;
     if (opt.vorticityEps >= 0.0f) cfg.params.vorticityEps = opt.vorticityEps;
+    if (opt.threads > 0) {
+        cfg.backend = smoke::Backend::CpuParallel;
+        cfg.threads = opt.threads;
+    }
     smoke::SmokeSolver solver(cfg);
 
-    std::cout << "=== Smoke Solver (serijska verzija) ===\n"
+    std::cout << "=== Smoke Solver (" << (opt.threads > 0 ? "paralelna verzija, " + std::to_string(solver.threadCount()) + " niti"
+                                                           : std::string("serijska verzija"))
+              << ") ===\n"
               << "Pocinjemo simulaciju dima.\n\n"
               << "Gradnja:  " << SMOKE_BUILD_TYPE << "\n"
               << "Racunar:  otisak: smoke_bench --calibrate\n"

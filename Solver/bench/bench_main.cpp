@@ -103,6 +103,8 @@ struct Options {
     bool obstacleExplicit = false;
     bool parallel = false;
     int threads = 0;
+    int waveDepth = 0;  // --wave D: Jacobi iterations per wave (D19); 0 = automatic
+    int planesPerTick = 0;  // --planes P: planes per tick of the wave (D19); 0 = automatic
     std::vector<int> gridSizes{32, 64, 96, 128};
     int steps = 100;
     int warmup = 10;
@@ -124,13 +126,13 @@ bool parsePositiveInt(std::string_view text, int& value, bool allowZero = false)
 }
 
 void printUsage(std::ostream& out) {
-    out << "Usage: smoke_bench [--grid N] [--steps N] [--warmup N] [--output FILE] [--niti T]\n"
+    out << "Usage: smoke_bench [--grid N] [--steps N] [--warmup N] [--output FILE] [--niti T] [--wave D] [--planes P]\n"
            "                   [--obstacle none|sphere|blanket]\n"
            "       smoke_bench --calibrate\n"
            "       smoke_bench --hwinfo\n"
            "       smoke_bench --convergence [--k-all-steps] [--grid N] [--steps N]\n"
            "       smoke_bench --reference FILE [--grid N] [--steps N]\n"
-           "       smoke_bench --verify FILE [--grid N] [--steps N]\n";
+           "       smoke_bench --verify FILE [--grid N] [--steps N] [--niti T]\n";
 }
 
 bool parseArgs(int argc, char** argv, Options& options) {
@@ -151,7 +153,7 @@ bool parseArgs(int argc, char** argv, Options& options) {
             options.convergenceAllSteps = true;
         } else if (arg == "--grid" || arg == "--steps" || arg == "--warmup" ||
                    arg == "--output" || arg == "--reference" || arg == "--verify" || arg == "--niti" ||
-                   arg == "--obstacle") {
+                   arg == "--obstacle" || arg == "--wave" || arg == "--planes") {
             if (i + 1 >= argc) return false;
             const std::string value(argv[++i]);
             if (arg == "--grid") {
@@ -174,6 +176,10 @@ bool parseArgs(int argc, char** argv, Options& options) {
             } else if (arg == "--niti") {
                 if (!parsePositiveInt(value, options.threads)) return false;
                 options.parallel = true;
+            } else if (arg == "--wave") {
+                if (!parsePositiveInt(value, options.waveDepth)) return false;
+            } else if (arg == "--planes") {
+                if (!parsePositiveInt(value, options.planesPerTick)) return false;
             } else if (arg == "--output") {
                 if (options.outputExplicit) return false;
                 options.outputPath = value;
@@ -721,6 +727,10 @@ bool runVerify(const Options& options) {
 
     smoke::SolverConfig config;
     config.grid = {n, n, n};
+    if (options.parallel) {  // D19: the parallel backend must reproduce the reference bit for bit too
+        config.backend = smoke::Backend::CpuParallel;
+        config.threads = options.threads;
+    }
     smoke::SmokeSolver solver(config);
     for (int step = 0; step < options.steps; ++step) solver.step();
     const smoke::Diagnostics diagnostics = solver.diagnostics();
@@ -880,6 +890,8 @@ bool runBenchmarks(const Options& options, std::ostream& csv) {
     for (const int n : options.gridSizes) {
         smoke::SolverConfig config;
         config.grid = {n, n, n};
+        config.jacobiWaveDepth = options.waveDepth;
+        config.jacobiPlanesPerTick = options.planesPerTick;
         if (options.parallel) {
             config.backend = smoke::Backend::CpuParallel;
             config.threads = options.threads;
@@ -951,7 +963,7 @@ int main(int argc, char** argv) {
     }
     if (options.convergence) return options.parallel ? 2 : (runConvergence(options) ? 0 : 1);
     if (!options.referencePath.empty()) return options.parallel ? 2 : (runReference(options) ? 0 : 1);
-    if (!options.verifyPath.empty()) return options.parallel ? 2 : (runVerify(options) ? 0 : 1);
+    if (!options.verifyPath.empty()) return runVerify(options) ? 0 : 1;  // D19: --niti allowed
 
     if (!options.outputPath.empty()) {
         if (!createParentDirectories(options.outputPath)) return 1;

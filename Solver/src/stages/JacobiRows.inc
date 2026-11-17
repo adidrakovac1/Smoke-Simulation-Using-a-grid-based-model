@@ -23,3 +23,27 @@ void jacobiSlab(float* pNew, const float* pOld, const float* div, int nx, int ny
             jacobiRow(pNew + row, pOld + row, div + row, nx, sJ, sK);
         }
 }
+
+// The FIRST Jacobi iteration of a step (D19). project() starts from p = 0 (pressure.fill(0)), so the six
+// neighbours of every cell are +0.0 and their sum is +0.0. This row computes exactly that: (+0.0 - div) / 6,
+// with the same subtraction and division as jacobiRow (0.0f - d is not folded to -d without -ffast-math,
+// because the two differ for d = +0.0), so the result is bit-identical, and the old iterate is never read.
+void jacobiRowFromZero(float* SMOKE_RESTRICT pNew, const float* SMOKE_RESTRICT div, int nx) {
+    for (int i = 1; i <= nx; ++i) {
+        const float neighbours = 0.0f;
+        pNew[i] = (neighbours - div[i]) / 6.0f;
+    }
+}
+
+// Rows [j0, j1) of plane k, interior cells only (used by the wavefront schedule, JacobiWavefront.cpp).
+// fromZero: the first iteration of a step, see jacobiRowFromZero (pOld is then not read).
+void jacobiPlaneRows(float* pNew, const float* pOld, const float* div, int nx, int j0, int j1, int k,
+                     std::ptrdiff_t sJ, std::ptrdiff_t sK, bool fromZero) {
+    for (int j = j0; j < j1; ++j) {
+        const std::ptrdiff_t row = j * sJ + k * sK;
+        if (fromZero)
+            jacobiRowFromZero(pNew + row, div + row, nx);
+        else
+            jacobiRow(pNew + row, pOld + row, div + row, nx, sJ, sK);
+    }
+}

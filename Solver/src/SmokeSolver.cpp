@@ -7,7 +7,7 @@
 #include "stages/ObstacleLists.h"
 #include "stages/Stages.h"
 
-#include <barrier>
+#include <chrono>
 #include <utility>
 
 namespace smoke {
@@ -35,130 +35,174 @@ SmokeSolver::~SmokeSolver()                                    = default;
 SmokeSolver::SmokeSolver(SmokeSolver&&) noexcept               = default;
 SmokeSolver& SmokeSolver::operator=(SmokeSolver&&) noexcept    = default;
 
-void SmokeSolver::step(float dt) {
+namespace {
+
+// One simulation step, run by every thread of `team` (decision D19). The phases, and the order of the calls
+// inside each phase, are those of the serial reference step before D19 (git history of this file; the stage
+// functions in Stages.h, e.g. project()); every kernel computes every cell with the same arithmetic, so the
+// result is bit-identical for any number of threads.
+//
+// How the work is split:
+//   * The cell kernels work on z-slabs: thread tid owns the planes ThreadPool::slabOf(nz, tid, size), writes
+//     only those planes, and refreshes their ghost cells itself (setBoundarySlab).
+//   * team.sync() (a spin barrier) separates two kernels when the second one reads cells of other slabs
+//     written by the first one (neighbours in k, or anywhere for the advection back-trace).
+//   * The obstacle passes walk short lists in a fixed order; they run on thread 0 between two barriers
+//     ("serialPart"), exactly where the reference step runs them.
+//   * Jacobi uses the wavefront schedule (jacobiWavefront), split by rows j.
+// Thread 0 also takes the time of every phase; each phase ends with a barrier, so that is the wall time of
+// the whole team.
+void runStep(SmokeState& st, const SmokeParams& params, const ObstacleLists* obstacles, int waveDepth,
+             int planesPerTick, float dt, const serial::Team& team, StepTimings& timings) {
     using namespace serial;
-    Impl& s = *impl_;
-    const SlabRange all = wholeInterior(s.config.grid);
-
-    s.timings = StepTimings{};  // timings of the last step only
-
-    const ObstacleLists* obstacles   = s.obstacles.get();
-    const float          ambientTemp = s.config.params.ambientTemp;
-
-    const GridSize g = s.config.grid;
-    const bool parallel = s.pool && s.pool->numThreads() > 1 && g.nz > 1;
-    auto forSlabs = [&](auto&& kernel) {
-        if (parallel) {
-            s.pool->parallelSlabs(g.nz, kernel);
-        } else {
-            kernel(all, 0);
-        }
+    using Clock = std::chrono::steady_clock;
+    const GridSize  g      = st.density.size();
+    const SlabRange slab   = ThreadPool::slabOf(g.nz, team.tid, team.size);
+    const bool      mine   = slab.k0 < slab.k1;
+    const bool      timing = team.tid == 0;
+    auto serialPart = [&](auto&& work) {
+        if (team.tid == 0) work();
+        team.sync();
+    };
+    Clock::time_point mark = timing ? Clock::now() : Clock::time_point{};
+    auto lap = [&](double& outMs) {
+        if (!timing) return;
+        const Clock::time_point now = Clock::now();
+        outMs += std::chrono::duration<double, std::milli>(now - mark).count();
+        mark = now;
     };
 
-    // 1. Sources. Source placement and obstacle lists intentionally remain serial (D18).
-    {
-        ScopedTimer t(s.timings[Stage::Sources]);
-        addSources(s.state, s.config.params, dt, all);
-        if (obstacles) clearSolidScalars(s.state, ambientTemp, *obstacles);
-    }
-
-    // 2. Forces. The cellwise buoyancy kernel can use slabs; its boundary pass must follow the join.
-    {
-        ScopedTimer t(s.timings[Stage::Forces]);
-        forSlabs([&](SlabRange slab, int) { applyBuoyancySlab(s.state, s.config.params, dt, slab); });
-        setBoundary(s.state.v, BoundaryKind::VelocityY);
-        if (s.config.params.vorticityEps > 0.0f)
-            applyVorticityConfinement(s.state, s.config.params.vorticityEps, dt, all);
-        if (obstacles) {
-            applyPorousDrag(s.state, dt, *obstacles);
-            enforceSolidVelocity(s.state, *obstacles);
+    // 1. Sources (addSources + clearSolidScalars).
+    if (mine) {
+        const SlabRange touched = addSourcesSlab(st, params, dt, slab);
+        if (touched.k0 < touched.k1) {
+            setBoundarySlab(st.density, BoundaryKind::Scalar, touched);
+            setBoundarySlab(st.temperature, BoundaryKind::Scalar, touched);
         }
     }
+    team.sync();
+    if (obstacles) serialPart([&] { clearSolidScalars(st, params.ambientTemp, *obstacles); });
+    lap(timings[Stage::Sources]);
 
-    // 3. Advect velocity. All components share one back-trace and the same phase ordering in both backends.
-    {
-        ScopedTimer t(s.timings[Stage::AdvectVelocity]);
-        s.state.u.swap(s.state.u0);
-        s.state.v.swap(s.state.v0);
-        s.state.w.swap(s.state.w0);
-        Field3D* const dst[3] = {&s.state.u, &s.state.v, &s.state.w};
-        const Field3D* const src[3] = {&s.state.u0, &s.state.v0, &s.state.w0};
-        forSlabs([&](SlabRange slab, int) {
-            advectFields(dst, src, 3, s.state.u0, s.state.v0, s.state.w0, dt, slab);
+    // 2. Forces: buoyancy, setBoundary(v), vorticity confinement (two passes), obstacles.
+    if (mine) {
+        applyBuoyancySlab(st, params, dt, slab);
+        setBoundarySlab(st.v, BoundaryKind::VelocityY, slab);
+    }
+    team.sync();
+    // With vorticity confinement the new velocity is written into u0, v0, w0 (confinementPassSlab), which is
+    // exactly where the velocity advection wants its input after its swap; so the swap is skipped then.
+    bool velocityInScratch = false;
+    auto swapVelocity = [&] {
+        st.u.swap(st.u0);
+        st.v.swap(st.v0);
+        st.w.swap(st.w0);
+    };
+    if (params.vorticityEps > 0.0f) {
+        if (mine) {
+            vorticityPassSlab(st, slab);
+            setBoundarySlab(st.vorticityMagnitude, BoundaryKind::Scalar, slab);
+        }
+        team.sync();
+        if (mine) {
+            confinementPassSlab(st, params.vorticityEps * dt, slab);
+            setBoundarySlab(st.u0, BoundaryKind::VelocityX, slab);
+            setBoundarySlab(st.v0, BoundaryKind::VelocityY, slab);
+            setBoundarySlab(st.w0, BoundaryKind::VelocityZ, slab);
+        }
+        team.sync();
+        velocityInScratch = true;
+    }
+    if (obstacles)
+        serialPart([&] {
+            if (velocityInScratch) swapVelocity();  // the obstacle passes work on st.u, st.v, st.w
+            applyPorousDrag(st, dt, *obstacles);
+            enforceSolidVelocity(st, *obstacles);
+            if (velocityInScratch) swapVelocity();
         });
-        setVelocityBoundary(s.state);
-        if (obstacles) enforceSolidVelocity(s.state, *obstacles);
-    }
+    lap(timings[Stage::Forces]);
 
-    // 4. Project. Each Jacobi iteration must finish and update ghost cells before the next begins.
+    // 3. Advect velocity (all three components share one back-trace) from u0, v0, w0 into u, v, w.
+    if (!velocityInScratch) serialPart(swapVelocity);
+    if (mine) {
+        Field3D* const       dst[3] = {&st.u, &st.v, &st.w};
+        const Field3D* const src[3] = {&st.u0, &st.v0, &st.w0};
+        advectFields(dst, src, 3, st.u0, st.v0, st.w0, dt, slab);
+        setVelocityBoundarySlab(st, slab);
+    }
+    team.sync();
+    if (obstacles) serialPart([&] { enforceSolidVelocity(st, *obstacles); });
+    lap(timings[Stage::AdvectVelocity]);
+
+    // 4. Project: divergence, Jacobi (wavefront), subtract the gradient.
+    if (mine) {
+        computeDivergence(st.u, st.v, st.w, st.divergence, slab);
+        setBoundarySlab(st.divergence, BoundaryKind::Scalar, slab);
+    }
+    team.sync();
     {
-        ScopedTimer t(s.timings[Stage::Project]);
-        forSlabs([&](SlabRange slab, int) {
-            computeDivergence(s.state.u, s.state.v, s.state.w, s.state.divergence, slab);
-        });
-        setBoundary(s.state.divergence, BoundaryKind::Scalar);
-        s.state.pressure.fill(0.0f);
-        if (parallel) s.state.pressure0.fill(0.0f);
-
-        const int iterations = s.config.params.jacobiIterations;
-        double jacobiTotalMs = 0.0;
-        if (iterations > 0) {
-            ScopedTimer jt(jacobiTotalMs);
-            if (parallel) {
-                auto on_complete = [&]() noexcept {
-                    if (obstacles) extendIntoSolids(s.state.pressure, *obstacles);
-                    setBoundary(s.state.pressure, BoundaryKind::Scalar);
-                    s.state.pressure.swap(s.state.pressure0);
-                };
-                std::barrier sync(s.pool->numThreads(), on_complete);
-                s.pool->parallelRun([&](int tid) {
-                    const int k0 = 1 + (tid * g.nz) / s.pool->numThreads();
-                    const int k1 = 1 + ((tid + 1) * g.nz) / s.pool->numThreads();
-                    const SlabRange slab{k0, k1};
-                    for (int it = 0; it < iterations; ++it) {
-                        if (slab.k0 < slab.k1)
-                            jacobiIteration(s.state.pressure, s.state.pressure0, s.state.divergence, slab);
-                        sync.arrive_and_wait();
-                    }
-                });
-                s.state.pressure.swap(s.state.pressure0);
-            } else {
-                for (int it = 0; it < iterations; ++it) {
-                    s.state.pressure.swap(s.state.pressure0);
-                    jacobiIteration(s.state.pressure, s.state.pressure0, s.state.divergence, all);
-                    if (obstacles) extendIntoSolids(s.state.pressure, *obstacles);
-                    setBoundary(s.state.pressure, BoundaryKind::Scalar);
-                }
-            }
-        }
-        s.timings.jacobiIterationMs = iterations > 0 ? jacobiTotalMs / iterations : 0.0;
-
-        forSlabs([&](SlabRange slab, int) {
-            subtractPressureGradient(s.state.u, s.state.v, s.state.w, s.state.pressure, slab);
-        });
-        if (obstacles) reflectVelocityIntoSolids(s.state.u, s.state.v, s.state.w, *obstacles);
-        setVelocityBoundary(s.state);
+        const Clock::time_point jacobiStart = timing ? Clock::now() : Clock::time_point{};
+        jacobiWavefront(st.pressure, st.pressure0, st.divergence, params.jacobiIterations, waveDepth, obstacles,
+                        team, planesPerTick);
+        if (timing && params.jacobiIterations > 0)
+            timings.jacobiIterationMs =
+                std::chrono::duration<double, std::milli>(Clock::now() - jacobiStart).count() /
+                params.jacobiIterations;
     }
+    lap(timings[Stage::Project]);
 
-    // 5. Advect scalars.
-    {
-        ScopedTimer t(s.timings[Stage::AdvectScalars]);
+    // 4b + 5. Subtract the pressure gradient and advect the scalars in one pass (correctVelocityAndAdvectScalars:
+    // the advection reads the velocity only at its own cell). Its time is counted as "advect scalars".
+    // With obstacles the reference order is: gradient, reflectVelocityIntoSolids, setVelocityBoundary,
+    // extendIntoSolids(density, temperature), swap, advect, setBoundary, clearSolidScalars, applyPorousFilter.
+    // Here the reflection and the velocity ghost layer come after the advection instead. That gives the same
+    // bits: the advection of a cell reads the velocity of that cell only, reflectVelocityIntoSolids changes
+    // the velocity of solid cells only, and the scalars of solid cells are overwritten by clearSolidScalars
+    // afterwards anyway (checked by test_parallel_solver.cpp, with obstacles).
+    serialPart([&] {
         if (obstacles) {
-            extendIntoSolids(s.state.density, *obstacles);
-            extendIntoSolids(s.state.temperature, *obstacles);
+            extendIntoSolids(st.density, *obstacles);
+            extendIntoSolids(st.temperature, *obstacles);
         }
-        s.state.density.swap(s.state.density0);
-        s.state.temperature.swap(s.state.temperature0);
-        Field3D* const dst[2] = {&s.state.density, &s.state.temperature};
-        const Field3D* const src[2] = {&s.state.density0, &s.state.temperature0};
-        forSlabs([&](SlabRange slab, int) { advectFields(dst, src, 2, s.state.u, s.state.v, s.state.w, dt, slab); });
-        setBoundary(s.state.density, BoundaryKind::Scalar);
-        setBoundary(s.state.temperature, BoundaryKind::Scalar);
-        if (obstacles) {
-            clearSolidScalars(s.state, ambientTemp, *obstacles);
-            applyPorousFilter(s.state, dt, *obstacles);
-        }
+        st.density.swap(st.density0);
+        st.temperature.swap(st.temperature0);
+    });
+    if (mine) {
+        correctVelocityAndAdvectScalars(st, dt, slab);
+        if (!obstacles) setVelocityBoundarySlab(st, slab);
+        setBoundarySlab(st.density, BoundaryKind::Scalar, slab);
+        setBoundarySlab(st.temperature, BoundaryKind::Scalar, slab);
     }
+    team.sync();
+    if (obstacles)
+        serialPart([&] {
+            reflectVelocityIntoSolids(st.u, st.v, st.w, *obstacles);
+            setVelocityBoundary(st);
+            clearSolidScalars(st, params.ambientTemp, *obstacles);
+            applyPorousFilter(st, dt, *obstacles);
+        });
+    lap(timings[Stage::AdvectScalars]);
+}
+
+void poolBarrier(void* pool) { static_cast<ThreadPool*>(pool)->barrier(); }
+
+} // namespace
+
+void SmokeSolver::step(float dt) {
+    Impl& s = *impl_;
+    s.timings = StepTimings{};  // timings of the last step only
+
+    ThreadPool* const pool = s.pool.get();
+    const int threads = pool ? pool->numThreads() : 1;
+    auto body = [&](int tid) {
+        const serial::Team team{tid, threads, &poolBarrier, pool};
+        runStep(s.state, s.config.params, s.obstacles.get(), s.config.jacobiWaveDepth, s.config.jacobiPlanesPerTick,
+                dt, team, s.timings);
+    };
+    if (pool && threads > 1)
+        pool->parallelRun(body);
+    else
+        body(0);
 
     s.lastDt = dt;
     ++s.steps;

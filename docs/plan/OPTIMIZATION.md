@@ -122,7 +122,7 @@ Svaka stavka je **kandidat**, ne obaveza. Redoslijed biramo prema profilu i ogra
 | Tehnika | Ideja | Napomena |
 | :--- | :--- | :--- |
 | **Fuzija jezgara** | spojiti faze koje prolaze kroz isti niz (npr. divergencija s prvom Jacobi iteracijom, uzgon s advekcijom) | smanjuje promet memorije, što je glavno usko grlo |
-| **Vremensko blokiranje Jacobija** | više iteracija na jednom bloku dok je u kešu | rezultat može ostati isti kao kod običnog Jacobija ako se ivice blokova pravilno obrade; složeno za pisanje i provjeru |
+| **Vremensko blokiranje Jacobija** | više iteracija na jednom bloku dok je u kešu | rezultat može ostati isti kao kod običnog Jacobija ako se ivice blokova pravilno obrade; složeno za pisanje i provjeru. **Urađeno u D19** (wavefront po `z`, `JacobiWavefront.cpp`, bit po bit isto; PERF_LOG.md, P-004) |
 | **Red-black Gauss-Seidel** | brža konvergencija, manje iteracija za isti kvalitet | mijenja rezultate (drugačiji algoritam), pa se poredi po kvalitetu, ne bit po bit |
 | **Multigrid / konjugirani gradijent** | puno manje iteracija na velikim mrežama | napredno; veliki dobitak za 128³ |
 | **FMA instrukcije** | množenje i sabiranje u jednoj instrukciji | mijenja zaokruživanje; opet tolerancije |
@@ -145,6 +145,10 @@ dok se ne uporede s osnovom u istoj sesiji po odjeljku 4.
 Implementacijski dogovor za D18: niti dijele disjunktne raspone `k`; granice polja i prepreke se obrađuju nakon
 završetka jezgra. Jacobi iteracije zahtijevaju barijeru između prolaza. Test `test_parallel_solver.cpp` poredi
 polje gustoće bit po bit sa serijskim backendom na kubnim i nekubnim mrežama te s preprekama.
+
+**D19 (2026-11-17):** backend je postao najbrža verzija, i dalje bit po bit ista. Šta je urađeno i šta je izmjereno
+(uključujući izmjene koje nisu pomogle, npr. ručni AVX2 `vgatherdps` za advekciju): PERF_LOG.md, P-004. OpenMP se
+koristi samo kao `#pragma omp simd` uz `-fopenmp-simd` (bez niti i bez biblioteke).
 
 Za svaku stavku prije početka upiši u PERF_LOG.md **hipotezu** ("očekujem X jer Y"), a poslije nje rezultat.
 

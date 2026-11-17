@@ -44,7 +44,12 @@ bool SmokeScene::Setup() {
     SetSkyboxVisible(false);
 
     // One box = one solver instance (docs/plan/ARCHITECTURE.md, section 8). Default grid is 64^3.
-    m_solver = std::make_unique<smoke::SmokeSolver>(smoke::SolverConfig{});
+    // D19: the multi-threaded CPU backend (bit-identical to the serial one), one thread per physical core.
+    smoke::SolverConfig config;
+    config.backend = smoke::Backend::CpuParallel;
+    config.threads = 0;
+    m_solver = std::make_unique<smoke::SmokeSolver>(config);
+    spdlog::info("[SmokeScene] solver: CpuParallel, {} threads", m_solver->threadCount());
     PlaceBox(m_solver->gridSize());
 
     if (!m_volumePass.Init(ShaderDir())) {

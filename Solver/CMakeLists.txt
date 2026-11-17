@@ -70,6 +70,7 @@ add_library(smoke_solver STATIC
   src/stages/Forces.cpp
   src/stages/Advection.cpp
   src/stages/Projection.cpp
+  src/stages/JacobiWavefront.cpp
   src/stages/Boundary.cpp
   src/stages/Obstacles.cpp
   src/Voxelizer.cpp
@@ -83,7 +84,8 @@ add_library(smoke_solver STATIC
 option(SMOKE_ENABLE_AVX2 "Build AVX2 kernels with a run-time CPU check (x86 only)" ON)
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SMOKE_CPU)
 if(SMOKE_ENABLE_AVX2 AND NOT SMOKE_DISABLE_VECTORIZATION AND SMOKE_CPU MATCHES "^(x86_64|amd64|x64|i[3-6]86)$")
-  set(SMOKE_AVX2_SOURCES src/stages/Projection_avx2.cpp src/stages/Advection_avx2.cpp src/stages/Forces_avx2.cpp)
+  set(SMOKE_AVX2_SOURCES src/stages/Projection_avx2.cpp src/stages/Advection_avx2.cpp src/stages/Forces_avx2.cpp
+                         src/stages/Advection_gather_avx2.cpp)
   target_sources(smoke_solver PRIVATE ${SMOKE_AVX2_SOURCES})
   if(MSVC)
     set_source_files_properties(${SMOKE_AVX2_SOURCES} PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
@@ -94,8 +96,19 @@ if(SMOKE_ENABLE_AVX2 AND NOT SMOKE_DISABLE_VECTORIZATION AND SMOKE_CPU MATCHES "
     # M4-017: g++'s cost model picks 4-float vectors for the fused advection rows (advectRow2/3) even with
     # -mavx2; "unlimited" lets it use 8 floats. Same arithmetic, so the result does not change.
     set_property(SOURCE src/stages/Advection_avx2.cpp APPEND PROPERTY COMPILE_OPTIONS "-fvect-cost-model=unlimited")
+    option(SMOKE_ADVECTION_NO_GATHER "D19 experiment: build the AVX2 advection without vgatherdps" OFF)
+    if(SMOKE_ADVECTION_NO_GATHER)
+      set_property(SOURCE src/stages/Advection_avx2.cpp APPEND PROPERTY COMPILE_OPTIONS "-mno-gather")
+    endif()
   endif()
   target_compile_definitions(smoke_solver PRIVATE SMOKE_HAS_AVX2_BINARY=1)
+  # D19: hand-written AVX2 advection with vgatherdps (Advection_gather_avx2.cpp). OFF: on PC-2 (Zen 3) it is
+  # ~35% SLOWER than g++'s emulated gather (PERF_LOG.md, P-004); kept for KernelIsa::Avx2Intrinsics and for
+  # CPUs with a fast gather instruction.
+  option(SMOKE_ADVECTION_GATHER "Use the hand-written AVX2 gather advection by default" OFF)
+  if(SMOKE_ADVECTION_GATHER)
+    target_compile_definitions(smoke_solver PRIVATE SMOKE_ADVECTION_GATHER_DEFAULT=1)
+  endif()
   set(SMOKE_AVX2_STATE "AVX2 kernels built (run-time check)")
 else()
   set(SMOKE_AVX2_STATE "no AVX2 kernels")
@@ -135,6 +148,11 @@ target_include_directories(smoke_solver
 )
 target_link_libraries(smoke_solver PUBLIC Threads::Threads)
 smoke_set_warnings(smoke_solver)
+# D19: "#pragma omp simd" (lab technique T8) on the ghost-layer copy loops. -fopenmp-simd only makes the
+# compiler read those pragmas; it does NOT turn on OpenMP threads and links no OpenMP runtime library.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(smoke_solver PRIVATE -fopenmp-simd)
+endif()
 
 if(SMOKE_DISABLE_VECTORIZATION)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -254,6 +272,10 @@ if(SMOKE_BUILD_BENCH)
     SMOKE_BENCH_PER_FILE_FLAGS="${SMOKE_PER_FILE_FLAGS}"
   )
   smoke_set_warnings(smoke_bench)
+  if(MINGW)
+    # Static C++ runtime, as smoke_demo: the benchmark also starts without MSYS2 on PATH.
+    target_link_options(smoke_bench PRIVATE -static)
+  endif()
 endif()
 
 # smoke_lab and smoke_demo: side-by-side versions for demonstrations (Solver/lab, Solver/demo; style of the
