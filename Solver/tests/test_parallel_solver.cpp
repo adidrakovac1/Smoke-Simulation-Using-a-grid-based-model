@@ -5,6 +5,8 @@
 #include "stages/ObstacleLists.h"
 #include "stages/Stages.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -122,6 +124,132 @@ TEST_CASE("solver defaults to serial and parallel backend matches serial bit for
             CHECK(densityMatches(serial, parallel));
         }
     }
+}
+
+// D20: the red-black solver and the warm start change the result, but the result must still not depend on the
+// number of threads or on how the threads wait (spin or block).
+TEST_CASE("D20 red-black and warm start: same bits for every thread count and wait mode") {
+    for (const smoke::GridSize grid : {smoke::GridSize{20, 18, 22}, smoke::GridSize{33, 31, 29}}) {
+        for (bool withObstacles : {false, true}) {
+            for (int variant = 0; variant < 3; ++variant) {
+                smoke::SolverConfig base;
+                base.grid = grid;
+                base.params.jacobiIterations = 7;
+                // 0: red-black SOR, cold; 1: red-black GS, warm; 2: Jacobi, warm
+                base.params.pressureSolver =
+                    variant < 2 ? smoke::PressureSolver::RedBlackGaussSeidel : smoke::PressureSolver::Jacobi;
+                base.params.sorOmega          = variant == 0 ? 1.7f : 1.0f;
+                base.params.warmStartPressure = variant != 0;
+                smoke::SmokeSolver serial(base);
+                const smoke::ObstacleGrid obstacleGrid = makeObstacles(grid);
+                if (withObstacles) REQUIRE(serial.setObstacles(obstacleGrid));
+                for (int step = 0; step < 4; ++step) serial.step();
+                CHECK(serial.diagnostics().nonFiniteCells == 0);
+                for (int threads : {2, 3, 6}) {
+                    for (smoke::ThreadWait wait : {smoke::ThreadWait::Spin, smoke::ThreadWait::Block}) {
+                        smoke::SolverConfig config = base;
+                        config.backend    = smoke::Backend::CpuParallel;
+                        config.threads    = threads;
+                        config.threadWait = wait;
+                        smoke::SmokeSolver parallel(config);
+                        if (withObstacles) REQUIRE(parallel.setObstacles(obstacleGrid));
+                        for (int step = 0; step < 4; ++step) parallel.step();
+                        INFO("variant " << variant << ", obstacles " << withObstacles << ", threads " << threads
+                                        << ", block " << (wait == smoke::ThreadWait::Block));
+                        CHECK(densityMatches(serial, parallel));
+                    }
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("D20 blocking wait gives the reference result") {
+    smoke::SolverConfig spin;
+    spin.grid = {24, 20, 18};
+    smoke::SolverConfig block = spin;
+    spin.backend = block.backend = smoke::Backend::CpuParallel;
+    spin.threads = block.threads = 4;
+    block.threadWait = smoke::ThreadWait::Block;
+    smoke::SmokeSolver a(spin), b(block), reference(smoke::SolverConfig{spin.grid, spin.params});
+    for (int step = 0; step < 5; ++step) {
+        a.step();
+        b.step();
+        reference.step();
+    }
+    CHECK(densityMatches(a, b));
+    CHECK(densityMatches(reference, b));
+}
+
+// Largest | laplacian(p) - div | over the interior: how far p is from solving the pressure equation.
+static double poissonResidual(const smoke::Field3D& p, const smoke::Field3D& div) {
+    const smoke::GridSize g = p.size();
+    double worst = 0.0;
+    for (int k = 1; k <= g.nz; ++k)
+        for (int j = 1; j <= g.ny; ++j)
+            for (int i = 1; i <= g.nx; ++i) {
+                const double lap = double(p.at(i - 1, j, k)) + p.at(i + 1, j, k) + p.at(i, j - 1, k) + p.at(i, j + 1, k) +
+                                   p.at(i, j, k - 1) + p.at(i, j, k + 1) - 6.0 * p.at(i, j, k);
+                worst = std::max(worst, std::fabs(lap - div.at(i, j, k)));
+            }
+    return worst;
+}
+
+TEST_CASE("D20 red-black converges faster than Jacobi, SOR faster still, warm start keeps a solution") {
+    using namespace smoke::serial;
+    const smoke::GridSize g{24, 24, 24};
+    // A smooth divergence with zero mean (a solvable Neumann problem): a few sines.
+    smoke::Field3D div(g), pJ(g), pJ0(g), pGS(g), pSOR(g);
+    for (int k = 1; k <= g.nz; ++k)
+        for (int j = 1; j <= g.ny; ++j)
+            for (int i = 1; i <= g.nx; ++i)
+                div.at(i, j, k) = 0.01f * std::cos(3.14159265f * (i - 0.5f) / g.nx) *
+                                  std::cos(3.14159265f * (j - 0.5f) / g.ny) * std::cos(2.0f * 3.14159265f * (k - 0.5f) / g.nz);
+    setBoundary(div, BoundaryKind::Scalar);
+    const Team one{};
+    const int K = 40;
+    jacobiWavefront(pJ, pJ0, div, K, 0, nullptr, one);
+    redBlackSolve(pGS, div, K, 1.0f, false, nullptr, one);
+    redBlackSolve(pSOR, div, K, 1.8f, false, nullptr, one);
+    // The exact solution (up to a constant, Neumann walls): many SOR iterations. Compare the ERROR, not the
+    // largest residual: right after the black sweep the residual of red-black sits on the red cells only, so its
+    // maximum says little (measured: Jacobi 0.0050, GS 0.0054, SOR 0.00028 after 40 iterations).
+    smoke::Field3D exact(g);
+    redBlackSolve(exact, div, 3000, 1.8f, false, nullptr, one);
+    auto error = [&](const smoke::Field3D& p) {
+        double meanP = 0.0, meanE = 0.0;
+        for (int k = 1; k <= g.nz; ++k)
+            for (int j = 1; j <= g.ny; ++j)
+                for (int i = 1; i <= g.nx; ++i) {
+                    meanP += p.at(i, j, k);
+                    meanE += exact.at(i, j, k);
+                }
+        const double cells = double(g.nx) * g.ny * g.nz;
+        meanP /= cells;
+        meanE /= cells;
+        double worst = 0.0;
+        for (int k = 1; k <= g.nz; ++k)
+            for (int j = 1; j <= g.ny; ++j)
+                for (int i = 1; i <= g.nx; ++i)
+                    worst = std::max(worst, std::fabs((p.at(i, j, k) - meanP) - (exact.at(i, j, k) - meanE)));
+        return worst;
+    };
+    const double eJ = error(pJ), eGS = error(pGS), eSOR = error(pSOR);
+    MESSAGE("max error after 40 iterations: Jacobi " << eJ << ", red-black GS " << eGS << ", SOR 1.8 " << eSOR
+                                                     << " (exact residual " << poissonResidual(exact, div) << ")");
+    CHECK(eGS < eJ);
+    CHECK(eSOR < eGS);
+
+    // Warm start from a (nearly) converged p: one more iteration must not make it worse.
+    smoke::Field3D warm(g);
+    redBlackSolve(warm, div, 400, 1.8f, false, nullptr, one);
+    const double rBefore = poissonResidual(warm, div);
+    redBlackSolve(warm, div, 1, 1.0f, true, nullptr, one);
+    CHECK(poissonResidual(warm, div) <= rBefore * 1.0001 + 1e-9);
+    // Warm start with 0 iterations leaves p untouched (cold start would reset it to 0).
+    const float probe = warm.at(5, 6, 7);
+    redBlackSolve(warm, div, 0, 1.0f, true, nullptr, one);
+    CHECK(warm.at(5, 6, 7) == probe);
 }
 
 // D19: the whole-step team, the slab ghost layers and the wavefront Jacobi schedule against the pre-D19 serial

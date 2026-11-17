@@ -42,6 +42,7 @@ STAGES="${STAGES:-all jacobi advect forces}"
 GRIDS="${GRIDS:-64 128}"
 VERSION="${VERSION:-m4}"
 THREADS="${THREADS:-}"
+EXTRA="${EXTRA:-}"   # more smoke_prof options for VERSION=d19 (D20), e.g. EXTRA="--warm --iters 10 --block"
 [ "$OBSTACLE" = "none" ] || STAGES="all"
 [ "$VERSION" = "m4" ] || STAGES="all"
 
@@ -61,6 +62,7 @@ mkdir -p "$OUT"
     echo "  obstacle: $OBSTACLE"
     echo "  version: $VERSION"
     echo "  threads: ${THREADS:-1}"
+    echo "  extra: ${EXTRA:-none}"
     echo "  date: $(date '+%Y-%m-%d %H:%M')"
 } > "$OUT/session_info.txt" 2>&1
 
@@ -75,7 +77,7 @@ for GRID in $GRIDS; do
         RUN_SECONDS=$((SECONDS_PER_RUN + DELAY))
         "$UPROF" collect --config "$CONFIG" --start-delay "$DELAY" -o "$(cygpath -w "$SESSION")" \
             "$(cygpath -w "$PWD/$PROF")" --grid "$GRID" --seconds "$RUN_SECONDS" --stage "$STAGE" \
-            --obstacle "$OBSTACLE" --version "$VERSION" ${THREADS:+--niti "$THREADS"} \
+            --obstacle "$OBSTACLE" --version "$VERSION" ${THREADS:+--niti "$THREADS"} $EXTRA \
             > "$OUT/collect_g${GRID}_${STAGE}.log" 2>&1
         if [ ! -d "$SESSION" ]; then
             echo "   collection FAILED, see $OUT/collect_g${GRID}_${STAGE}.log" >&2

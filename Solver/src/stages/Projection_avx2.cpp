@@ -15,7 +15,13 @@ namespace smoke::serial {
 
 namespace {
 #include "stages/JacobiRows.inc"
+#include "stages/RedBlackRows.inc"
 } // namespace
+
+void redBlackSweepAvx2(float* p, const float* div, int nx, int ny, int k0, int k1, int colour, float omega,
+                       std::ptrdiff_t sJ, std::ptrdiff_t sK) {
+    redBlackSweep(p, div, nx, ny, k0, k1, colour, omega, sJ, sK);  // copy compiled with -mavx2 (D20)
+}
 
 void jacobiSlabAvx2(float* pNew, const float* pOld, const float* div, int nx, int ny, int k0, int k1,
                     std::ptrdiff_t sJ, std::ptrdiff_t sK) {

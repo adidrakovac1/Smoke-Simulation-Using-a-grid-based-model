@@ -105,6 +105,13 @@ struct Options {
     int threads = 0;
     int waveDepth = 0;  // --wave D: Jacobi iterations per wave (D19); 0 = automatic
     int planesPerTick = 0;  // --planes P: planes per tick of the wave (D19); 0 = automatic
+    // D20 (results are no longer bit-identical to the reference with --solver rbgs or --warm):
+    std::string solver = "jacobi";  // --solver jacobi|rbgs
+    float omega = 1.0f;             // --omega W (rbgs only)
+    bool warm = false;              // --warm: start the pressure from the previous step
+    bool block = false;             // --block: waiting threads sleep (ThreadWait::Block)
+    int iters = 0;                  // --iters K: pressure iterations per step (0 = default 40)
+    bool quality = false;           // --quality: report the divergence left after the projection
     std::vector<int> gridSizes{32, 64, 96, 128};
     int steps = 100;
     int warmup = 10;
@@ -127,7 +134,8 @@ bool parsePositiveInt(std::string_view text, int& value, bool allowZero = false)
 
 void printUsage(std::ostream& out) {
     out << "Usage: smoke_bench [--grid N] [--steps N] [--warmup N] [--output FILE] [--niti T] [--wave D] [--planes P]\n"
-           "                   [--obstacle none|sphere|blanket]\n"
+           "                   [--obstacle none|sphere|blanket] [--solver jacobi|rbgs] [--omega W] [--warm]\n"
+           "                   [--iters K] [--block] [--quality]\n"
            "       smoke_bench --calibrate\n"
            "       smoke_bench --hwinfo\n"
            "       smoke_bench --convergence [--k-all-steps] [--grid N] [--steps N]\n"
@@ -198,6 +206,26 @@ bool parseArgs(int argc, char** argv, Options& options) {
                 options.referencePath = value;
                 if (options.referencePath.empty()) return false;
                 options.referenceExplicit = true;
+            }
+        } else if (arg == "--warm") {
+            options.warm = true;
+        } else if (arg == "--block") {
+            options.block = true;
+        } else if (arg == "--quality") {
+            options.quality = true;
+        } else if (arg == "--solver" || arg == "--omega" || arg == "--iters") {
+            if (i + 1 >= argc) return false;
+            const std::string value(argv[++i]);
+            if (arg == "--solver") {
+                if (value != "jacobi" && value != "rbgs") return false;
+                options.solver = value;
+            } else if (arg == "--omega") {
+                char* end = nullptr;
+                options.omega = std::strtof(value.c_str(), &end);
+                if (end == value.c_str() || *end != '\0' || !(options.omega > 0.0f) || !(options.omega < 2.0f))
+                    return false;
+            } else {
+                if (!parsePositiveInt(value, options.iters, true)) return false;
             }
         } else if (arg == "--help" || arg == "-h") {
             printUsage(std::cout);
@@ -882,6 +910,60 @@ bool runConvergence(const Options& options) {
     return true;
 }
 
+// D20 options shared by the timing and the quality mode.
+void applySolverOptions(const Options& options, smoke::SolverConfig& config) {
+    config.params.pressureSolver = options.solver == "rbgs" ? smoke::PressureSolver::RedBlackGaussSeidel
+                                                            : smoke::PressureSolver::Jacobi;
+    config.params.sorOmega = options.omega;
+    config.params.warmStartPressure = options.warm;
+    if (options.iters > 0) config.params.jacobiIterations = options.iters;
+    config.threadWait = options.block ? smoke::ThreadWait::Block : smoke::ThreadWait::Spin;
+}
+
+// --quality (D20): how well the projection works with the chosen solver. After every step the diagnostics give
+// max|div u| before and after the projection (DiagnosticsCompute.cpp); the medians over the measured steps go
+// to stdout, together with the median time of a step. One row per grid.
+bool runQuality(const Options& options) {
+    std::cout << "grid,solver,omega,warm,iters,threads,steps,median_max_div_before,median_max_div_after,"
+                 "max_max_div_after,median_ratio_after_before,median_rms_div_after,median_poisson_residual,"
+                 "median_step_ms\n";
+    for (const int n : options.gridSizes) {
+        smoke::SolverConfig config;
+        config.grid = {n, n, n};
+        applySolverOptions(options, config);
+        if (options.parallel) {
+            config.backend = smoke::Backend::CpuParallel;
+            config.threads = options.threads;
+        }
+        smoke::SmokeSolver solver(config);
+        if (options.obstacle != "none" &&
+            !solver.setObstacles(smoke::scenarios::makeObstacleScenario(options.obstacle, config.grid)))
+            return false;
+        for (int step = 0; step < options.warmup; ++step) solver.step();
+        std::vector<double> before, after, ratio, ms, rms, residual;
+        for (int step = 0; step < options.steps; ++step) {
+            solver.step();
+            ms.push_back(solver.lastTimings().total());
+            const smoke::Diagnostics d = solver.diagnostics();
+            if (d.nonFiniteCells != 0) {
+                std::cerr << "Non-finite solver state at grid " << n << "^3\n";
+                return false;
+            }
+            before.push_back(d.maxDivBefore);
+            after.push_back(d.maxDivAfter);
+            ratio.push_back(d.maxDivBefore > 0.0 ? d.maxDivAfter / d.maxDivBefore : 0.0);
+            rms.push_back(d.rmsDivAfter);
+            residual.push_back(d.poissonResidual);
+        }
+        std::cout << n << "^3," << options.solver << ',' << options.omega << ',' << (options.warm ? 1 : 0) << ','
+                  << config.params.jacobiIterations << ',' << solver.threadCount() << ',' << options.steps << ','
+                  << std::setprecision(6) << median(before) << ',' << median(after) << ','
+                  << *std::max_element(after.begin(), after.end()) << ',' << median(ratio) << ',' << median(rms)
+                  << ',' << median(residual) << ',' << median(ms) << '\n';
+    }
+    return true;
+}
+
 bool runBenchmarks(const Options& options, std::ostream& csv) {
     csv << "grid,stage,median_ms,min_ms,max_ms,steps\n";
     std::cerr << "backend=" << (options.parallel ? "CpuParallel" : "Serial");
@@ -892,6 +974,7 @@ bool runBenchmarks(const Options& options, std::ostream& csv) {
         config.grid = {n, n, n};
         config.jacobiWaveDepth = options.waveDepth;
         config.jacobiPlanesPerTick = options.planesPerTick;
+        applySolverOptions(options, config);
         if (options.parallel) {
             config.backend = smoke::Backend::CpuParallel;
             config.threads = options.threads;
@@ -964,6 +1047,7 @@ int main(int argc, char** argv) {
     if (options.convergence) return options.parallel ? 2 : (runConvergence(options) ? 0 : 1);
     if (!options.referencePath.empty()) return options.parallel ? 2 : (runReference(options) ? 0 : 1);
     if (!options.verifyPath.empty()) return runVerify(options) ? 0 : 1;  // D19: --niti allowed
+    if (options.quality) return runQuality(options) ? 0 : 1;           // D20
 
     if (!options.outputPath.empty()) {
         if (!createParentDirectories(options.outputPath)) return 1;

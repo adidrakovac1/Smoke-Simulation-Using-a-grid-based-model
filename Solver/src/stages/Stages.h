@@ -56,6 +56,7 @@ struct Team {
     int   size = 1;
     void (*barrierFn)(void*) = nullptr;
     void* barrierCtx         = nullptr;
+    bool  blockingWait       = false;  // D20: a barrier costs microseconds (threads sleep), so use fewer of them
     void  sync() const {
         if (size > 1) barrierFn(barrierCtx);
     }
@@ -129,8 +130,23 @@ JacobiPlaneRowsFn jacobiPlaneRowsKernel();
 /// including pressure0 (the iterate before the last one) and every ghost cell. `waveDepth` is how many
 /// iterations travel through the grid together, `planesPerTick` how many planes each of them advances between
 /// two barriers (0 = automatic choice for both). All threads of the team must call it.
+/// warmStart (D20): start from the values already in `pressure` (the previous step) instead of p = 0.
 void jacobiWavefront(Field3D& pressure, Field3D& pressure0, const Field3D& div, int iterations, int waveDepth,
-                     const ObstacleLists* obstacles, const Team& team, int planesPerTick = 0);
+                     const ObstacleLists* obstacles, const Team& team, int planesPerTick = 0, bool warmStart = false);
+
+/// D20: one colour sweep of red-black Gauss-Seidel / SOR over the planes [k0, k1), in place (RedBlackRows.inc).
+/// colour 0 = cells with (i + j + k) even, 1 = odd. omega = 1: Gauss-Seidel; otherwise over-relaxation.
+using RedBlackSweepFn = void (*)(float* p, const float* div, int nx, int ny, int k0, int k1, int colour, float omega,
+                                 std::ptrdiff_t sJ, std::ptrdiff_t sK);
+RedBlackSweepFn redBlackSweepKernel(KernelIsa isa = KernelIsa::Auto);
+
+/// D20: `iterations` red-black iterations (red sweep, then black sweep) for laplacian(p) = div, in place in
+/// `pressure`, run by every thread of `team` (RedBlack.cpp). warmStart = false starts from p = 0 like project();
+/// true starts from the values already in `pressure` (the previous step). After every iteration the obstacle
+/// cells (extendIntoSolids) and the ghost layer are refreshed, as in the Jacobi loop. The result does not
+/// depend on the number of threads (the cells of one colour are independent).
+void redBlackSolve(Field3D& pressure, const Field3D& div, int iterations, float omega, bool warmStart,
+                   const ObstacleLists* obstacles, const Team& team);
 
 /// u -= ( p(i+1) - p(i-1) ) / 2, and the same for v (in j) and w (in k). Interior cells only.
 void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D& p, SlabRange range);

@@ -71,6 +71,7 @@ add_library(smoke_solver STATIC
   src/stages/Advection.cpp
   src/stages/Projection.cpp
   src/stages/JacobiWavefront.cpp
+  src/stages/RedBlack.cpp
   src/stages/Boundary.cpp
   src/stages/Obstacles.cpp
   src/Voxelizer.cpp

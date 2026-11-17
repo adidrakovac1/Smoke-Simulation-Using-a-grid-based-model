@@ -37,6 +37,10 @@ struct Options {
     float vorticityEps = -1.0f;
     int  jacobi  = 0;          // > 0: override SmokeParams::jacobiIterations
     int  threads = 0;          // --niti T: CpuParallel backend with T threads (D19); 0 = serial
+    bool redBlack = false;     // --solver rbgs (D20)
+    float omega  = 1.0f;       // --omega W (D20)
+    bool warm    = false;      // --warm (D20)
+    bool block   = false;      // --block (D20)
 };
 
 bool parseInt(const char* text, int& out, int minValue = 1) {
@@ -67,6 +71,7 @@ void printUsage() {
     std::cout << "Koriscenje: smoke_cli [--grid N] [--nx N --ny N --nz N] [--steps N] [--warmup N] [--quiet]\n"
               << "                      [--dt X] [--jacobi K] [--vorticity-eps X] [--dump-slices FOLDER] [--every N]\n"
               << "                      [--niti T]   (T niti, paralelni backend; bez opcije: serijski)\n"
+              << "                      [--solver jacobi|rbgs] [--omega W] [--warm] [--block]   (odluka D20)\n"
               << "            smoke_cli --selftest   (pokrece iste testove tacnosti kao smoke_tests)\n"
               << "            smoke_cli --demo advect [--dump-slices FOLDER] [--every N]\n"
               << "                                    (M1: kugla gustoce nosena konstantnom brzinom)\n";
@@ -98,6 +103,17 @@ bool parseArgs(int argc, char** argv, Options& o) {
         else if (a == "--dt")          { if (i + 1 >= argc || !parseFloat(argv[++i], o.dt)) return false; }
         else if (a == "--jacobi")      { if (!next(o.jacobi)) return false; }
         else if (a == "--niti" || a == "--threads") { if (!next(o.threads)) return false; }
+        else if (a == "--warm")  { o.warm = true; }
+        else if (a == "--block") { o.block = true; }
+        else if (a == "--solver") {
+            std::string s;
+            if (!nextText(s) || (s != "jacobi" && s != "rbgs")) return false;
+            o.redBlack = (s == "rbgs");
+        }
+        else if (a == "--omega") {
+            if (i + 1 >= argc || !parseNonnegativeFloat(argv[++i], o.omega) || !(o.omega > 0.0f) || !(o.omega < 2.0f))
+                return false;
+        }
         else if (a == "--vorticity-eps") {
             if (i + 1 >= argc || !parseNonnegativeFloat(argv[++i], o.vorticityEps)) return false;
         }
@@ -144,6 +160,10 @@ int main(int argc, char** argv) {
         cfg.backend = smoke::Backend::CpuParallel;
         cfg.threads = opt.threads;
     }
+    cfg.params.pressureSolver = opt.redBlack ? smoke::PressureSolver::RedBlackGaussSeidel : smoke::PressureSolver::Jacobi;
+    cfg.params.sorOmega = opt.omega;
+    cfg.params.warmStartPressure = opt.warm;
+    cfg.threadWait = opt.block ? smoke::ThreadWait::Block : smoke::ThreadWait::Spin;
     smoke::SmokeSolver solver(cfg);
 
     std::cout << "=== Smoke Solver (" << (opt.threads > 0 ? "paralelna verzija, " + std::to_string(solver.threadCount()) + " niti"

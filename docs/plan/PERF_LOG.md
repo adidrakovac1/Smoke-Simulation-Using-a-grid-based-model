@@ -78,6 +78,7 @@ Komanda za procesor (PowerShell):
 | P-002 | 2026-11-09 | PC-1 | M3 / compiler default | svi koraci | 32³–128³ | 1 | 1.58–1.64x | 36.55–38.89% | baseline |
 | P-003 | 2026-11-15 | PC-1 | CPU / std::thread slojevi | cijeli korak | 32³–128³ | 2, 4, 6, 10 | 0.90–3.25x | -10.92–69.25% | brže na 64³–128³; mali grid zavisi od niti |
 | P-004 | 2026-11-17 | PC-2 | D19: tim niti za cijeli korak, wavefront Jacobi, fuzija | cijeli korak | 32³–128³ | 1, 6, 12 | 2.08–3.00x (6 niti, zadano); 2.38–3.59x (12) | 52.0–66.7% (6) | brže na svim mrežama, bit po bit isto; serijski 128³ 1.45x |
+| P-005 | 2026-11-17 | PC-2 | D20: topli start, red-black SOR, spavanje niti | cijeli korak | 64³, 128³ | 6 | 1.16–1.62x prema P-004 | 14.1–38.3% | rezultat NIJE bit po bit isti (manji reziduum); CPI 64³ 1.11 → 0.41 |
 
 (Ispod tabele idu puni unosi po šablonu, najnoviji na kraju.)
 
@@ -208,6 +209,56 @@ jednaka osnovi (šum): tamo polja staju u keš, pa blokiranje nema šta da ušte
 - Zaključak: **ZADRŽATI**. Oznake u CSV-u: `PC2-20261117-D19-*`.
 - Šta smo naučili: na 128³ je usko grlo bilo pomjeranje podataka (Jacobi kroz RAM 40 puta po koraku), pa je
   vremensko blokiranje dalo više od niti; na 64³ je granica propusnost L3 keša, koju dijele sve niti.
+
+### P-005: D20, topli start, red-black SOR i niti koje spavaju (PC-2)
+
+- Datum / autor / računar: 2026-11-17 / Ermin (Claude CLI) / PC-2 (kao P-004)
+- Commit: `1bcff97-dirty` (osnova: `1bcff97`, D19). Gradnja kao u P-004.
+- Nivo i tehnika: nivo 2 (red-black GS / SOR, topli start; **mijenjaju rezultat**, odluka D20) + način čekanja niti.
+- Hipoteze: (1) topli start smanjuje broj iteracija za isti kvalitet, jer se pritisak sporo mijenja; (2) red-black
+  konvergira brže po iteraciji; (3) niti koje spavaju ne troše cikluse na čekanje, pa CPI pada, a korak je sporiji.
+- Tačnost: 71/71 testova (novi: red-black i topli start daju iste bitove za 1/2/3/6 niti i oba načina čekanja, s
+  preprekama i bez; spavanje s referentnim rješavačem daje referentni rezultat; red-black i SOR konvergiraju brže od
+  Jacobija). `--verify` sa zadanim parametrima: 0 različitih ćelija (serijski i 6 niti).
+- Kvalitet (reziduum Poissonove jednačine, `smoke_bench --quality`): MATH.md, odjeljak 5.1.
+
+**Vrijeme po D10** (5 naizmjeničnih rundi, 100 + 10 koraka, 6 niti; osnova `ref_spin` = D19 sa zadanim
+parametrima; sirovi podaci `perf/rounds/2026-11-17_d20_solvers/`):
+
+| Varijanta | 64³ cijeli korak (ms) | S | 128³ cijeli korak (ms) | S |
+| :--- | ---: | ---: | ---: | ---: |
+| `ref_spin` (Jacobi K=40, od nule, vrtenje) | 2.52 | 1.00 | 29.8 | 1.00 |
+| `ref_block` (isto, niti spavaju) | 3.04 | 0.83 (sporije) | 34.0 | 0.88 (sporije) |
+| `warm10_spin` (Jacobi K=10, topli start) | 1.56 | **1.62** | 22.2 | **1.35** |
+| `warm10_block` | 1.85 | 1.36 | 24.5 | 1.22 |
+| `rb15w6_spin` (red-black ω=1.5, K=6, topli) | 1.91 | 1.32 | 25.3 | 1.18 |
+| `rb15w6_block` (**vizualizacija**) | 2.17 | 1.17 | 25.6 | 1.16 |
+
+Sve presude su iznad šuma (64³ šum 0.23 ms, 128³ 1.17 ms) i iste u svakoj rundi. Prema serijskoj M4 verziji (P-004,
+7.37 / 89.8 ms): `warm10_spin` 4.7x / 4.0x, `rb15w6_block` 3.4x / 3.5x.
+
+**Spavanje i oblik talasa:** kad niti spavaju, jedna barijera košta mikrosekunde, pa wavefront s mnogo tickova
+postaje skup (64³, topli Jacobi K=10: 3.6 ms s D=4,P=4). Za male mreže se tada bira obična petlja (D=1, P=nz):
+1.8 ms (`chooseShape`, `Team::blockingWait`). Na 128³ ostaje D=20, P=1 (24.4 ms; D=10,P=2..4 isto u šumu).
+
+**CPI** (uProf `assess_ext`, Release `smoke_prof --version d19 --niti 6`, 2026-11-17; isti postupak i ista
+napomena o profileru kao u P-004; vrijeme pod profilerom se ne koristi):
+
+| Varijanta | CPI 64³ | ciklusa u čekanju | CPI 128³ | ciklusa u čekanju |
+| :--- | ---: | ---: | ---: | ---: |
+| M4 serijska (P-004, za poređenje) | 0.479 | 0% | 0.859 | 0% |
+| `ref_spin` | 1.110 | 38.6% | 1.206 | 16.8% |
+| `ref_block` | 0.693 | 1.3% | 1.046 | 1.1% |
+| `warm10_spin` | 0.834 | 22.2% | 1.238 | 9.0% |
+| `warm10_block` | 0.626 | 0.8% | 1.143 | 0.8% |
+| `rb15w6_block` | **0.414** | 0.8% | **0.742** | 0.2% |
+
+- Spavanje skida cikluse čekanja (CPI oko 7 do 8 po instrukciji `pause`) iz brojanja: CPI pada za 0.1 do 0.4.
+- Red-black jezgro ima CPI 0.29 do 0.38: računa novu vrijednost za svaku ćeliju reda i zadržava polovinu (blend,
+  `omp simd`), pa izvrši više jeftinih instrukcija po ćeliji. To spušta CPI, a ne ubrzava program; i to je primjer
+  da CPI nije mjera brzine.
+- Zaključak: **ZADRŽATI kao opcije**; vizualizacija koristi `rb15w6_block` (Ermin: CPI prije brzine). Najbrža
+  varijanta s kvalitetom iznad reference je `warm10_spin`. Oznake u CSV-u: `PC2-20261117-D20-*`.
 
 ### P-001: B0 serijska osnova bez vektorizacije
 

@@ -31,12 +31,17 @@ namespace smoke {
 /// If a thread of the team is not running (the operating system gave its processor to another program), the
 /// others would spin for a whole scheduler time slice; so after kSpinsBeforeYield polls a waiting thread yields
 /// its processor on every further poll.
+///
+/// D20: with `blocking` set the waiting threads sleep instead (C++20 std::atomic::wait / notify_all): no
+/// cycles are spent while waiting, so they do not show up in the CPI, but every wake-up takes the operating
+/// system microseconds (SolverConfig::threadWait, ThreadWait::Block).
 class SpinBarrier {
 public:
     explicit SpinBarrier(int threads = 1) : threads_(threads), remaining_(threads) {}
 
-    void reset(int threads) {
-        threads_ = threads;
+    void reset(int threads, bool blocking = false) {
+        threads_  = threads;
+        blocking_ = blocking;
         remaining_.store(threads, std::memory_order_relaxed);
         phase_.store(0, std::memory_order_relaxed);
     }
@@ -49,6 +54,11 @@ public:
         if (remaining_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
             remaining_.store(threads_, std::memory_order_relaxed);
             phase_.store(phase + 1, std::memory_order_release);
+            if (blocking_) phase_.notify_all();
+            return;
+        }
+        if (blocking_) {
+            while (phase_.load(std::memory_order_acquire) == phase) phase_.wait(phase, std::memory_order_acquire);
             return;
         }
         int polls = 0;
@@ -67,6 +77,7 @@ private:
     // wait at a balanced barrier, much shorter than a scheduler time slice (~15 ms on Windows).
     static constexpr int kSpinsBeforeYield = 4096;
     int threads_;
+    bool blocking_ = false;
     // Separate cache lines, so the spinning readers of phase_ do not slow down the decrements.
     alignas(64) std::atomic<int> remaining_;
     alignas(64) std::atomic<std::uint32_t> phase_{0};
@@ -81,11 +92,13 @@ private:
 /// calls step() once per frame, so the workers do not burn a core between frames).
 class ThreadPool {
 public:
-    explicit ThreadPool(int requestedThreads = 0) {
+    /// blocking (D20): waiting threads sleep instead of spinning, at the barrier, between steps and while the
+    /// calling thread waits for the workers at the end of parallelRun.
+    explicit ThreadPool(int requestedThreads = 0, bool blocking = false) : blocking_(blocking) {
         int count = requestedThreads;
         if (count <= 0) count = defaultThreadCount();
         numThreads_ = count;
-        barrier_.reset(numThreads_);
+        barrier_.reset(numThreads_, blocking_);
 
         for (int i = 1; i < numThreads_; ++i) {
             workers_.emplace_back([this, i] { workerLoop(i); });
@@ -132,6 +145,12 @@ public:
         }
         if (sleepers_.load(std::memory_order_acquire) > 0) cvWork_.notify_all();
         func(0);
+        if (blocking_) {
+            for (int left = remaining_.load(std::memory_order_acquire); left != 0;
+                 left = remaining_.load(std::memory_order_acquire))
+                remaining_.wait(left, std::memory_order_acquire);
+            return;
+        }
         for (int polls = 0; remaining_.load(std::memory_order_acquire) != 0;) {
             if (polls < 4096) {
                 ++polls;
@@ -177,11 +196,11 @@ private:
         std::uint64_t seen = 0;
         using Clock = std::chrono::steady_clock;
         while (true) {
-            // Spin for a while: the next step usually starts right away.
+            // Spin for a while: the next step usually starts right away (not when blocking, D20).
             const auto spinUntil = Clock::now() + std::chrono::microseconds(kSpinMicroseconds);
             std::uint64_t gen = generation_.load(std::memory_order_acquire);
             int polls = 0;
-            while (gen == seen && !stop_.load(std::memory_order_relaxed)) {
+            while (!blocking_ && gen == seen && !stop_.load(std::memory_order_relaxed)) {
                 SMOKE_CPU_RELAX();
                 if (++polls == 256) {
                     polls = 0;
@@ -202,12 +221,13 @@ private:
             if (stop_.load(std::memory_order_acquire)) return;
             seen = gen;
             taskFunc_(id, taskCtx_);
-            remaining_.fetch_sub(1, std::memory_order_acq_rel);
+            if (remaining_.fetch_sub(1, std::memory_order_acq_rel) == 1 && blocking_) remaining_.notify_one();
         }
     }
 
     static constexpr int kSpinMicroseconds = 2000;
 
+    bool blocking_ = false;
     int numThreads_ = 1;
     std::vector<std::thread> workers_;
     std::mutex mutex_;

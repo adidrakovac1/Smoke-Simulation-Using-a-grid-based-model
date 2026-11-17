@@ -25,7 +25,7 @@ struct SmokeSolver::Impl {
     explicit Impl(const SolverConfig& cfg) : config(cfg) {
         state.resize(config.grid);
         if (config.backend == Backend::CpuParallel && config.threads != 1) {
-            pool = std::make_unique<ThreadPool>(config.threads);
+            pool = std::make_unique<ThreadPool>(config.threads, config.threadWait == ThreadWait::Block);
         }
     }
 };
@@ -142,8 +142,13 @@ void runStep(SmokeState& st, const SmokeParams& params, const ObstacleLists* obs
     team.sync();
     {
         const Clock::time_point jacobiStart = timing ? Clock::now() : Clock::time_point{};
-        jacobiWavefront(st.pressure, st.pressure0, st.divergence, params.jacobiIterations, waveDepth, obstacles,
-                        team, planesPerTick);
+        // D20: the solver and the starting value are parameters; the default (Jacobi from p = 0) is the reference.
+        if (params.pressureSolver == PressureSolver::RedBlackGaussSeidel)
+            redBlackSolve(st.pressure, st.divergence, params.jacobiIterations, params.sorOmega,
+                          params.warmStartPressure, obstacles, team);
+        else
+            jacobiWavefront(st.pressure, st.pressure0, st.divergence, params.jacobiIterations, waveDepth, obstacles,
+                            team, planesPerTick, params.warmStartPressure);
         if (timing && params.jacobiIterations > 0)
             timings.jacobiIterationMs =
                 std::chrono::duration<double, std::milli>(Clock::now() - jacobiStart).count() /
@@ -195,7 +200,7 @@ void SmokeSolver::step(float dt) {
     ThreadPool* const pool = s.pool.get();
     const int threads = pool ? pool->numThreads() : 1;
     auto body = [&](int tid) {
-        const serial::Team team{tid, threads, &poolBarrier, pool};
+        const serial::Team team{tid, threads, &poolBarrier, pool, s.config.threadWait == ThreadWait::Block};
         runStep(s.state, s.config.params, s.obstacles.get(), s.config.jacobiWaveDepth, s.config.jacobiPlanesPerTick,
                 dt, team, s.timings);
     };

@@ -113,15 +113,19 @@ struct Shape {
 };
 
 // TODO(measure): the constants are the best values of the sweep on PC-2 (PERF_LOG.md, P-004).
-Shape chooseShape(const GridSize& s, std::ptrdiff_t sK, int threads, int waveDepth, int planesPerTick) {
+Shape chooseShape(const GridSize& s, std::ptrdiff_t sK, int threads, int waveDepth, int planesPerTick,
+                  bool blockingWait) {
     const std::size_t fieldBytes = static_cast<std::size_t>(sK) * sizeof(float) * static_cast<std::size_t>(s.nz + 2);
-    (void)threads;  // the same shapes measured best for 1 and for 6 threads
+    // Spinning threads: the same shapes measured best for 1 and for 6 threads.
     Shape shape{20, 1};
     if (3 * fieldBytes <= (8u << 20)) {
         // The three fields fit in the L3 cache together (64^3: 3.6 MiB): there is no RAM traffic to save, the
         // limit is the L3 bandwidth. Short waves with 4 planes per tick keep the ticks long enough for the
         // barrier (sweep at 64^3, 6 threads: D=4,P=4 0.034 ms per iteration, plain loop 0.042 ms).
         shape = Shape{4, 4};
+        // D20: when the threads sleep at a barrier, a barrier costs microseconds; then the plain loop (one barrier
+        // per iteration) is best (64^3, 6 threads, warm start K = 10: 1.8 ms per step against 3.6 ms with D=4,P=4).
+        if (blockingWait && threads > 1) shape = Shape{1, s.nz};
     }
     // else: long waves, one plane per tick (sweep at 128^3, 6 threads: D=20,P=1 0.28 ms, D=8,P=2 0.34 ms,
     // plain loop 0.92 ms; 1 thread: D=20 0.57 ms, plain loop 1.20 ms).
@@ -134,16 +138,18 @@ Shape chooseShape(const GridSize& s, std::ptrdiff_t sK, int threads, int waveDep
 } // namespace
 
 void jacobiWavefront(Field3D& pressure, Field3D& pressure0, const Field3D& div, int iterations, int waveDepth,
-                     const ObstacleLists* obstacles, const Team& team, int planesPerTick) {
+                     const ObstacleLists* obstacles, const Team& team, int planesPerTick, bool warmStart) {
     const GridSize s = pressure.size();
     if (iterations <= 0) {
-        // The plain loop leaves pressure = 0 and pressure0 untouched.
-        if (team.tid == 0) pressure.fill(0.0f);
+        // The plain loop leaves pressure = 0 and pressure0 untouched (with a warm start: the old pressure).
+        if (team.tid == 0 && !warmStart) pressure.fill(0.0f);
         team.sync();
         return;
     }
+    // Warm start (D20): iteration 1 reads X = pressure, which still holds the result of the previous step
+    // (with its ghost layer); only the "from zero" shortcut of iteration 1 is switched off.
 
-    const Shape shape = chooseShape(s, pressure.strideK(), team.size, waveDepth, planesPerTick);
+    const Shape shape = chooseShape(s, pressure.strideK(), team.size, waveDepth, planesPerTick, team.blockingWait);
     const int P = shape.planes;
     const int L = obstacles ? 2 + (2 + P - 1) / P : 2;
     const int blocks = (s.nz + P - 1) / P;                          // interior blocks 0 .. blocks-1
@@ -179,7 +185,7 @@ void jacobiWavefront(Field3D& pressure, Field3D& pressure0, const Field3D& div, 
                 if (q < blocks) {
                     const int a0 = q * P + 1, a1 = std::min(q * P + P, s.nz);
                     for (int a = a0; a <= a1; ++a) {
-                        rows(out, in, d, g.nx, g.j0, g.j1, a, g.sJ, g.sK, t == 1);
+                        rows(out, in, d, g.nx, g.j0, g.j1, a, g.sJ, g.sK, t == 1 && !warmStart);
                         if (!obstacles) finalizeRows(out, nullptr, g, a);
                     }
                 }
@@ -196,7 +202,7 @@ void jacobiWavefront(Field3D& pressure, Field3D& pressure0, const Field3D& div, 
     // The plain loop ends with the last iterate in `pressure` and the one before it in `pressure0`.
     // After one iteration, pressure0 is the starting p = 0 (X was never written here).
     if (team.tid == 0) {
-        if (iterations == 1) pressure.fill(0.0f);
+        if (iterations == 1 && !warmStart) pressure.fill(0.0f);
         if (iterations % 2 == 1) pressure.swap(pressure0);
     }
     team.sync();
