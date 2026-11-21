@@ -321,9 +321,9 @@ TEST_CASE("D22 extra sources and fans: same bits for every thread count and the 
         base.params.extraSources[0]  = {0.8f, 0.2f, 0.7f, 0.1f, 6.0f, 4.0f};
         base.params.extraSources[1]  = {0.2f, 0.6f, 0.3f, 0.08f, 3.0f, 8.0f};
         base.params.fanCount = 3;
-        base.params.fans[0]  = {0.1f, 0.3f, 0.5f, 1.0f, 0.0f, 0.0f, 0.15f, 0.6f, 20.0f};
-        base.params.fans[1]  = {0.9f, 0.7f, 0.2f, -1.0f, 0.5f, 1.0f, 0.1f, 0.5f, 35.0f};
-        base.params.fans[2]  = {0.5f, 0.1f, 0.9f, 0.0f, 1.0f, -1.0f, 0.2f, 0.4f, 10.0f};
+        base.params.fans[0]  = {0.1f, 0.3f, 0.5f, 1.0f, 0.0f, 0.0f, 0.15f, 0.6f, 20.0f, 6.0f};
+        base.params.fans[1]  = {0.9f, 0.7f, 0.2f, -1.0f, 0.5f, 1.0f, 0.1f, 0.5f, 35.0f, 40.0f};
+        base.params.fans[2]  = {0.5f, 0.1f, 0.9f, 0.0f, 1.0f, -1.0f, 0.2f, 0.4f, 10.0f, 2.0f};
         for (bool withObstacles : {false, true}) {
             smoke::SmokeSolver serial(base);
             smoke::SmokeState  ref;

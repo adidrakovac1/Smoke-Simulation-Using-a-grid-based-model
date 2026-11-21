@@ -21,19 +21,22 @@ struct SmokeSource {
     float temperatureRate = 10.0f;
 };
 
-/// D22: a fan, an external force that pushes the air inside a cylinder in front of it along its axis
-/// (docs/plan/MATH.md, section 3, "Ventilator"). Position like SmokeSource (relative, [0,1] along each axis);
-/// radius and reach (the cylinder's length) as a fraction of nx, like SmokeSource::radius.
+/// D22: a fan, an external force that drives the air inside a cylinder in front of it towards a target speed
+/// along its axis (docs/plan/MATH.md, section 3, "Ventilator"). Position like SmokeSource (relative, [0,1] along
+/// each axis); radius and reach (the cylinder's length) as a fraction of nx, like SmokeSource::radius.
 /// For a cell centre p:  a = (p - c) . n  (distance along the axis),  r^2 = |p - c|^2 - a^2;
-/// if 0 <= a <= reach and r <= radius:  u += dt * strength * (1 - a / reach) * n.
-/// The form u += dt * f is the external force term of Stam 2003 / Fedkiw et al. 2001; the cylinder and the
-/// linear fall-off are our model choice.
+/// if 0 <= a <= reach and r <= radius:  target = speed * (1 - a / reach),  un = u . n,
+///                                       if un < target:  u += min(1, dt * response) * (target - un) * n.
+/// A real fan blows the air at a certain speed rather than accelerating it without limit, and it does not brake
+/// air that is already faster. The update is a force term u += dt * f (Stam 2003 / Fedkiw et al. 2001) with
+/// f = response * (target - un) * n; the cylinder, the linear fall-off and the relaxation are our model choice.
 struct SmokeFan {
     float x = 0.5f, y = 0.5f, z = 0.5f;          // centre of the fan's face
     float dirX = 1.0f, dirY = 0.0f, dirZ = 0.0f; // blowing direction; normalized by the solver (zero = off)
     float radius   = 0.06f;
     float reach    = 0.40f;
-    float strength = 0.0f;  // cells/s^2; 0 = off (the house scene sets it from m/s^2, HouseScene.cpp)
+    float speed    = 0.0f;  // target air speed at the face, cells/s; 0 = off (the house scene converts from m/s)
+    float response = 0.0f;  // 1/s: how fast the air reaches the target speed; 0 = off
 };
 
 /// How the pressure equation  laplacian(p) = div  is solved (decision D20, docs/plan/MATH.md, section 5).

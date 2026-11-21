@@ -104,6 +104,21 @@ void HouseScene::DrawPanel() {
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Prikaz")) {
+            // Quick looks; every value stays editable below.
+            if (ImGui::Button("Svijetli dim")) {
+                m_view.smokeColor = {0.80f, 0.80f, 0.82f};
+                m_view.ambient    = 0.30f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Tamni dim")) {
+                m_view.smokeColor = {0.28f, 0.28f, 0.30f};
+                m_view.ambient    = 0.15f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Bijela para")) {
+                m_view.smokeColor = {0.97f, 0.97f, 1.0f};
+                m_view.ambient    = 0.45f;
+            }
             DrawViewSettings(m_view, &m_state.showOutline);
             ImGui::EndTabItem();
         }
@@ -196,7 +211,7 @@ void HouseScene::DrawFansTab() {
         AddSceneObject(SceneObjectKind::Fan, HouseAsset("fan.obj"), "Ventilator", {m_newPosition.x, 0.0f, m_newPosition.z});
     ImGui::EndDisabled();
     ImGui::Checkbox("Prikazi domet", &m_showFanReach);
-    ImGui::TextDisabled("Ventilator gura zrak u cilindru ispred sebe (smjer ose, slabi s udaljenoscu).");
+    ImGui::TextDisabled("Ventilator tjera zrak u cilindru ispred sebe na zadanu brzinu duz ose (slabi s udaljenoscu).");
 
     int number = 0, removeIndex = -1;
     for (int i = 0; i < static_cast<int>(m_objects.size()); ++i) {
@@ -224,7 +239,8 @@ void HouseScene::DrawFansTab() {
         if (done && object.fan.solid) m_obstaclesDirty = true;
         ImGui::SliderFloat("Radijus (m)", &object.fan.radius, 0.05f, 1.5f, "%.2f");
         ImGui::SliderFloat("Domet (m)", &object.fan.reach, 0.2f, 12.0f, "%.1f");
-        ImGui::SliderFloat("Jacina (m/s^2)", &object.fan.strength, 0.0f, 20.0f, "%.2f");
+        ImGui::SliderFloat("Brzina zraka (m/s)", &object.fan.speed, 0.0f, 8.0f, "%.1f");
+        ImGui::SliderFloat("Odziv (1/s)", &object.fan.response, 0.5f, 20.0f, "%.1f");
         if (ImGui::Checkbox("Kuciste je prepreka", &object.fan.solid)) m_obstaclesDirty = true;
         ImGui::Separator();
         ImGui::PopID();

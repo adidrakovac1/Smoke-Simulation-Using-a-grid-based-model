@@ -27,7 +27,8 @@ struct SourceSettings {
 struct FanSettings {
     float radius   = 0.30f;  ///< radius of the pushed cylinder, metres
     float reach    = 3.00f;  ///< length of the cylinder, metres
-    float strength = 0.0f;   ///< m/s^2 at the fan's face; set by HouseScene (kDefaultFanStrength)
+    float speed    = 3.0f;   ///< target air speed at the face, m/s (a household fan blows a few m/s)
+    float response = 4.0f;   ///< 1/s, how fast the air in front of it reaches that speed (chosen visually, D22)
     bool  enabled  = true;
     bool  solid    = false;  ///< the fan's body is also a solid obstacle
 };

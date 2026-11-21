@@ -68,7 +68,8 @@ TEST_CASE("velocity_advection_keeps_a_constant_flow_constant_away_from_the_walls
     CHECK(ghostLayerErrors(s.u, true, false, false) == 0);
 }
 
-// D22: fans, u += dt * strength * (1 - a / reach) * n inside a cylinder (SmokeParams.h, SmokeFan).
+// D22: fans drive the air in a cylinder towards speed * (1 - a / reach) along the axis (SmokeParams.h, SmokeFan).
+// From rest one step adds min(1, dt * response) * target.
 TEST_CASE("D22 fan pushes only inside its cylinder, along its axis, weaker further away") {
     const GridSize g{16, 16, 16};
     SmokeState s;
@@ -77,8 +78,8 @@ TEST_CASE("D22 fan pushes only inside its cylinder, along its axis, weaker furth
     p.vorticityEps = 0.0f;  // only the fan (applyForces also runs vorticity confinement)
     p.fanCount = 1;
     // Centre (4.5, 8.5, 8.5) in cells, blowing along +x, radius 2 cells, reach 8 cells.
-    p.fans[0] = {0.25f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.125f, 0.5f, 4.0f};
-    const float dt = 0.5f;
+    p.fans[0] = {0.25f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.125f, 0.5f, 4.0f, 1.0f};  // speed 4, response 1
+    const float dt = 0.5f;  // dt * response = 0.5: half of the target in one step
 
     applyForces(s, p, dt, wholeInterior(g));  // buoyancy is zero here (no density, no temperature)
 
@@ -109,7 +110,7 @@ TEST_CASE("D22 diagonal fan pushes along its normalized direction and zero fans 
     SmokeParams p;
     p.vorticityEps = 0.0f;  // only the fan (applyForces also runs vorticity confinement)
     p.fanCount = 1;
-    p.fans[0] = {0.3f, 0.3f, 0.5f, 2.0f, 2.0f, 0.0f, 0.2f, 0.5f, 1.0f};  // (2, 2, 0) -> (0.707, 0.707, 0)
+    p.fans[0] = {0.3f, 0.3f, 0.5f, 2.0f, 2.0f, 0.0f, 0.2f, 0.5f, 1.0f, 1.0f};  // (2, 2, 0) -> (0.707, 0.707, 0)
     applyForces(s, p, 1.0f, wholeInterior(g));
     CHECK(totalMass(s.u) > 0.0);
     CHECK(totalMass(s.u) == doctest::Approx(totalMass(s.v)));
@@ -122,4 +123,23 @@ TEST_CASE("D22 diagonal fan pushes along its normalized direction and zero fans 
     applyForces(t, none, 1.0f, wholeInterior(g));
     CHECK(totalMass(t.u) == 0.0);
     CHECK(totalMass(t.v) == 0.0);
+}
+
+TEST_CASE("D22 fan reaches its target speed, never overshoots and does not brake faster air") {
+    const GridSize g{16, 16, 16};
+    SmokeParams p;
+    p.vorticityEps = 0.0f;
+    p.fanCount = 1;
+    p.fans[0] = {0.25f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.125f, 0.5f, 4.0f, 100.0f};  // dt * response >= 1
+    // Cell (5, 9, 9): a = 0.5, target = 4 * (1 - 0.5 / 8) = 3.75.
+    SmokeState s;
+    s.resize(g);
+    for (int step = 0; step < 3; ++step) applyForces(s, p, 0.5f, wholeInterior(g));
+    CHECK(s.u.at(5, 9, 9) == doctest::Approx(3.75f));  // reached in one step and kept, not exceeded
+
+    SmokeState fast;
+    fast.resize(g);
+    fast.u.at(5, 9, 9) = 10.0f;  // already faster than the fan blows
+    applyForces(fast, p, 0.5f, wholeInterior(g));
+    CHECK(fast.u.at(5, 9, 9) == 10.0f);
 }

@@ -45,9 +45,6 @@ constexpr int         kCellSizeCount = 3;
 constexpr glm::vec3 kFanFaceOffset{0.10f, 1.10f, 0.0f};
 // Radius of source_marker.obj (metres); the marker is scaled to the source radius.
 constexpr float kMarkerRadius = 0.10f;
-// Fan strength at the face in m/s^2. Chosen visually (2026-11-21, screenshots from above at 0.10 and 0.075 m):
-// the smoke visibly bends along the fan's axis without tearing the plume apart; the panel changes it (0..20).
-constexpr float kDefaultFanStrength = 2.0f;
 
 const char* ShaderDir() { return SMOKE_SHADER_DIR; }
 std::string HouseAsset(const std::string& file) { return std::string(SMOKE_ASSET_DIR) + "/house/" + file; }
@@ -78,8 +75,16 @@ bool HouseScene::Setup() {
     // darker and denser smoke than in the empty smoke scene (it must stand out in front of the walls), and a
     // stronger buoyancy. The solver works in cell units (D4) and the house is 160 cells long, so with the 64^3
     // buoyancy the smoke needs long to fill it. Everything stays editable in the panel.
-    m_view.smokeColor = {0.30f, 0.30f, 0.33f};
-    m_view.absorption = 12.0f;
+    // Light grey smoke with strong self-shadowing: the lit top is bright and the core is darker, so the smoke has
+    // structure and stands out both in front of light and of coloured walls. 192 steps: the house is 12 m long,
+    // 96 steps would sample it every ~12 cm, coarser than the 7.5 cm cells.
+    m_view.smokeColor     = {0.80f, 0.80f, 0.82f};
+    m_view.absorption     = 10.0f;
+    m_view.ambient        = 0.30f;
+    m_view.lightIntensity = 1.0f;
+    m_view.shadowStrength = 1.6f;
+    m_view.lightSteps     = 8;
+    m_view.steps          = 192;
     m_solver->params().buoyancyBeta = 6.0f;
     // dt = 1/30 s instead of 1/60 s: still one step per frame (D17), but each frame advances the simulation twice
     // as far, so the smoke fills the house twice as fast (semi-Lagrangian advection stays stable; MATH.md 4).
@@ -275,7 +280,6 @@ SceneObject* HouseScene::AddSceneObject(SceneObjectKind kind, const std::string&
         return nullptr;
     }
     object->position = position;
-    if (kind == SceneObjectKind::Fan) object->fan.strength = kDefaultFanStrength;
 
     // Sources are drawn as transparent overlays (an opaque marker would hide the smoke it makes), so they get
     // no RenderItem. Furniture and fans are ordinary opaque objects of the Renderer.
@@ -407,7 +411,7 @@ void HouseScene::RebuildObstacles() {
 
 // Sources and fans live in metres in the scene; the solver wants them relative to the box (SmokeParams.h).
 // Positions: (p - boxMin) / boxSize per axis. Radius and reach: a fraction of nx, i.e. metres / boxSize.x,
-// because the cells are cubes. Fan strength: m/s^2 -> cells/s^2 by dividing by the cell size h (D4).
+// because the cells are cubes. Fan speed: m/s -> cells/s by dividing by the cell size h (D4).
 void HouseScene::SyncSolverParams() {
     smoke::SmokeParams& p = m_solver->params();
     const float         h = CellSize();
@@ -437,7 +441,8 @@ void HouseScene::SyncSolverParams() {
             fan.dirZ = dir.z;
             fan.radius   = object->fan.radius / kHouseSize.x;
             fan.reach    = object->fan.reach / kHouseSize.x;
-            fan.strength = object->fan.enabled ? object->fan.strength / h : 0.0f;
+            fan.speed    = object->fan.enabled ? object->fan.speed / h : 0.0f;
+            fan.response = object->fan.response;
             p.fans[static_cast<std::size_t>(fans)] = fan;
             ++fans;
         }
