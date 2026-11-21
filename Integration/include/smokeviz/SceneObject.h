@@ -18,8 +18,8 @@ enum class SceneObjectKind { Furniture, Source, Fan };
 /// A smoke source in metres (HouseScene turns it into smoke::SmokeSource, relative to the box).
 struct SourceSettings {
     float radius          = 0.25f;  ///< sphere radius in metres (2.5 cells on the coarsest grid)
-    float densityRate     = 10.0f;  ///< same defaults as smoke::SmokeSource
-    float temperatureRate = 10.0f;
+    float densityRate     = 25.0f;  ///< denser than smoke::SmokeSource (10): chosen on screenshots of the house (D22)
+    float temperatureRate = 10.0f;  ///< same as smoke::SmokeSource
     bool  enabled         = true;
 };
 

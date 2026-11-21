@@ -156,6 +156,21 @@ ako je 0 ≤ a ≤ L i r² ≤ R²:   u ← u + dt · s · (1 − a / L) · n
 - Pozicija, `R` i `L` su relativni kao kod izvora; scena kuće ih računa iz metara, a jačinu iz m/s²
   dijeljenjem s veličinom ćelije `h` (D4: solver radi u jedinicama ćelije).
 - Zadana jačina u sceni kuće (2 m/s²) je izabrana vizuelno, kao uzgon u M2; panel je mijenja (0 do 20).
+
+### Zadane vrijednosti scene kuće (D22, izabrano vizuelno 2026-11-21, poslije Erminove probe)
+Prva verzija je koristila parametre podešene na 64³ (odjeljak 3 gore). U kući od 160 ćelija dim se tada širio
+presporo i bio je slabo vidljiv ispred svijetlih zidova. Zato scena kuće (samo ona) mijenja:
+
+| Parametar | Zadano (64³) | Kuća | Zašto |
+| :--- | ---: | ---: | :--- |
+| `buoyancyBeta` | 2.0 | 6.0 | brži uspon; solver radi u ćelijama (D4), a kuća ima 40 ćelija visine i 160 dužine |
+| `dt` | 1/60 s | 1/30 s | i dalje jedan korak po frejmu (D17), ali dvostruko više simuliranog vremena po frejmu |
+| jačina izvora (gustina/s) | 10 | 25 | gušći dim |
+| apsorpcija prikaza | 6 | 12 | gušći izgled (samo prikaz) |
+| boja dima | svijetlosiva | tamnosiva | kontrast prema zidovima (samo prikaz) |
+
+Snimak poslije 15 s pokazuje dim koji se digne do plafona i širi se ispod njega kao topli sloj. Sve se mijenja u
+panelu (kartice Simulacija, Izvori i Prikaz). Referenca solvera (`SmokeParams{}`) se ne mijenja.
 - Testovi: `test_forces.cpp` (sila samo u cilindru, slabljenje duž ose, kosi smjer), `test_parallel_solver.cpp`
   (s ventilatorima i izvorima `CpuParallel` = `Serial` = referentni korak po fazama).
 

@@ -2,7 +2,9 @@
 """Writes the meshes of the house scene (decision D22, docs/plan/OBSTACLES.md, section 6) into
 Integration/assets/house/:
 
-    house_shell.obj        floor and outer walls (drawn only: the solver box walls are already solid)
+    house_floor.obj        floor slab, house_ground.obj grass around the house
+    house_shell.obj        outer walls with window openings (drawn only: the solver box walls are already solid)
+    house_glass.obj        window panes (drawn transparent), house_frames.obj window frames
     house_ceiling.obj      ceiling (drawn only; the panel can hide it to look in from above)
     house_inner_walls.obj  inner walls with doorways (drawn AND voxelized as solid obstacles)
     table.obj, chair.obj, sofa.obj, bed.obj, wardrobe.obj, shelf.obj, kitchen_counter.obj
@@ -97,14 +99,55 @@ def wall_along_z(m, x, za, zb, doors):
         m.add_box(x - WALL / 2, x + WALL / 2, DOOR_H, Y1, d0, d1)
 
 
+SILL, WIN_TOP = 0.9, 2.1   # window sill and top height
+FRAME = 0.05               # window frame bar width
+
+
+def outer_wall(wall, glass, frames, along, t0, t1, a, b, windows):
+    """Outer wall from a to b along `along` ('x' or 'z'), thickness [t0, t1] across it, with windows
+    [(w0, w1), ...]: full-height pieces between the windows, pieces below the sill and above the top, a glass
+    pane in the middle of the thickness and a frame (four bars and a middle post) in each opening."""
+    def box(m, u0, u1, y0, y1, v0, v1):
+        if along == "x":
+            m.add_box(u0, u1, y0, y1, v0, v1)
+        else:
+            m.add_box(v0, v1, y0, y1, u0, u1)
+    edges = [a] + [e for w in sorted(windows) for e in w] + [b]
+    for i in range(0, len(edges), 2):
+        if edges[i + 1] > edges[i]:
+            box(wall, edges[i], edges[i + 1], Y0, Y1, t0, t1)
+    mid = 0.5 * (t0 + t1)
+    for w0, w1 in windows:
+        box(wall, w0, w1, Y0, SILL, t0, t1)
+        box(wall, w0, w1, WIN_TOP, Y1, t0, t1)
+        box(glass, w0, w1, SILL, WIN_TOP, mid - 0.01, mid + 0.01)
+        box(frames, w0, w1, SILL, SILL + FRAME, t0, t1)
+        box(frames, w0, w1, WIN_TOP - FRAME, WIN_TOP, t0, t1)
+        box(frames, w0, w0 + FRAME, SILL, WIN_TOP, t0, t1)
+        box(frames, w1 - FRAME, w1, SILL, WIN_TOP, t0, t1)
+        c = 0.5 * (w0 + w1)
+        box(frames, c - FRAME / 2, c + FRAME / 2, SILL, WIN_TOP, mid - 0.03, mid + 0.03)
+
+
 def house():
-    shell = Mesh()
-    shell.add_box(X0 - WALL, X1 + WALL, Y0 - 0.15, Y0, Z0 - WALL, Z1 + WALL)  # floor slab
-    shell.add_box(X0 - WALL, X0, Y0, Y1, Z0 - WALL, Z1 + WALL)                # west wall
-    shell.add_box(X1, X1 + WALL, Y0, Y1, Z0 - WALL, Z1 + WALL)                # east wall
-    shell.add_box(X0, X1, Y0, Y1, Z0 - WALL, Z0)                              # south wall
-    shell.add_box(X0, X1, Y0, Y1, Z1, Z1 + WALL)                              # north wall
-    shell.write("house_shell", "house: floor and outer walls around the solver box [-6,6]x[0,3]x[-4.5,4.5]")
+    floor = Mesh()
+    floor.add_box(X0 - WALL, X1 + WALL, Y0 - 0.15, Y0, Z0 - WALL, Z1 + WALL)
+    floor.write("house_floor", "house: floor slab")
+
+    ground = Mesh()  # grass around the house, seen through the windows
+    ground.add_box(-40.0, 40.0, Y0 - 0.35, Y0 - 0.15, -40.0, 40.0)
+    ground.write("house_ground", "ground plane around the house, 80 x 80 m")
+
+    # Outer walls with windows (sill 0.9 m, top 2.1 m). Only drawn: the solver box walls are the house's outer
+    # walls, so the windows are closed glass and the smoke stays inside.
+    shell, glass, frames = Mesh(), Mesh(), Mesh()
+    outer_wall(shell, glass, frames, "x", Z0 - WALL, Z0, X0, X1, [(-4.8, -3.4), (-1.8, -0.4), (3.0, 4.6)])  # south
+    outer_wall(shell, glass, frames, "x", Z1, Z1 + WALL, X0, X1, [(-2.2, -0.8), (4.0, 5.4)])                # north
+    outer_wall(shell, glass, frames, "z", X0 - WALL, X0, Z0 - WALL, Z1 + WALL, [(-2.6, -1.2), (1.8, 3.2)])  # west
+    outer_wall(shell, glass, frames, "z", X1, X1 + WALL, Z0 - WALL, Z1 + WALL, [(-2.6, -1.2), (1.8, 3.2)])  # east
+    shell.write("house_shell", "house: outer walls with window openings around the solver box [-6,6]x[0,3]x[-4.5,4.5]")
+    glass.write("house_glass", "house: window panes (drawn transparent)")
+    frames.write("house_frames", "house: window frames")
 
     ceiling = Mesh()
     ceiling.add_box(X0 - WALL, X1 + WALL, Y1, Y1 + 0.15, Z0 - WALL, Z1 + WALL)

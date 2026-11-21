@@ -130,6 +130,8 @@ Zadnja scena u listi ("Smoke: house"). Panel se otvara dugmetom **Smoke** u gorn
 - **Ventilatori:** kartica Ventilatori, 0 do 8; pozicija, smjer (lijevo-desno, nagib), radijus i domet cilindra,
   jačina u m/s², "Kućište je prepreka". Prozirni plavi cilindar pokazuje gdje ventilator gura zrak.
 - **Rezolucija:** ćelija 0.10, 0.075 (zadano) ili 0.06 m, dugme "Primijeni".
+- Kuća ima prozore sa staklom (zatvoreni: zidovi kutije solvera su na mjestu stakla, pa dim ostaje unutra),
+  drveni pod, travu oko kuće i plavo nebo.
 - Modeli se prave skriptom: `python tools/make_house_meshes.py` (izlaz u `Integration/assets/house/`).
 - Provjera bez ruku: `SMOKE_SCENE_SHOT_INDEX=6 SMOKE_SCENE_SHOT_FRAMES=600 SMOKE_SCENE_SHOT_FILE=kuca.png`, uz
   `SMOKE_HOUSE_VIEW=above` (pogled odozgo), `SMOKE_HOUSE_FAN=1` (probni ventilator), `SMOKE_HOUSE_CELL=0|1|2`.

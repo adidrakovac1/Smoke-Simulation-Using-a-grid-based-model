@@ -16,12 +16,14 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 
 namespace smokeviz {
 
@@ -63,7 +65,7 @@ HouseScene::~HouseScene() = default;
 bool HouseScene::Setup() {
     spdlog::info("[HouseScene] Setting up (meshes from {})", HouseAsset(""));
     SetSceneName("Smoke: house");
-    SetClearColor({0.55f, 0.65f, 0.75f, 1.0f});
+    SetClearColor({0.45f, 0.65f, 0.88f, 1.0f});  // blue sky behind the windows (the same colour as TerrainScene)
     SetSkyboxVisible(false);
 
     // One solver box = the inside of the house, D19/D20 settings (smokeviz/SolverSetup.h).
@@ -72,8 +74,16 @@ bool HouseScene::Setup() {
     spdlog::info("[HouseScene] solver: CpuParallel, {} threads, grid {}x{}x{} ({} m cells)", m_solver->threadCount(),
                  g.nx, g.ny, g.nz, kCellSizes[m_resolution]);
     m_state.showOutline = false;
-    // Darker smoke than in the empty smoke scene: white smoke is hard to see in front of light walls.
-    m_view.smokeColor = {0.32f, 0.32f, 0.35f};
+    // Visual defaults for the house, chosen on screenshots (2026-11-21, D22; docs/plan/MATH.md, section 3):
+    // darker and denser smoke than in the empty smoke scene (it must stand out in front of the walls), and a
+    // stronger buoyancy. The solver works in cell units (D4) and the house is 160 cells long, so with the 64^3
+    // buoyancy the smoke needs long to fill it. Everything stays editable in the panel.
+    m_view.smokeColor = {0.30f, 0.30f, 0.33f};
+    m_view.absorption = 12.0f;
+    m_solver->params().buoyancyBeta = 6.0f;
+    // dt = 1/30 s instead of 1/60 s: still one step per frame (D17), but each frame advances the simulation twice
+    // as far, so the smoke fills the house twice as fast (semi-Lagrangian advection stays stable; MATH.md 4).
+    m_solver->params().dt = 1.0f / 30.0f;
 
     if (!m_volumePass.Init(ShaderDir()) || !m_outline.Init(ShaderDir())) {
         spdlog::error("[HouseScene] smoke shaders failed to load");
@@ -133,9 +143,21 @@ bool HouseScene::LoadHouse() {
         m->SetFloat("u_EmissiveStrength", 1.0f);
         return m;
     };
-    m_wallMaterial      = makeMaterial("mat_house_wall", {0.78f, 0.76f, 0.72f}, 0.9f, {0.0f, 0.0f, 0.0f});
-    m_floorMaterial     = makeMaterial("mat_house_ceiling", {0.86f, 0.86f, 0.84f}, 0.9f, {0.0f, 0.0f, 0.0f});
-    m_furnitureMaterial = makeMaterial("mat_house_furniture", {0.45f, 0.30f, 0.18f}, 0.6f, {0.0f, 0.0f, 0.0f});
+    const glm::vec3 none{0.0f};
+    m_outerWallMaterial = makeMaterial("mat_house_outer_wall", {0.86f, 0.78f, 0.64f}, 0.9f, none);  // warm beige
+    m_innerWallMaterial = makeMaterial("mat_house_inner_wall", {0.62f, 0.72f, 0.66f}, 0.9f, none);  // sage green
+    m_floorMaterial     = makeMaterial("mat_house_floor", {0.55f, 0.36f, 0.20f}, 0.7f, none);       // wooden floor
+    m_ceilingMaterial   = makeMaterial("mat_house_ceiling", {0.92f, 0.92f, 0.90f}, 0.9f, none);
+    m_groundMaterial    = makeMaterial("mat_house_ground", {0.30f, 0.52f, 0.22f}, 0.95f, none);    // grass
+    m_frameMaterial     = makeMaterial("mat_house_frame", {0.95f, 0.95f, 0.95f}, 0.5f, none);
+    m_furnitureMaterial = makeMaterial("mat_house_furniture", {0.45f, 0.30f, 0.18f}, 0.6f, none);
+    const std::pair<const char*, glm::vec3> modelColours[] = {
+        {"table.obj", {0.72f, 0.52f, 0.30f}},    {"chair.obj", {0.72f, 0.52f, 0.30f}},
+        {"sofa.obj", {0.20f, 0.32f, 0.55f}},     {"bed.obj", {0.80f, 0.80f, 0.85f}},
+        {"wardrobe.obj", {0.32f, 0.20f, 0.12f}}, {"shelf.obj", {0.50f, 0.33f, 0.18f}},
+        {"kitchen_counter.obj", {0.90f, 0.90f, 0.88f}}};
+    for (const auto& [file, colour] : modelColours)
+        m_modelMaterials.emplace_back(file, makeMaterial(file, colour, 0.6f, none));
     m_sourceMaterial    = makeMaterial("mat_house_source", {0.9f, 0.45f, 0.1f}, 0.5f, {0.9f, 0.4f, 0.05f});
     m_fanMaterial       = makeMaterial("mat_house_fan", {0.30f, 0.38f, 0.48f}, 0.4f, {0.0f, 0.0f, 0.0f});
 
@@ -144,15 +166,21 @@ bool HouseScene::LoadHouse() {
         const char*       file;
         MaterialInstance* material;
     };
-    const Part parts[] = {{&m_shell, "house_shell.obj", m_wallMaterial.get()},
-                          {&m_ceiling, "house_ceiling.obj", m_floorMaterial.get()},
-                          {&m_innerWalls, "house_inner_walls.obj", m_wallMaterial.get()}};
+    // The glass is loaded like the rest but has no material: it is drawn as a transparent overlay.
+    const Part parts[] = {{&m_ground, "house_ground.obj", m_groundMaterial.get()},
+                          {&m_floor, "house_floor.obj", m_floorMaterial.get()},
+                          {&m_shell, "house_shell.obj", m_outerWallMaterial.get()},
+                          {&m_frames, "house_frames.obj", m_frameMaterial.get()},
+                          {&m_glass, "house_glass.obj", nullptr},
+                          {&m_ceiling, "house_ceiling.obj", m_ceilingMaterial.get()},
+                          {&m_innerWalls, "house_inner_walls.obj", m_innerWallMaterial.get()}};
     for (const Part& part : parts) {
         std::string error;
         if (!part.object->Load(HouseAsset(part.file), part.file, SceneObjectKind::Furniture, &error)) {
             spdlog::error("[HouseScene] {}: {} (run tools/make_house_meshes.py)", part.file, error);
             return false;
         }
+        if (part.material == nullptr) continue;
         RenderItem item;
         item.meshMulti           = part.object->RenderMesh();
         item.material            = part.material;
@@ -319,8 +347,13 @@ const MaterialInstance* HouseScene::MaterialFor(const SceneObject& object) const
     switch (object.Kind()) {
         case SceneObjectKind::Fan: return m_fanMaterial.get();
         case SceneObjectKind::Source: return m_sourceMaterial.get();
-        default: return m_furnitureMaterial.get();
+        default: break;
     }
+    const std::string& path = object.Path();
+    for (const auto& [file, material] : m_modelMaterials)
+        if (path.size() >= file.size() && path.compare(path.size() - file.size(), file.size(), file) == 0)
+            return material.get();
+    return m_furnitureMaterial.get();
 }
 
 // ─── Simulation ──────────────────────────────────────────────────────────────
@@ -428,17 +461,39 @@ void HouseScene::ClampToHouse(SceneObject& object) const {
     if (object.Kind() != SceneObjectKind::Source && lo.y < 0.0f) object.position.y -= lo.y;
 }
 
+namespace {
+
+// True when the mouse is over one of the panels. ImGui's WantCaptureMouse cannot be used for this: the Renderer
+// covers the whole 3D view with a transparent ImGui window for its HUD ("##VP_Overlay", RendererUI.cpp), so
+// WantCaptureMouse is true everywhere, and the Renderer's InputManager then also hides the left button. So we ask
+// ImGui which window is under the mouse and ignore that overlay, unless one of its HUD items is hovered.
+bool MouseOverPanel() {
+    const ImGuiContext* context = ImGui::GetCurrentContext();
+    if (context == nullptr || context->HoveredWindow == nullptr) return false;
+    const ImGuiWindow* root = context->HoveredWindow->RootWindow;
+    if (root != nullptr && std::strcmp(root->Name, "##VP_Overlay") == 0) return context->HoveredId != 0;
+    return true;
+}
+
+} // namespace
+
 // Left click picks the nearest object under the mouse (ray / bounding box) and drags it over a horizontal plane
 // at its own height; the obstacles are rebuilt when the button is released. R turns the selection by 90 degrees,
-// Delete removes it. Clicks on ImGui windows and the right button (camera) are left alone.
+// Delete removes it. Clicks on panels and the right button (camera look) are left alone. The left button is read
+// from GLFW directly, because the Renderer's InputManager hides it whenever ImGui wants the mouse (see above).
 void HouseScene::HandleMouse(IInputProvider& input) {
-    const ImGuiIO& io      = ImGui::GetIO();
-    const bool     overUi  = io.WantCaptureMouse;
+    const ImGuiIO&  io = ImGui::GetIO();
     const glm::vec2 mouse{io.MousePos.x, io.MousePos.y};
     const glm::vec2 display{io.DisplaySize.x, io.DisplaySize.y};
+    GLFWwindow*     window    = glfwGetCurrentContext();
+    const bool      leftDown  = window != nullptr && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    const bool      leftPress = leftDown && !m_leftWasDown;
+    m_leftWasDown             = leftDown;
+    const bool lookMode = input.IsMouseCaptured() ||
+                          (window != nullptr && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
     if (display.x <= 0.0f || display.y <= 0.0f) return;
 
-    if (input.IsMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT) && !overUi) {
+    if (leftPress && !lookMode && !MouseOverPanel()) {
         const Ray ray  = RayThroughPixel(GetCamera().GetViewProjection(), mouse, display);
         int       best = -1;
         float     bestDistance = 1e30f;
@@ -465,7 +520,7 @@ void HouseScene::HandleMouse(IInputProvider& input) {
     }
 
     if (m_dragging && m_selected >= 0) {
-        if (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
+        if (leftDown) {
             const Ray ray = RayThroughPixel(GetCamera().GetViewProjection(), mouse, display);
             glm::vec3 hit;
             if (RayHorizontalPlane(ray, m_dragHeight, hit)) {
@@ -590,6 +645,9 @@ void HouseScene::DrawOverlays() {
         m_overlayShader->SetUniform("u_Alpha", alpha);
         mesh->DrawAll();
     };
+    // Window glass: a faint blue pane (the sky shows through it). Outside the solver box, so its order relative
+    // to the smoke does not matter.
+    draw(m_glass.RenderMesh(), glm::mat4(1.0f), {0.70f, 0.85f, 1.0f}, 0.12f);
     for (const auto& object : m_objects) {
         switch (object->Kind()) {
             case SceneObjectKind::Source:  // the sphere the smoke is injected into

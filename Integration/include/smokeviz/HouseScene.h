@@ -103,7 +103,7 @@ private:
     float                               m_porousFilter = 0.0f;
 
     // The house (fixed) and the placed objects
-    SceneObject m_shell, m_ceiling, m_innerWalls;
+    SceneObject m_shell, m_ceiling, m_innerWalls, m_floor, m_ground, m_frames, m_glass;
     bool        m_showCeiling = true;
     std::vector<std::unique_ptr<SceneObject>> m_objects;  // furniture, sources and fans
     std::vector<std::size_t>                  m_freeItems; // RenderItem slots of removed objects, reused
@@ -112,13 +112,16 @@ private:
     // Renderer resources
     std::shared_ptr<ShaderProgram>    m_meshShader;
     std::shared_ptr<Material>         m_baseMaterial;
-    std::unique_ptr<MaterialInstance> m_wallMaterial, m_floorMaterial, m_furnitureMaterial, m_sourceMaterial,
-        m_fanMaterial;
+    std::unique_ptr<MaterialInstance> m_outerWallMaterial, m_innerWallMaterial, m_floorMaterial, m_ceilingMaterial,
+        m_groundMaterial, m_frameMaterial, m_furnitureMaterial, m_sourceMaterial, m_fanMaterial;
+    // One colour per generated furniture model, by file name (e.g. "sofa.obj"); others use m_furnitureMaterial.
+    std::vector<std::pair<std::string, std::unique_ptr<MaterialInstance>>> m_modelMaterials;
     std::unique_ptr<ShaderProgram> m_overlayShader;  // overlay_mesh.vert + obstacle_mesh.frag
     std::shared_ptr<Mesh>          m_fanRegionMesh;  // unit cylinder along +x, for the fan reach
 
     // Mouse picking
     int       m_selected = -1;
+    bool      m_leftWasDown = false;  // left button in the previous frame (GLFW), for the press edge
     bool      m_dragging = false;
     bool      m_dragMoved = false;
     glm::vec2 m_dragOffset{0.0f};  // object position - grab point, in x and z
