@@ -468,6 +468,12 @@ void HouseScene::ClampToHouse(SceneObject& object) const {
 
 namespace {
 
+// Only furniture and fans with a solid body are in the obstacle grid; moving a source or an ordinary fan changes
+// only SmokeParams (SyncSolverParams), so it must not trigger a rebuild (~85 ms on 0.075 m cells).
+bool AffectsObstacles(const SceneObject& object) {
+    return object.Kind() == SceneObjectKind::Furniture || (object.Kind() == SceneObjectKind::Fan && object.fan.solid);
+}
+
 // True when the mouse is over one of the panels. ImGui's WantCaptureMouse cannot be used for this: the Renderer
 // covers the whole 3D view with a transparent ImGui window for its HUD ("##VP_Overlay", RendererUI.cpp), so
 // WantCaptureMouse is true everywhere, and the Renderer's InputManager then also hides the left button. So we ask
@@ -541,7 +547,8 @@ void HouseScene::HandleMouse(IInputProvider& input) {
             }
         } else {
             m_dragging = false;
-            if (m_dragMoved) m_obstaclesDirty = true;
+            if (m_dragMoved && AffectsObstacles(*m_objects[static_cast<std::size_t>(m_selected)]))
+                m_obstaclesDirty = true;
         }
     }
 
@@ -551,7 +558,7 @@ void HouseScene::HandleMouse(IInputProvider& input) {
             object.yawDegrees = std::fmod(object.yawDegrees + 90.0f, 360.0f);
             ClampToHouse(object);
             SyncRenderItem(object);
-            m_obstaclesDirty = true;
+            if (AffectsObstacles(object)) m_obstaclesDirty = true;
         }
         if (input.IsKeyPressed(GLFW_KEY_DELETE)) RemoveSceneObject(m_selected);
         else if (input.IsKeyPressed(GLFW_KEY_ESCAPE)) m_selected = -1;
