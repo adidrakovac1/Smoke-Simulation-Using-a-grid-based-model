@@ -8,7 +8,12 @@ namespace smoke::serial {
 // Like add_source in Stam 2003 (x += dt * s), but the source "s" is a sphere given by params.source
 // instead of a user-filled array (docs/plan/MATH.md, section 3).
 void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRange range) {
-    if (params.source.radius * static_cast<float>(state.density.size().nx) <= 0.0f) return;  // as before D19
+    // As before D19: nothing to do (and no setBoundary) when no source has a positive radius.
+    const float nx       = static_cast<float>(state.density.size().nx);
+    bool        anySource = params.source.radius * nx > 0.0f;
+    for (int n = 0; n < params.extraSourceCount && n < kMaxSources - 1; ++n)
+        anySource = anySource || params.extraSources[static_cast<std::size_t>(n)].radius * nx > 0.0f;
+    if (!anySource) return;
     addSourcesSlab(state, params, dt, range);
     setBoundary(state.density, BoundaryKind::Scalar);
     setBoundary(state.temperature, BoundaryKind::Scalar);
@@ -20,9 +25,11 @@ void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRang
 // the ghost cells of every other plane already hold the values setBoundary would write: every phase that
 // changes density or temperature ends with setBoundary (Stages.h invariant), so the ghost layer is always a
 // copy of the current interior.
-SlabRange addSourcesSlab(SmokeState& state, const SmokeParams& params, float dt, SlabRange range) {
-    const SmokeSource& src = params.source;
-    const GridSize     g   = state.density.size();
+namespace {
+
+// One source sphere for the planes of `range`; returns the planes it may have changed (empty: k0 == k1).
+SlabRange addSphereSlab(SmokeState& state, const SmokeSource& src, float dt, SlabRange range) {
+    const GridSize g = state.density.size();
 
     // Relative position -> cell-index coordinates. The box spans [0.5, n + 0.5], so x = 0.5 maps to the
     // exact middle (n + 1) / 2, which keeps a centred source mirror-symmetric (test T6).
@@ -58,6 +65,22 @@ SlabRange addSourcesSlab(SmokeState& state, const SmokeParams& params, float dt,
         }
     }
     return k0 <= k1 ? SlabRange{k0, k1 + 1} : SlabRange{range.k0, range.k0};
+}
+
+} // namespace
+
+// D22: the main source, then the extra ones in order (each adds to what is already there, so the order does not
+// change the result). The returned range is the union of the planes every sphere may have changed; the planes
+// between two spheres get their ghost layer refreshed too, which writes the values it already holds.
+SlabRange addSourcesSlab(SmokeState& state, const SmokeParams& params, float dt, SlabRange range) {
+    SlabRange touched = addSphereSlab(state, params.source, dt, range);
+    for (int n = 0; n < params.extraSourceCount && n < kMaxSources - 1; ++n) {
+        const SlabRange more = addSphereSlab(state, params.extraSources[static_cast<std::size_t>(n)], dt, range);
+        if (more.k0 >= more.k1) continue;
+        touched = touched.k0 < touched.k1 ? SlabRange{std::min(touched.k0, more.k0), std::max(touched.k1, more.k1)}
+                                          : more;
+    }
+    return touched;
 }
 
 } // namespace smoke::serial

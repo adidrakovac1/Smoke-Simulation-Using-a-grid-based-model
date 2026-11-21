@@ -37,6 +37,11 @@ void referenceStep(smoke::SmokeState& s, const smoke::SmokeParams& p, const smok
     if (obstacles) clearSolidScalars(s, p.ambientTemp, *obstacles);
 
     applyBuoyancySlab(s, p, dt, all);
+    if (anyFanActive(p)) {  // D22
+        applyFansSlab(s, p, dt, all);
+        setBoundary(s.u, BoundaryKind::VelocityX);
+        setBoundary(s.w, BoundaryKind::VelocityZ);
+    }
     setBoundary(s.v, BoundaryKind::VelocityY);
     if (p.vorticityEps > 0.0f) applyVorticityConfinement(s, p.vorticityEps, dt, all);
     if (obstacles) {
@@ -300,6 +305,52 @@ TEST_CASE("D19 step matches the pre-D19 serial step bit for bit") {
                     CHECK(sameBits(reference.density, solver.density()));
                 }
             }
+        }
+    }
+}
+
+// D22: several sources and fans. The parallel step must still give the serial result bit for bit, for every
+// thread count, and the serial step must match the stage-by-stage reference (with and without obstacles).
+TEST_CASE("D22 extra sources and fans: same bits for every thread count and the reference") {
+    const std::vector<smoke::GridSize> grids{{24, 12, 18}, {32, 16, 24}, {9, 11, 7}};
+    for (const auto& grid : grids) {
+        smoke::SolverConfig base;
+        base.grid = grid;
+        base.params.jacobiIterations = 6;
+        base.params.extraSourceCount = 2;
+        base.params.extraSources[0]  = {0.8f, 0.2f, 0.7f, 0.1f, 6.0f, 4.0f};
+        base.params.extraSources[1]  = {0.2f, 0.6f, 0.3f, 0.08f, 3.0f, 8.0f};
+        base.params.fanCount = 3;
+        base.params.fans[0]  = {0.1f, 0.3f, 0.5f, 1.0f, 0.0f, 0.0f, 0.15f, 0.6f, 20.0f};
+        base.params.fans[1]  = {0.9f, 0.7f, 0.2f, -1.0f, 0.5f, 1.0f, 0.1f, 0.5f, 35.0f};
+        base.params.fans[2]  = {0.5f, 0.1f, 0.9f, 0.0f, 1.0f, -1.0f, 0.2f, 0.4f, 10.0f};
+        for (bool withObstacles : {false, true}) {
+            smoke::SmokeSolver serial(base);
+            smoke::SmokeState  ref;
+            ref.resize(grid);
+            const smoke::ObstacleGrid obstacles = makeObstacles(grid);
+            std::unique_ptr<smoke::ObstacleLists> lists;
+            if (withObstacles) {
+                REQUIRE(serial.setObstacles(obstacles));
+                lists = std::make_unique<smoke::ObstacleLists>(smoke::buildObstacleLists(obstacles, ref.density));
+                smoke::serial::enforceSolidVelocity(ref, *lists);
+                smoke::serial::clearSolidScalars(ref, base.params.ambientTemp, *lists);
+            }
+            std::vector<std::unique_ptr<smoke::SmokeSolver>> parallel;
+            for (int threads : {2, 3, 6}) {
+                smoke::SolverConfig config = base;
+                config.backend = smoke::Backend::CpuParallel;
+                config.threads = threads;
+                parallel.push_back(std::make_unique<smoke::SmokeSolver>(config));
+                if (withObstacles) REQUIRE(parallel.back()->setObstacles(obstacles));
+            }
+            for (int step = 0; step < 4; ++step) {
+                serial.step();
+                referenceStep(ref, base.params, lists.get(), base.params.dt);
+                for (auto& solver : parallel) solver->step();
+            }
+            CHECK(sameBits(ref.density, serial.density()));
+            for (auto& solver : parallel) CHECK(densityMatches(serial, *solver));
         }
     }
 }
