@@ -1,6 +1,7 @@
 #include "app/Application.h"
 #include <spdlog/spdlog.h>
 #include <cstddef>
+#include <algorithm>
 #include <cstdlib>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include "CapturePresetScene.h"
 #include "TerrainScene.h"
 #include "smokeviz/Screenshot.h"
+#include "smokeviz/HouseScene.h"
 #include "smokeviz/SmokeScene.h"
 #include "smokeviz/SmokeSystem.h"
 
@@ -29,8 +31,10 @@ int main()
     CapturePresetScene captureMaterialSweep(CapturePresetKind::MaterialSweep);
     CapturePresetScene captureCulling(CapturePresetKind::CullingTest);
     smokeviz::SmokeScene smokeScene;
+    smokeviz::HouseScene houseScene;  // D22
 
     bool smokeOk = smokeScene.Setup();
+    bool houseOk = houseScene.Setup();
     bool terrainOk = terrainScene.Setup();
     bool bistroOk = bistroScene.Setup();
     bool captureBaselineOk = captureBaseline.Setup();
@@ -40,6 +44,8 @@ int main()
 
     if (!smokeOk)
         spdlog::error("[TestApp] SmokeScene::Setup() failed");
+    if (!houseOk)
+        spdlog::error("[TestApp] HouseScene::Setup() failed");
     if (!terrainOk)
         spdlog::error("[TestApp] TerrainScene::Setup() failed");
     if (!bistroOk)
@@ -68,13 +74,15 @@ int main()
     {
         scenes.push_back(&smokeScene);
     }
+    // D22: the house scene comes last, so every earlier scene keeps its number key.
+    if (houseOk) scenes.push_back(&houseScene);
 
     // Attach the renderer-owned smoke menu to every ordinary scene. Terrain and the dedicated smoke
     // scene already host their own multi-volume collections, so they keep those scene-aware defaults.
     std::vector<std::unique_ptr<smokeviz::SmokeSystem>> sceneSmokeSystems;
     for (Scene* scene : scenes)
     {
-        if (scene == &terrainScene || scene == &smokeScene) continue;
+        if (scene == &terrainScene || scene == &smokeScene || scene == &houseScene) continue;
         auto system = std::make_unique<smokeviz::SmokeSystem>();
         if (!system->Initialize()) {
             spdlog::warn("[TestApp] Smoke extension unavailable for {}", scene->GetName());
@@ -94,7 +102,8 @@ int main()
 
     // Unattended check of any scene, used to compare the existing scenes before and after a Renderer change
     // (docs/plan/ARCHITECTURE.md, section 6):
-    //   SMOKE_SCENE_SHOT_INDEX=1 SMOKE_SCENE_SHOT_FILE=out.png  ->  draw that scene for 90 frames, save a
+    //   SMOKE_SCENE_SHOT_INDEX=1 SMOKE_SCENE_SHOT_FILE=out.png  ->  draw that scene for 90 frames (or
+    //   SMOKE_SCENE_SHOT_FRAMES, D22: the smoke in the house needs longer to spread), save a
     //   picture of the window, exit.
     const char* shotIndex = std::getenv("SMOKE_SCENE_SHOT_INDEX");
     const char* shotFile  = std::getenv("SMOKE_SCENE_SHOT_FILE");
@@ -102,7 +111,9 @@ int main()
     {
         const std::size_t index = static_cast<std::size_t>(std::atoi(shotIndex)) % scenes.size();
         spdlog::info("[TestApp] Scene shot: {} -> {}", scenes[index]->GetName(), shotFile);
-        for (int frame = 0; frame < 90; ++frame)
+        const char* framesText = std::getenv("SMOKE_SCENE_SHOT_FRAMES");
+        const int   frames     = framesText != nullptr ? std::max(1, std::atoi(framesText)) : 90;
+        for (int frame = 0; frame < frames; ++frame)
             app.Update(*scenes[index]);
         if (!smokeviz::SaveWindowPng(shotFile))
             spdlog::error("[TestApp] Could not save {}", shotFile);

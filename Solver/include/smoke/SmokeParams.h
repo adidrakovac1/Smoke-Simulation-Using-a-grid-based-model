@@ -33,7 +33,7 @@ struct SmokeFan {
     float dirX = 1.0f, dirY = 0.0f, dirZ = 0.0f; // blowing direction; normalized by the solver (zero = off)
     float radius   = 0.06f;
     float reach    = 0.40f;
-    float strength = 0.0f;  // cells/s^2; 0 = off. TODO(measure): chosen visually in the house scene (D22)
+    float strength = 0.0f;  // cells/s^2; 0 = off (the house scene sets it from m/s^2, HouseScene.cpp)
 };
 
 /// How the pressure equation  laplacian(p) = div  is solved (decision D20, docs/plan/MATH.md, section 5).

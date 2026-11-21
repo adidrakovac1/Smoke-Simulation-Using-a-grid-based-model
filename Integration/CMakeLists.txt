@@ -12,6 +12,10 @@ add_library(SmokeIntegration STATIC
   src/SmokeScene.cpp
   src/SmokeVolume.cpp
   src/SmokeSystem.cpp
+  src/MeshBuild.cpp
+  src/SceneObject.cpp
+  src/HouseScene.cpp
+  src/HouseSceneUI.cpp
   src/Texture3D.cpp
   src/VolumeRaymarchPass.cpp
   src/BoxOutline.cpp

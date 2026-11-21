@@ -31,6 +31,52 @@ void usePreset(ObstacleSettings& o, const char* file, int mode, float y, float s
 }
 } // namespace
 
+// ── Panel parts shared by the smoke panel and the house panel (D22) ──────────────
+
+void DrawSimulationParams(smoke::SmokeParams& params) {
+    ImGui::SliderFloat("dt (s)", &params.dt, 1.0f / 240.0f, 1.0f / 15.0f, "%.4f");
+    ImGui::SliderInt("Iteracija pritiska K", &params.jacobiIterations, 1, 160);
+    // D20: pressure solver and its starting value (docs/plan/MATH.md, section 5).
+    int pressureChoice = params.pressureSolver == smoke::PressureSolver::RedBlackGaussSeidel ? 1 : 0;
+    const char* const kSolvers[] = {"Jacobi", "Red-black SOR"};
+    if (ImGui::Combo("Rjesavac pritiska", &pressureChoice, kSolvers, 2))
+        params.pressureSolver =
+            pressureChoice == 1 ? smoke::PressureSolver::RedBlackGaussSeidel : smoke::PressureSolver::Jacobi;
+    if (pressureChoice == 1) ImGui::SliderFloat("SOR omega", &params.sorOmega, 1.0f, 1.95f, "%.2f");
+    ImGui::Checkbox("Topli start pritiska", &params.warmStartPressure);
+    ImGui::SliderFloat("Vrtlozenje eps", &params.vorticityEps, 0.0f, 15.0f, "%.2f");
+    ImGui::SliderFloat("Uzgon alfa (tezina)", &params.buoyancyAlpha, 0.0f, 1.0f, "%.3f");
+    ImGui::SliderFloat("Uzgon beta (toplota)", &params.buoyancyBeta, 0.0f, 10.0f, "%.2f");
+}
+
+void DrawViewSettings(VolumeSettings& view, bool* showOutline) {
+    ImGui::SliderFloat("Gustina prikaza", &view.absorption, 0.1f, 40.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderInt("Koraka zrake", &view.steps, 16, 256);
+    ImGui::SliderInt("Koraka prema svjetlu", &view.lightSteps, 0, 16);
+    ImGui::SliderFloat("Jacina sjene", &view.shadowStrength, 0.0f, 4.0f, "%.2f");
+    ImGui::SliderFloat("Ambijent", &view.ambient, 0.0f, 1.0f, "%.2f");
+    ImGui::SliderFloat("Jacina svjetla", &view.lightIntensity, 0.0f, 5.0f, "%.2f");
+    ImGui::ColorEdit3("Boja dima", &view.smokeColor.x);
+    ImGui::Checkbox("Jitter", &view.jitter);
+    if (showOutline != nullptr) {
+        ImGui::SameLine();
+        ImGui::Checkbox("Okvir kutije", showOutline);
+    }
+    ImGui::SameLine();
+    ImGui::Checkbox("Zaklanjanje", &view.occlusion);
+}
+
+void DrawStepTimings(const smoke::SmokeSolver& solver, double uploadMs) {
+    const smoke::StepTimings& timings = solver.lastTimings();
+    for (std::size_t s = 0; s < smoke::kStageCount; ++s)
+        ImGui::Text("%-26s %8.3f", smoke::stageName(static_cast<smoke::Stage>(s)), timings.ms[s]);
+    ImGui::Text("%-26s %8.3f", "Ukupno korak", timings.total());
+    ImGui::Text("%-26s %8.4f", "Jedna Jacobi iteracija", timings.jacobiIterationMs);
+    ImGui::Text("%-26s %8.3f", "Prenos gustine na GPU", uploadMs);
+    ImGui::Text("FPS: %.1f  (%.2f ms po frejmu)", ImGui::GetIO().Framerate,
+                ImGui::GetIO().Framerate > 0.0f ? 1000.0f / ImGui::GetIO().Framerate : 0.0f);
+}
+
 bool SmokeUI::DrawStepValue(const char* label, const char* id, float& value, float step,
                             float minimum, float maximum, bool& committed) {
     bool changed = false;
@@ -104,19 +150,7 @@ SmokeUiActions SmokeUI::Draw(smoke::SmokeSolver& solver, VolumeSettings& view, S
 
     // ── Simulation parameters (docs/plan/MATH.md, sections 2 and 3) ──────────
     ImGui::SeparatorText("Simulacija");
-    ImGui::SliderFloat("dt (s)", &params.dt, 1.0f / 240.0f, 1.0f / 15.0f, "%.4f");
-    ImGui::SliderInt("Iteracija pritiska K", &params.jacobiIterations, 1, 160);
-    // D20: pressure solver and its starting value (docs/plan/MATH.md, section 5).
-    int pressureChoice = params.pressureSolver == smoke::PressureSolver::RedBlackGaussSeidel ? 1 : 0;
-    const char* const kSolvers[] = {"Jacobi", "Red-black SOR"};
-    if (ImGui::Combo("Rjesavac pritiska", &pressureChoice, kSolvers, 2))
-        params.pressureSolver =
-            pressureChoice == 1 ? smoke::PressureSolver::RedBlackGaussSeidel : smoke::PressureSolver::Jacobi;
-    if (pressureChoice == 1) ImGui::SliderFloat("SOR omega", &params.sorOmega, 1.0f, 1.95f, "%.2f");
-    ImGui::Checkbox("Topli start pritiska", &params.warmStartPressure);
-    ImGui::SliderFloat("Vrtlozenje eps", &params.vorticityEps, 0.0f, 15.0f, "%.2f");
-    ImGui::SliderFloat("Uzgon alfa (tezina)", &params.buoyancyAlpha, 0.0f, 1.0f, "%.3f");
-    ImGui::SliderFloat("Uzgon beta (toplota)", &params.buoyancyBeta, 0.0f, 10.0f, "%.2f");
+    DrawSimulationParams(params);
 
     ImGui::SeparatorText("Izvor dima");
     ImGui::SliderFloat("x", &params.source.x, 0.0f, 1.0f, "%.2f");
@@ -182,29 +216,11 @@ SmokeUiActions SmokeUI::Draw(smoke::SmokeSolver& solver, VolumeSettings& view, S
 
     // ── Display only: these do not change the simulation ─────────────────────
     ImGui::SeparatorText("Prikaz");
-    ImGui::SliderFloat("Gustina prikaza", &view.absorption, 0.1f, 40.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
-    ImGui::SliderInt("Koraka zrake", &view.steps, 16, 256);
-    ImGui::SliderInt("Koraka prema svjetlu", &view.lightSteps, 0, 16);
-    ImGui::SliderFloat("Jacina sjene", &view.shadowStrength, 0.0f, 4.0f, "%.2f");
-    ImGui::SliderFloat("Ambijent", &view.ambient, 0.0f, 1.0f, "%.2f");
-    ImGui::SliderFloat("Jacina svjetla", &view.lightIntensity, 0.0f, 5.0f, "%.2f");
-    ImGui::ColorEdit3("Boja dima", &view.smokeColor.x);
-    ImGui::Checkbox("Jitter", &view.jitter);
-    ImGui::SameLine();
-    ImGui::Checkbox("Okvir kutije", &state.showOutline);
-    ImGui::SameLine();
-    ImGui::Checkbox("Zaklanjanje", &view.occlusion);
+    DrawViewSettings(view, &state.showOutline);
 
     // ── Timings of the last step (StepTimings: every stage measures itself) ──
     ImGui::SeparatorText("Vrijeme zadnjeg koraka (ms)");
-    const smoke::StepTimings& timings = solver.lastTimings();
-    for (std::size_t s = 0; s < smoke::kStageCount; ++s)
-        ImGui::Text("%-26s %8.3f", smoke::stageName(static_cast<smoke::Stage>(s)), timings.ms[s]);
-    ImGui::Text("%-26s %8.3f", "Ukupno korak", timings.total());
-    ImGui::Text("%-26s %8.4f", "Jedna Jacobi iteracija", timings.jacobiIterationMs);
-    ImGui::Text("%-26s %8.3f", "Prenos gustine na GPU", state.uploadMs);
-    ImGui::Text("FPS: %.1f  (%.2f ms po frejmu)", ImGui::GetIO().Framerate,
-                ImGui::GetIO().Framerate > 0.0f ? 1000.0f / ImGui::GetIO().Framerate : 0.0f);
+    DrawStepTimings(solver, state.uploadMs);
 
     // ── Health numbers, on demand: diagnostics() makes several passes over the grid ──
     ImGui::SeparatorText("Dijagnostika");
