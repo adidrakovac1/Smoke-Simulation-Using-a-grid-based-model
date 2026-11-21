@@ -4,6 +4,7 @@
 #include "core/Mesh.h"
 #include "core/ShaderProgram.h"
 #include "smokeviz/Screenshot.h"
+#include "smokeviz/SolverSetup.h"
 #include "smoke/SmokeSolver.h"
 
 #include <glad/glad.h>
@@ -19,9 +20,10 @@ SmokeVolume::~SmokeVolume() = default;
 bool SmokeVolume::Initialize(const glm::vec3& boxMin, const glm::vec3& boxSize, smoke::GridSize grid) {
     m_boxMin = boxMin;
     m_boxSize = boxSize;
-    m_solver = std::make_unique<smoke::SmokeSolver>();
-    if (grid.nx != 64 || grid.ny != 64 || grid.nz != 64)
-        m_solver->resize(grid);
+    // Same D19/D20 settings as the dedicated smoke scene (smokeviz/SolverSetup.h).
+    m_solver = std::make_unique<smoke::SmokeSolver>(VisualizationSolverConfig(grid));
+    spdlog::info("[SmokeVolume] solver: CpuParallel, {} threads, grid {}x{}x{}", m_solver->threadCount(),
+                 grid.nx, grid.ny, grid.nz);
 
     if (!m_volumePass.Init(SMOKE_SHADER_DIR) || !m_outline.Init(SMOKE_SHADER_DIR)) {
         spdlog::error("[SmokeVolume] failed to initialize volume shaders");

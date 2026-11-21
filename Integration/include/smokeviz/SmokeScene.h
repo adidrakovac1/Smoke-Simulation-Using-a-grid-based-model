@@ -3,7 +3,7 @@
 #include "smokeviz/BoxOutline.h"
 #include "smokeviz/ObstacleObject.h"
 #include "smokeviz/SmokeUI.h"
-#include "smokeviz/SmokeVolume.h"
+#include "smokeviz/SmokeSystem.h"
 #include "smokeviz/Texture3D.h"
 #include "smokeviz/VolumeRaymarchPass.h"
 
@@ -100,9 +100,7 @@ private:
     std::string m_autoShotFile;
     bool        m_autoShotTaken   = false;
     bool        m_closeAfterShot  = false;
-    std::vector<std::unique_ptr<SmokeVolume>> m_extraSmokeVolumes;
-    glm::vec3 m_newSmokePosition{0.0f, 2.0f, 0.0f};
-    glm::vec3 m_newSmokeSize{12.0f, 18.0f, 12.0f};
+    SmokeSystem m_extraSmoke;  // extra boxes added from the Smoke menu
 };
 
 } // namespace smokeviz

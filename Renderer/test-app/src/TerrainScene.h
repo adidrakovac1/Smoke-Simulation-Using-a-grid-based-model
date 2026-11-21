@@ -6,7 +6,7 @@
 #include "terrain/TerrainMeshBuilder.h"
 #include "core/Material.h"
 #include "terrain/TerrainVegetation.h"
-#include "smokeviz/SmokeVolume.h"
+#include "smokeviz/SmokeSystem.h"
 
 #include <memory>
 #include <vector>
@@ -77,9 +77,7 @@ private:
 
     // ── Vegetation ─────────────────────────────────────────────────────────
     TerrainVegetation m_vegetation;
-    std::vector<std::unique_ptr<smokeviz::SmokeVolume>> m_smokeVolumes;
-    glm::vec3 m_newSmokePosition{0.0f, 2.0f, 0.0f};
-    glm::vec3 m_newSmokeSize{12.0f, 18.0f, 12.0f};
+    smokeviz::SmokeSystem m_smoke;  // smoke boxes of this scene, edited from the Smoke menu
 
     // ── Atmosphere ─────────────────────────────────────────────────────────
     float     m_fogDensity = 0.0015f;
