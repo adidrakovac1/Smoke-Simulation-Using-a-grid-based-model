@@ -131,6 +131,34 @@ divergenciju koja ostaje poslije projekcije.** `max|div|` prije / poslije projek
   privremenim programom koji ponavlja `SmokeSolver::step` preko funkcija faza (nije u repozitoriju).
   Izbor ε je odluka tima; referenca i osnove B0/B1 se snimaju tek kad je ε konačan.
 
+### Više izvora (odluka D22, 2026-11-21)
+Uz glavni izvor (`SmokeParams::source`) može biti još do 7 izvora (`extraSources`, `extraSourceCount`).
+Svaki je ista kugla kao glavni i dodaje `dt · rate` u svoje ćelije; gdje se kugle preklapaju, doprinosi se
+saberu. Zadano nema dodatnih izvora, pa je rezultat bit po bit isti kao prije (`smoke_bench --verify`).
+
+### Ventilator: vanjska sila (odluka D22, 2026-11-21)
+Navier-Stokesova jednačina ima član vanjske sile `f`; [Stam03] ga dodaje kao `u ← u + dt · f` (`add_source`
+na brzini), [Fedkiw01] isto (odjeljak 4). Uzgon je jedna takva sila; ventilator je druga. Oblik polja sile
+ventilatora rad ne daje, pa je ovo **naš model**: cilindar ispred ventilatora, centar lica `c`, jedinična osa
+`n`, poluprečnik `R`, domet `L`, jačina `s` (ćelija/s²). Za centar ćelije `p`:
+
+```
+a  = (p − c) · n                (udaljenost duž ose)
+r² = |p − c|² − a²              (kvadrat udaljenosti od ose)
+ako je 0 ≤ a ≤ L i r² ≤ R²:   u ← u + dt · s · (1 − a / L) · n
+```
+
+- Sila slabi linearno od lica do kraja dometa, pa na kraju cilindra nema skoka. Iza ventilatora (`a < 0`)
+  nema sile.
+- Djeluje u koraku 2 (sile), odmah poslije uzgona; projekcija u koraku 4 zatim pravi polje bez divergencije,
+  pa zrak koji ventilator gura obilazi namještaj i vraća se kroz ostatak kuće.
+- Do 8 ventilatora (`SmokeParams::fans`, `fanCount`); zadano nijedan, pa je referenca nepromijenjena.
+- Pozicija, `R` i `L` su relativni kao kod izvora; scena kuće ih računa iz metara, a jačinu iz m/s²
+  dijeljenjem s veličinom ćelije `h` (D4: solver radi u jedinicama ćelije).
+- Zadana jačina u sceni kuće (2 m/s²) je izabrana vizuelno, kao uzgon u M2; panel je mijenja (0 do 20).
+- Testovi: `test_forces.cpp` (sila samo u cilindru, slabljenje duž ose, kosi smjer), `test_parallel_solver.cpp`
+  (s ventilatorima i izvorima `CpuParallel` = `Serial` = referentni korak po fazama).
+
 ---
 
 ## 4. Advekcija (semi-Lagrangian)

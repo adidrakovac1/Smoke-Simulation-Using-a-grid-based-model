@@ -360,6 +360,15 @@ Renderer već ima ono što nam treba za crtanje dima:
    prijavljuje `CpuParallel`. Gruba provjera više kutija (jedna sesija, 15 ponavljanja, medijan; nije unos u PERF_LOG):
    s 2 do 3 kutije korak jedne kutije je oko 1.1x sporiji nego s jednom kad niti spavaju (`Block`), a 1.6 do 1.8x
    kad vrte (`Spin`); zato i dodatne kutije koriste `Block`.
+6. (D22, 2026-11-21, grana `feature/house-scene`) `test-app/src/main.cpp`:
+   - pravi `smokeviz::HouseScene` i dodaje je **na kraj** liste (postojeće scene zadržavaju tipke; kuća je tipka 7
+     kad se Bistro ne učita) i izuzima je iz petlje `SmokeSystem` (kao scenu dima);
+   - režim 3a dobija `SMOKE_SCENE_SHOT_FRAMES` (zadano 90), jer se dim u kući širi duže.
+   Ostalo je sve u `Integration/` (`HouseScene`, `SceneObject`, `MousePicker`, `MeshBuild`, `shaders/overlay_mesh.vert`).
+   Odabir mišem ne traži izmjenu Renderera: položaj miša i `WantCaptureMouse` daje ImGui, dugmad `IInputProvider`.
+   Gruba provjera brzine (PC-2, jedna sesija, 15 ponavljanja, medijan; nije unos u PERF_LOG): korak na ćeliji
+   0.075 m je 2.7x, a na 0.06 m 5.6x korak na 0.10 m; 8 izvora i 8 ventilatora mijenjaju korak u granicama šuma
+   (−2 % do +4 %). Zadana ćelija je 0.075 m (aplikacija oko 68 FPS); 0.06 m ne staje u frejm od 60 FPS.
 
 Sve ostalo ostaje netaknuto. Ako se pojavi potreba za većom izmjenom, prvo se dogovara u timu
 i upisuje u ovaj odjeljak.
