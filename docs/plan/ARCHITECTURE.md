@@ -320,6 +320,7 @@ Renderer već ima ono što nam treba za crtanje dima:
    **Urađeno 2026-11-11.** Iz Solvera se tu gradi samo biblioteka (`SMOKE_BUILD_CLI/TESTS/BENCH/LAB/PROF = OFF`).
 2. `Renderer/test-app/src/main.cpp`: napraviti `SmokeScene` i dodati je u listu scena.
    **Urađeno 2026-11-11.** Scena dima je dodana na kraj liste (postojeće scene zadržavaju svoje tipke) i otvara se prva.
+   Od D21 (tačka 5) prva se otvara Terrain, a scena dima ostaje zadnja u listi.
 
 **Šta smo naučili o Rendereru pri spajanju (M-VIZ), bez izmjene njegovog koda:**
 - "Gore" je +Y, isto kao uzgon u solveru.
@@ -343,6 +344,22 @@ Renderer već ima ono što nam treba za crtanje dima:
    `SMOKE_SCENE_SHOT_FILE=slika.png` program prikaže scenu `n` 90 frejmova, snimi prozor i izađe. Služi za
    poređenje postojećih scena prije i poslije izmjene u Rendereru.
 4. Dalje izmjene u `Renderer/` samo uz upis u ovaj popis (šta i zašto).
+5. (D21, 2026-11-21, PR #12 Adi, dopunjeno na grani `bugfix/podesavanja-d19`) Globalni meni **Smoke** i više kutija
+   dima po sceni. Izmijenjeni fajlovi i razlog:
+   - `src/include/scene/Scene.h`: virtualna kuka `OnGlobalSmokeUI(bool)` i tri `std::function` povratna poziva
+     (`SetSmokeCallbacks`), da scena koju ne pišemo mi (npr. Capture scene) dobije dim bez izmjene svoje klase.
+     Tipovi su skriveni iza `std::function`, pa `RendererLib` i dalje ne zavisi od Solvera ni od `Integration/`.
+   - `src/opengl/app/Application.cpp`: poziva te kuke (korak, crtanje poslije `OnPostRender`, ImGui).
+   - `src/include/ui/RendererUI.h`, `src/opengl/ui/RendererUI.cpp`: dugme **Smoke** u gornjoj traci
+     (`showSmokePanel`, zadano isključeno). Paneli dima se vide tek kad se uključi.
+   - `test-app/src/TerrainScene.cpp/.h`: Terrain drži jedan `smokeviz::SmokeSystem` s jednom kutijom iznad sredine terena.
+   - `test-app/src/main.cpp`: Terrain je prva scena; ostalim scenama (osim Terrain i scene dima) se dodaje
+     `SmokeSystem` preko `SetSmokeCallbacks`. Režim `SMOKE_SCENE_SHOT_INDEX` (3a) se ne mijenja, indeks je i dalje redni broj scene od 0.
+   - `build.bat`, `run.bat`: putanje i MSYS2 okruženje za Windows; `run.bat` traži i `build-short`.
+   Provjera 2026-11-21 (PC-2): snimci scena Terrain i Smoke preko `SMOKE_SCENE_SHOT_INDEX`, u logu svaka kutija
+   prijavljuje `CpuParallel`. Gruba provjera više kutija (jedna sesija, 15 ponavljanja, medijan; nije unos u PERF_LOG):
+   s 2 do 3 kutije korak jedne kutije je oko 1.1x sporiji nego s jednom kad niti spavaju (`Block`), a 1.6 do 1.8x
+   kad vrte (`Spin`); zato i dodatne kutije koriste `Block`.
 
 Sve ostalo ostaje netaknuto. Ako se pojavi potreba za većom izmjenom, prvo se dogovara u timu
 i upisuje u ovaj odjeljak.

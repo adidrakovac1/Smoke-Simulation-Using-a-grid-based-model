@@ -23,6 +23,8 @@ build\test-app\TestApp.exe
   konfliktu. Pri **prvoj** gradnji na novom računaru opcija se izostavlja, da se biblioteke preuzmu.
 - Terrain scena se otvara prva i prikazuje dim kao komponentu. Kontrole su dostupne iz stavke Smoke u glavnom meniju.
 - Svaka scena u aplikaciji dobija globalni sistem dima; u meniju Smoke moguće je dodati više nezavisnih volumena i zadati im XYZ poziciju i dimenzije.
+- Svaka kutija ima svoj solver s istim postavkama kao scena dima (`CpuParallel`, red-black SOR, niti koje spavaju;
+  `smokeviz::VisualizationSolverConfig()`, odluke D19 do D21). Kutije se računaju jedna za drugom, jedan korak po frejmu.
 
 Upravljanje: desna tipka miša i pomjeranje rotira kameru oko kutije, točkić približava, WASD pomjera centar,
 F12 snima sliku (`smoke_screenshot_N.png` u radnom folderu).
@@ -36,7 +38,9 @@ F12 snima sliku (`smoke_screenshot_N.png` u radnom folderu).
 | `Texture3D` | 3D tekstura s jednim float kanalom; u njoj je gustina dima na grafičkoj kartici | Renderer ima samo 2D teksture, pa je pišemo sami | `SmokeScene` je puni svaki frejm, shader iz nje čita |
 | `VolumeRaymarchPass` | Crta dim: zraka kroz kutiju, uzorkovanje, prozirnost | [Crane07] (GPU Gems 3, pogl. 30), Beer-Lambertov zakon | `SmokeScene::OnPostRender` |
 | `BoxOutline` | 12 ivica kutije kao linije | pomoć pri razvoju: kutija je inače nevidljiva | `SmokeScene::OnPostRender` |
-| `SmokeUI` | ImGui panel: mreža, parametri, izvor, prikaz, vremena | parametri su `smoke::SmokeParams`, vremena `smoke::StepTimings` | `SmokeScene::OnImGuiRender` |
+| `SmokeSystem` | Skup kutija dima jedne scene i prozor "Dimovi" (dodaj, ukloni, uredi) | D21 (ARCHITECTURE.md, odjeljak 6, tačka 5) | `SmokeScene` (dodatne kutije), `TerrainScene`, ostale scene preko `main.cpp` |
+| `SolverSetup.h` | `VisualizationSolverConfig()`: D19/D20 postavke solvera za svaku kutiju | D19, D20 (PERF_LOG.md, P-005), D21 | `SmokeScene`, `SmokeVolume` |
+| `SmokeUI` | ImGui panel: mreža, parametri, izvor, položaj kutije, prepreka, prikaz, vremena | parametri su `smoke::SmokeParams`, vremena `smoke::StepTimings` | `SmokeScene::OnGlobalSmokeUI`, `SmokeVolume::DrawUI` |
 | `Screenshot` | Snima prozor u PNG | `stb_image_write` (dio paketa `stb` koji Renderer već preuzima) | F12, dugme u panelu, automatska provjera |
 | `shaders/` | GLSL izvor za dim i okvir | | učitava ih Rendererov `ShaderProgram` |
 
