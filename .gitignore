@@ -13,6 +13,7 @@ compile_commands.json
 .vscode/
 .idea/
 *.user
+imgui.ini
 
 # OS junk
 .DS_Store

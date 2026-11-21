@@ -112,6 +112,16 @@ bool TerrainScene::Setup()
 
     // ── Generate terrain + upload ─────────────────────────────────────────────
     Regenerate();
+    if (m_heightfield.IsValid())
+    {
+        const uint32_t centerX = m_heightfield.width / 2;
+        const uint32_t centerZ = m_heightfield.height / 2;
+        const float smokeBaseY = m_heightfield.At(centerX, centerZ).height + m_terrainVerticalOffset + 2.0f;
+        m_smoke.SetNewVolumeDefaults({-20.0f, smokeBaseY, -20.0f}, {12.0f, 18.0f, 12.0f},
+                                     smoke::GridSize{64, 64, 64});
+        if (!m_smoke.AddVolume({-20.0f, smokeBaseY, -20.0f}, {40.0f, 48.0f, 40.0f}))
+            spdlog::warn("[TerrainScene] Smoke volume could not be initialized");
+    }
 
     spdlog::info("[TerrainScene] Setup complete");
     return true;
@@ -245,6 +255,7 @@ void TerrainScene::ApplyMaterialUniforms() const
 
 void TerrainScene::OnUpdate(float deltaTime, IInputProvider& input)
 {
+    m_smoke.Update();
     UpdateStandardCameraAndPlayer(deltaTime, input, m_playerPos, m_moveDirXZ);
     ApplyMaterialUniforms();
 
@@ -265,6 +276,16 @@ void TerrainScene::OnUpdate(float deltaTime, IInputProvider& input)
 void TerrainScene::OnPostRender()
 {
     m_vegetation.DrawAll();
+    m_smoke.Render(GetCamera());
+}
+
+void TerrainScene::OnImGuiRender()
+{
+}
+
+void TerrainScene::OnGlobalSmokeUI(bool visible)
+{
+    m_smoke.DrawUI(visible);
 }
 
 void TerrainScene::OnTerrainTabUI()

@@ -3,6 +3,7 @@
 #include "smokeviz/BoxOutline.h"
 #include "smokeviz/ObstacleObject.h"
 #include "smokeviz/SmokeUI.h"
+#include "smokeviz/SmokeSystem.h"
 #include "smokeviz/Texture3D.h"
 #include "smokeviz/VolumeRaymarchPass.h"
 
@@ -46,9 +47,10 @@ public:
     void OnUpdate(float deltaTime, IInputProvider& input) override;
     void OnPostRender() override;
     void OnImGuiRender() override;
+    void OnGlobalSmokeUI(bool visible) override;
 
 private:
-    void PlaceBox(const smoke::GridSize& grid);
+    void PlaceBox(const smoke::GridSize& grid, bool preserveCenter = false);
     void BuildFloor();
     void ReadAutoShotSettings();
     void ApplyObstacle();
@@ -84,6 +86,7 @@ private:
     ObstacleObject                    m_obstacle;
     ObstacleSettings                  m_obstacleSettings;
     bool                              m_obstaclePorous = false;
+    std::string                       m_loadedObstaclePath;
     std::unique_ptr<MaterialInstance> m_obstacleMaterial;
     std::unique_ptr<ShaderProgram>    m_obstacleShader;
     long long                         m_obstacleItem = -1;  // index of its RenderItem, -1 = not added yet
@@ -97,6 +100,7 @@ private:
     std::string m_autoShotFile;
     bool        m_autoShotTaken   = false;
     bool        m_closeAfterShot  = false;
+    SmokeSystem m_extraSmoke;  // extra boxes added from the Smoke menu
 };
 
 } // namespace smokeviz

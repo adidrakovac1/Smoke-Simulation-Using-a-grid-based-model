@@ -1,6 +1,7 @@
 #include "smokeviz/SmokeScene.h"
 
 #include "smokeviz/Screenshot.h"
+#include "smokeviz/SolverSetup.h"
 
 #include "assets/AssetImporter.h"
 #include "core/IInputProvider.h"
@@ -14,6 +15,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
+#include <imgui.h>
 
 #include <algorithm>
 #include <chrono>
@@ -44,22 +46,14 @@ bool SmokeScene::Setup() {
     SetSkyboxVisible(false);
 
     // One box = one solver instance (docs/plan/ARCHITECTURE.md, section 8). Default grid is 64^3.
-    // D19: the multi-threaded CPU backend (bit-identical to the serial one), one thread per physical core.
-    // D20 (Ermin, 2026-11-17: lower CPI even if a step is a little slower): warm-started red-black SOR,
-    // omega = 1.5, K = 6, and threads that sleep instead of spinning. Lowest CPI of all measured variants and a
-    // smaller Poisson residual than the reference (Jacobi K = 40 from p = 0), still faster than D19.
-    // Measured in docs/plan/PERF_LOG.md, P-005. The menu can switch the solver, omega, K and the warm start.
-    smoke::SolverConfig config;
-    config.backend    = smoke::Backend::CpuParallel;
-    config.threads    = 0;
-    config.threadWait = smoke::ThreadWait::Block;
-    config.params.pressureSolver    = smoke::PressureSolver::RedBlackGaussSeidel;
-    config.params.sorOmega          = 1.5f;
-    config.params.jacobiIterations  = 6;
-    config.params.warmStartPressure = true;
-    m_solver = std::make_unique<smoke::SmokeSolver>(config);
+    // D19/D20 settings shared with every SmokeVolume (smokeviz/SolverSetup.h).
+    m_solver = std::make_unique<smoke::SmokeSolver>(VisualizationSolverConfig());
     spdlog::info("[SmokeScene] solver: CpuParallel, {} threads", m_solver->threadCount());
     PlaceBox(m_solver->gridSize());
+    // Extra boxes from the Smoke menu ("Dimovi" window); this scene's own box is "Dim 1".
+    m_extraSmoke.SetNewVolumeDefaults(m_boxMin, {12.0f, 18.0f, 12.0f}, smoke::GridSize{64, 64, 64});
+    m_extraSmoke.SetFirstLabel(2);
+    m_extraSmoke.SetLight(-m_lightDirection, m_lightColor);
 
     if (!m_volumePass.Init(ShaderDir())) {
         spdlog::error("[SmokeScene] volume_raymarch shader failed to load");
@@ -113,12 +107,14 @@ bool SmokeScene::Setup() {
     return true;
 }
 
-void SmokeScene::PlaceBox(const smoke::GridSize& grid) {
+void SmokeScene::PlaceBox(const smoke::GridSize& grid, bool preserveCenter) {
+    const glm::vec3 oldCenter = m_boxMin + 0.5f * m_boxSize;
     // Cells are cubes, so the box has the same proportions as the grid; it stands on the floor, centred in x and z.
     const float longest = static_cast<float>(std::max({grid.nx, grid.ny, grid.nz}));
     m_boxSize = kBoxLongestSide * glm::vec3(static_cast<float>(grid.nx), static_cast<float>(grid.ny),
                                             static_cast<float>(grid.nz)) / longest;
-    m_boxMin  = glm::vec3(-0.5f * m_boxSize.x, 0.0f, -0.5f * m_boxSize.z);
+    m_boxMin = preserveCenter ? oldCenter - 0.5f * m_boxSize
+                              : glm::vec3(-0.5f * m_boxSize.x, 0.0f, -0.5f * m_boxSize.z);
 }
 
 void SmokeScene::BuildFloor() {
@@ -199,10 +195,13 @@ void SmokeScene::ReadAutoShotSettings() {
 
 void SmokeScene::ApplyObstacle() {
     std::string error;
-    if (!m_obstacle.Load(m_obstacleSettings.path, &error)) {
+    if (m_loadedObstaclePath != m_obstacleSettings.path || !m_obstacle.RenderMesh()) {
+      if (!m_obstacle.Load(m_obstacleSettings.path, &error)) {
         m_state.obstacleMessage = "Greska: " + error;
         spdlog::warn("[SmokeScene] obstacle: {}", error);
         return;
+      }
+      m_loadedObstaclePath = m_obstacleSettings.path;
     }
     // One transform for both sides: world-space triangles for drawing, box-space triangles for the solver.
     m_obstacle.Place(m_obstacleSettings, m_boxMin, m_boxSize);
@@ -303,10 +302,11 @@ void SmokeScene::OnUpdate(float deltaTime, IInputProvider& input) {
     // One simulation step per frame with the solver's own dt (not the frame time), so the result is the same
     // on a slow and on a fast frame (decision D17; determinism rule in ARCHITECTURE.md, section 5).
     const bool autoShotPending = m_autoShotSteps > 0 && !m_autoShotTaken;
-    if (!m_state.paused && !(autoShotPending && m_solver->stepCount() >= m_autoShotSteps)) {
+    if (m_state.enabled && !m_state.paused && !(autoShotPending && m_solver->stepCount() >= m_autoShotSteps)) {
         m_solver->step();
         m_densityDirty = true;
     }
+    m_extraSmoke.Update();
     if (autoShotPending && m_solver->stepCount() >= m_autoShotSteps && m_screenshotCountdown == 0) {
         m_autoShotTaken       = true;
         m_closeAfterShot      = true;
@@ -317,26 +317,38 @@ void SmokeScene::OnUpdate(float deltaTime, IInputProvider& input) {
 
 void SmokeScene::OnPostRender() {
     // Called by Application after the opaque objects are in the HDR framebuffer and before tone mapping.
-    if (m_densityDirty) {
-        const auto start = std::chrono::steady_clock::now();
-        m_densityTexture.Upload(m_solver->density());
-        m_state.uploadMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
-        m_densityDirty   = false;
-    }
-
+    // The extra boxes are drawn even when this scene's own box is switched off.
     const Camera& camera = GetCamera();
-    if (m_state.showOutline) m_outline.Draw(camera, m_boxMin, m_boxSize, {0.55f, 0.62f, 0.70f});
-    m_volumePass.Draw(camera, m_densityTexture, m_boxMin, m_boxSize, m_view, -m_lightDirection, m_lightColor);
-    DrawPorousObstacle();
+    if (m_state.enabled) {
+        if (m_densityDirty) {
+            const auto start = std::chrono::steady_clock::now();
+            m_densityTexture.Upload(m_solver->density());
+            m_state.uploadMs =
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+            m_densityDirty = false;
+        }
+        if (m_state.showOutline) m_outline.Draw(camera, m_boxMin, m_boxSize, {0.55f, 0.62f, 0.70f});
+        m_volumePass.Draw(camera, m_densityTexture, m_boxMin, m_boxSize, m_view, -m_lightDirection, m_lightColor);
+        DrawPorousObstacle();
+    }
+    m_extraSmoke.Render(camera);
 }
 
 void SmokeScene::OnImGuiRender() {
-    const SmokeUiActions actions = m_ui.Draw(*m_solver, m_view, m_state, m_obstacleSettings);
+}
+
+void SmokeScene::OnGlobalSmokeUI(bool visible) {
+    if (!visible) return;
+    m_extraSmoke.DrawUI(visible);
+    const SmokeUiActions actions = m_ui.Draw(*m_solver, m_view, m_state, m_obstacleSettings,
+                                             true, "Dim (simulacija)", &m_boxMin, &m_boxSize);
 
     if (actions.applyGrid) {
         // resize() reallocates all fields and restarts the simulation; the texture follows on the next upload.
         m_solver->resize(smoke::GridSize{actions.newGrid, actions.newGrid, actions.newGrid});
-        PlaceBox(m_solver->gridSize());
+        PlaceBox(m_solver->gridSize(), true);
+        m_cameraAnchor = m_boxMin + 0.5f * m_boxSize;
+        GetCamera().SetOrbitTarget(m_cameraAnchor);
         m_densityDirty = true;
         // resize() dropped the obstacles with the old grid: voxelize the same object for the new one.
         if (m_state.obstacleActive) ApplyObstacle();
@@ -358,6 +370,14 @@ void SmokeScene::OnImGuiRender() {
         m_screenshotPath      = "smoke_screenshot_" + std::to_string(m_screenshotIndex++) + ".png";
         m_screenshotCountdown = 2;
     }
+    if (actions.boxTransformChanged) {
+        m_cameraAnchor = m_boxMin + 0.5f * m_boxSize;
+        GetCamera().SetOrbitTarget(m_cameraAnchor);
+        if (m_state.obstacleActive)
+            m_obstacle.Place(m_obstacleSettings, m_boxMin, m_boxSize);
+    }
+    if (actions.boxTransformCommitted && m_state.obstacleActive)
+        ApplyObstacle();
 }
 
 } // namespace smokeviz
