@@ -128,7 +128,7 @@ Zadnja scena u listi ("Smoke: house"). Panel se otvara dugmetom **Smoke** u gorn
   rotacija, skala i tip prepreke (puni, ljuska, porozni) su u dijelu "Odabrano".
 - **Izvori:** kartica Izvori, 1 do 8; svaki ima poziciju, radijus i jačinu, i može se isključiti. Prvi se ne uklanja.
 - **Ventilatori:** kartica Ventilatori, 0 do 8; pozicija, smjer (lijevo-desno, nagib), radijus i domet cilindra,
-  jačina u m/s², "Kućište je prepreka". Prozirni plavi cilindar pokazuje gdje ventilator gura zrak.
+  brzina zraka (m/s) i odziv, "Kućište je prepreka". Prozirni plavi cilindar pokazuje gdje ventilator gura zrak.
 - **Rezolucija:** ćelija 0.10, 0.075 (zadano) ili 0.06 m, dugme "Primijeni".
 - Kuća ima prozore sa staklom (zatvoreni: zidovi kutije solvera su na mjestu stakla, pa dim ostaje unutra),
   drveni pod, travu oko kuće i plavo nebo.

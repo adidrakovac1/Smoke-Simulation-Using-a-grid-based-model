@@ -140,22 +140,31 @@ saberu. Zadano nema dodatnih izvora, pa je rezultat bit po bit isti kao prije (`
 Navier-Stokesova jednačina ima član vanjske sile `f`; [Stam03] ga dodaje kao `u ← u + dt · f` (`add_source`
 na brzini), [Fedkiw01] isto (odjeljak 4). Uzgon je jedna takva sila; ventilator je druga. Oblik polja sile
 ventilatora rad ne daje, pa je ovo **naš model**: cilindar ispred ventilatora, centar lica `c`, jedinična osa
-`n`, poluprečnik `R`, domet `L`, jačina `s` (ćelija/s²). Za centar ćelije `p`:
+`n`, poluprečnik `R`, domet `L`, ciljna brzina `V` (ćelija/s) i odziv `k` (1/s). Za centar ćelije `p`:
 
 ```
 a  = (p − c) · n                (udaljenost duž ose)
 r² = |p − c|² − a²              (kvadrat udaljenosti od ose)
-ako je 0 ≤ a ≤ L i r² ≤ R²:   u ← u + dt · s · (1 − a / L) · n
+ako je 0 ≤ a ≤ L i r² ≤ R²:   cilj = V · (1 − a / L),   un = u · n
+                              ako je un < cilj:   u ← u + min(1, dt · k) · (cilj − un) · n
 ```
 
-- Sila slabi linearno od lica do kraja dometa, pa na kraju cilindra nema skoka. Iza ventilatora (`a < 0`)
-  nema sile.
+- To je i dalje `u ← u + dt · f`, sa silom `f = k · (cilj − un) · n`: pravi ventilator tjera zrak na određenu
+  brzinu (kućni ventilator nekoliko m/s), a ne ubrzava ga bez granice, i ne koči zrak koji je već brži.
+- **Prva verzija** (2026-11-21, isti dan) je bila stalno ubrzanje `u ← u + dt · s · (1 − a/L) · n` sa
+  `s = 2 m/s²`. U kući je uzgon bio jači, pa se dim skoro samo penjao; Ermin je tražio da dim "stvarno ide u
+  pravcu u kojem ga ventilator puše". S ciljnom brzinom (3 m/s, odziv 4/s) dim vidljivo ide duž ose i kroz
+  otvor u susjednu sobu (snimak odozgo poslije 10 s).
+- Ciljna brzina slabi linearno od lica do kraja dometa, pa na kraju cilindra nema skoka. Iza ventilatora
+  (`a < 0`) nema sile.
 - Djeluje u koraku 2 (sile), odmah poslije uzgona; projekcija u koraku 4 zatim pravi polje bez divergencije,
   pa zrak koji ventilator gura obilazi namještaj i vraća se kroz ostatak kuće.
 - Do 8 ventilatora (`SmokeParams::fans`, `fanCount`); zadano nijedan, pa je referenca nepromijenjena.
-- Pozicija, `R` i `L` su relativni kao kod izvora; scena kuće ih računa iz metara, a jačinu iz m/s²
-  dijeljenjem s veličinom ćelije `h` (D4: solver radi u jedinicama ćelije).
-- Zadana jačina u sceni kuće (2 m/s²) je izabrana vizuelno, kao uzgon u M2; panel je mijenja (0 do 20).
+- Pozicija, `R` i `L` su relativni kao kod izvora; scena kuće ih računa iz metara, a brzinu iz m/s dijeljenjem
+  s veličinom ćelije `h` (D4: solver radi u jedinicama ćelije).
+- Zadano u sceni kuće: 3 m/s i odziv 4/s, izabrano vizuelno (kao uzgon u M2); panel mijenja brzinu (0 do 8 m/s)
+  i odziv (0.5 do 20 /s). CFL: 3 m/s na ćeliji 0.075 m je 40 ćelija/s, uz `dt = 1/30` s to je 1.3 ćelije po
+  koraku, što semi-Lagrangeova advekcija podnosi (odjeljak 4).
 
 ### Zadane vrijednosti scene kuće (D22, izabrano vizuelno 2026-11-21, poslije Erminove probe)
 Prva verzija je koristila parametre podešene na 64³ (odjeljak 3 gore). U kući od 160 ćelija dim se tada širio
@@ -166,13 +175,18 @@ presporo i bio je slabo vidljiv ispred svijetlih zidova. Zato scena kuće (samo 
 | `buoyancyBeta` | 2.0 | 6.0 | brži uspon; solver radi u ćelijama (D4), a kuća ima 40 ćelija visine i 160 dužine |
 | `dt` | 1/60 s | 1/30 s | i dalje jedan korak po frejmu (D17), ali dvostruko više simuliranog vremena po frejmu |
 | jačina izvora (gustina/s) | 10 | 25 | gušći dim |
-| apsorpcija prikaza | 6 | 12 | gušći izgled (samo prikaz) |
-| boja dima | svijetlosiva | tamnosiva | kontrast prema zidovima (samo prikaz) |
+| apsorpcija prikaza | 6 | 10 | gušći izgled (samo prikaz) |
+| boja dima, ambijent, svjetlo, sjena | 0.85, 0.12, 0.75, 1.0 | 0.80, 0.30, 1.0, 1.6 | osvijetljen vrh i tamnije jezgro: dim ima strukturu i vidi se ispred svijetlih i obojenih zidova (samo prikaz) |
+| koraka zrake / prema svjetlu | 96 / 6 | 192 / 8 | kuća je 12 m duga; 96 koraka bi uzorkovalo svakih ~12 cm, grublje od ćelije 7.5 cm (samo prikaz) |
+
+Prva verzija (isti dan) je imala tamnosiv dim (0.30) i apsorpciju 12; Ermin je tražio da boje dima budu bolje
+vidljive. Kartica Prikaz ima i brze izglede "Svijetli dim", "Tamni dim" i "Bijela para".
 
 Snimak poslije 15 s pokazuje dim koji se digne do plafona i širi se ispod njega kao topli sloj. Sve se mijenja u
 panelu (kartice Simulacija, Izvori i Prikaz). Referenca solvera (`SmokeParams{}`) se ne mijenja.
-- Testovi: `test_forces.cpp` (sila samo u cilindru, slabljenje duž ose, kosi smjer), `test_parallel_solver.cpp`
-  (s ventilatorima i izvorima `CpuParallel` = `Serial` = referentni korak po fazama).
+- Testovi: `test_forces.cpp` (sila samo u cilindru, slabljenje duž ose, kosi smjer, cilj se dostigne i ne
+  prebaci, brži zrak se ne koči), `test_parallel_solver.cpp` (s ventilatorima i izvorima `CpuParallel` =
+  `Serial` = referentni korak po fazama).
 
 ---
 
