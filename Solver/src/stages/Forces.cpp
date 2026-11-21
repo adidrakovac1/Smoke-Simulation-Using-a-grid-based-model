@@ -51,6 +51,11 @@ void vorticitySlabAvx2(float* u, float* v, float* w, float* ox, float* oy, float
                        int k0, int k1, std::ptrdiff_t sJ, std::ptrdiff_t sK);
 void confinementSlabAvx2(float* u, float* v, float* w, float* ox, float* oy, float* oz, float* mag, int nx, int ny,
                          int k0, int k1, float epsilonDt, std::ptrdiff_t sJ, std::ptrdiff_t sK);
+void vorticityMagnitudeSlabAvx2(float* mag, const float* u, const float* v, const float* w, int nx, int ny, int k0,
+                                int k1, std::ptrdiff_t sJ, std::ptrdiff_t sK);
+void confinementOutSlabAvx2(float* uOut, float* vOut, float* wOut, const float* u, const float* v, const float* w,
+                            const float* mag, int nx, int ny, int k0, int k1, float epsilonDt, std::ptrdiff_t sJ,
+                            std::ptrdiff_t sK);
 #endif
 
 // Vorticity confinement (Fedkiw et al. 2001, eq. 9-11; docs/plan/MATH.md, section 3):
@@ -88,6 +93,43 @@ bool applyVorticityConfinement(SmokeState& s, float epsilon, float dt, SlabRange
     confinementSlab(f, g.nx, g.ny, range.k0, range.k1, epsilonDt, sJ, sK);
     setVelocityBoundary(s);
     return true;
+}
+
+// D19: the two passes of applyVorticityConfinement as separate slab calls, for the parallel step, with fewer
+// bytes through memory (ForcesRows.inc, vorticityMagnitudeRow / confinementOutRow). Pass 1 of a slab reads
+// u, v, w of the neighbouring planes (other slabs) and writes only |w| of its own planes; pass 2 reads u, v, w
+// and |w| of the neighbouring planes and writes the new velocity of its own planes into s.u0, s.v0, s.w0 (u, v,
+// w stay unchanged). So every slab can run in parallel as long as all of pass 1 (and the ghost layer of |w|)
+// is finished before pass 2 starts. The vorticity components themselves are no longer stored.
+// Same arithmetic and the same KernelIsa::Auto choice as applyVorticityConfinement: bit-identical.
+void vorticityPassSlab(SmokeState& s, SlabRange range) {
+    const GridSize g = s.u.size();
+    const std::ptrdiff_t sJ = s.u.strideJ(), sK = s.u.strideK();
+    assert(s.vorticityMagnitude.strideK() == sK);
+#if defined(SMOKE_HAS_AVX2_BINARY)
+    if (avx2Supported()) {
+        vorticityMagnitudeSlabAvx2(s.vorticityMagnitude.data(), s.u.data(), s.v.data(), s.w.data(), g.nx, g.ny,
+                                   range.k0, range.k1, sJ, sK);
+        return;
+    }
+#endif
+    vorticityMagnitudeSlab(s.vorticityMagnitude.data(), s.u.data(), s.v.data(), s.w.data(), g.nx, g.ny, range.k0,
+                           range.k1, sJ, sK);
+}
+
+void confinementPassSlab(SmokeState& s, float epsilonDt, SlabRange range) {
+    const GridSize g = s.u.size();
+    const std::ptrdiff_t sJ = s.u.strideJ(), sK = s.u.strideK();
+    assert(s.u0.strideK() == sK && s.v0.strideK() == sK && s.w0.strideK() == sK);
+#if defined(SMOKE_HAS_AVX2_BINARY)
+    if (avx2Supported()) {
+        confinementOutSlabAvx2(s.u0.data(), s.v0.data(), s.w0.data(), s.u.data(), s.v.data(), s.w.data(),
+                               s.vorticityMagnitude.data(), g.nx, g.ny, range.k0, range.k1, epsilonDt, sJ, sK);
+        return;
+    }
+#endif
+    confinementOutSlab(s.u0.data(), s.v0.data(), s.w0.data(), s.u.data(), s.v.data(), s.w.data(),
+                       s.vorticityMagnitude.data(), g.nx, g.ny, range.k0, range.k1, epsilonDt, sJ, sK);
 }
 
 } // namespace smoke::serial

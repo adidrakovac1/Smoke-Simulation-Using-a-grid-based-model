@@ -267,6 +267,16 @@ sad paraleliziramo, nego da ne ugrađujemo prepreke:
    **Izuzetak D18 (2026-11-15):** eksperimentalni `std::thread` backend dijeli samo navedena jezgra po `SlabRange`;
    `setBoundary`, izvori i obrada rijetkih listi prepreka ostaju serijski. Rubni uslovi uzgona pozivaju se tek nakon
    što svi radnici završe jezgro. Backend se bira izričito; `Serial` ostaje zadani.
+   **D19 (2026-11-17), zamjenjuje opis D18:** `SmokeSolver::step` pokreće cijeli korak u jednom `parallelRun`
+   (`runStep` u `SmokeSolver.cpp`); serijski backend je isti kod s timom od jedne niti. Faze dijele `k` po nitima
+   (`ThreadPool::slabOf`), a `serial::Team::sync()` (spin barijera, `ThreadPool.h`) stoji tamo gdje drugo jezgro čita
+   slojeve drugih niti. `setBoundarySlab` (Boundary.cpp) popunjava ghost ćelije samo za planove jednog sloja, pa ih
+   svaka nit radi za sebe. Petlje po listama prepreka ostaju na niti 0 između dvije barijere, istim redoslijedom.
+   Jacobi ide kroz `jacobiWavefront` (JacobiWavefront.cpp): vremensko blokiranje, podjela po redovima `j`.
+   Spojena jezgra: `vorticityPassSlab` / `confinementPassSlab` (Forces.cpp, nova brzina u `u0`, `v0`, `w0`) i
+   `correctVelocityAndAdvectScalars` (Advection.cpp: gradijent pritiska + advekcija skalara). Stare funkcije faza
+   (`project`, `applyVorticityConfinement`, ...) ostaju nepromijenjene: koriste ih testovi, `smoke_lab`, `smoke_prof
+   --version m4` i `smoke_bench --convergence`, a test poredi novi korak sa starim bit po bit.
 2. **Dvostruko baferovanje.** Advekcija i Jacobi čitaju iz starog polja, a pišu u novo. Tako
    nema trke podataka (jedan od ciljeva projekta). Zamjena polja je zamjena pokazivača.
 3. **Bez skrivenog stanja.** Nema `static` pomoćnih nizova unutar funkcija, nema globalnih

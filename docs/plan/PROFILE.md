@@ -6,7 +6,8 @@ Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 i P1.
 
 Stanje (2026-11-12): dodan profil s preprekama (odjeljak 6). Stanje (2026-11-11): P0 i P1 su urađeni, prvo s **vremenskim uzorkovanjem (TBP)**, a poslije isključenja WSL2 i
 s **hardverskim brojačima (EBP)**. IBS nije dostupan (odjeljak 3.3). Odgovori na hipoteze su u odjeljku 4.3;
-H2 ostaje otvorena. HTML izvještaj sa svim sesijama: `perf/uprof/report.html`.
+H2 ostaje otvorena. HTML izvještaji: `perf/uprof/report_v1.html` (sesije do 2026-11-15, ranije `report.html`) i
+`perf/uprof/report_v2.html` (sve sesije, s verzijama D19 i D20 od 2026-11-17; odjeljak 3.4).
 
 ---
 
@@ -201,6 +202,12 @@ perf/uprof/collect.sh ebp assess_ext      # isto, s hardverskim brojačima
 perf/uprof/collect.sh inst inst_access 10 # keš instrukcija i ITLB (frontend), po 10 s
 python tools/uprof_report.py perf/uprof/2026-11-11_tbp perf/uprof/2026-11-11_ebp perf/uprof/2026-11-11_inst     perf/uprof/2026-11-12_obs_none_tbp perf/uprof/2026-11-12_obs_none_ebp     perf/uprof/2026-11-12_obs_sphere_tbp perf/uprof/2026-11-12_obs_sphere_ebp     perf/uprof/2026-11-12_obs_blanket_tbp perf/uprof/2026-11-12_obs_blanket_ebp -o perf/uprof/report.html
 python tools/uprof_report.py perf/uprof/2026-11-11_ebp --summary    # tekst: faze, brojači i instrukcije po funkciji
+
+# report_v2.html (2026-11-17): sve sesije, i Release sesije D19/D20 (imena funkcija iz tabele simbola .exe preko nm)
+python tools/uprof_report.py $(ls -d perf/uprof/2026-*) -o perf/uprof/report_v2.html
+# D19/D20 sesije: Release smoke_prof, verzija d19 s opcijama (odjeljak 3.4, PERF_LOG.md P-004/P-005)
+PROF=Solver/build/smoke_prof.exe STAGES=all VERSION=d19 THREADS=6 EXTRA="--warm --iters 6 --solver rbgs --omega 1.5 --block" \
+  perf/uprof/collect.sh d20cpi_rb15w6_block_ebp assess_ext 15
 
 # verzije (odjeljak 7): isti posao, tri verzije koda; oznaka foldera mora biti ver_<verzija>_tbp / _ebp
 for v in m3 m3auto m4; do

@@ -50,6 +50,43 @@ SMOKE_NOINLINE void advectRow3(float* SMOKE_RESTRICT d0, float* SMOKE_RESTRICT d
     }
 }
 
+// D19 (kernel fusion): the end of the projection and the advection of the scalars in one pass. advectRow2
+// reads the velocity only at its OWN cell, so the pressure-gradient correction of that cell
+//     u -= 0.5 * (p(i+1) - p(i-1))   (and v in j, w in k; gradientRow in Projection.cpp)
+// can be done right here: the corrected value is stored back into u, v, w and used for the back-trace. The
+// velocity is read from memory once instead of twice. Same expressions in the same order as gradientRow and
+// advectRow2, so u, v, w, d0 and d1 are bit-identical to running the two passes one after the other.
+SMOKE_NOINLINE void correctAdvectRow2(float* SMOKE_RESTRICT d0, float* SMOKE_RESTRICT d1, float* SMOKE_RESTRICT u,
+                                      float* SMOKE_RESTRICT v, float* SMOKE_RESTRICT w,
+                                      const float* SMOKE_RESTRICT p, const float* SMOKE_RESTRICT s0,
+                                      const float* SMOKE_RESTRICT s1, const smoke::GridSize s, float fj, float fk,
+                                      float dt, std::ptrdiff_t sJ, std::ptrdiff_t sK) {
+    for (int i = 1; i <= s.nx; ++i) {
+        const float uc = u[i] - 0.5f * (p[i + 1] - p[i - 1]);
+        const float vc = v[i] - 0.5f * (p[i + sJ] - p[i - sJ]);
+        const float wc = w[i] - 0.5f * (p[i + sK] - p[i - sK]);
+        u[i] = uc;
+        v[i] = vc;
+        w[i] = wc;
+        const float x = clampToBox(static_cast<float>(i) - dt * uc, s.nx);
+        const float y = clampToBox(fj - dt * vc, s.ny);
+        const float z = clampToBox(fk - dt * wc, s.nz);
+        d0[i] = sampleTrilinear(s0, sJ, sK, x, y, z);
+        d1[i] = sampleTrilinear(s1, sJ, sK, x, y, z);
+    }
+}
+
+void correctAdvectSlab2(float* d0, float* d1, float* u, float* v, float* w, const float* p, const float* s0,
+                        const float* s1, const smoke::GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ,
+                        std::ptrdiff_t sK) {
+    for (int k = k0; k < k1; ++k)
+        for (int j = 1; j <= s.ny; ++j) {
+            const std::ptrdiff_t row = j * sJ + k * sK;
+            correctAdvectRow2(d0 + row, d1 + row, u + row, v + row, w + row, p + row, s0, s1, s,
+                              static_cast<float>(j), static_cast<float>(k), dt, sJ, sK);
+        }
+}
+
 // `count` (1, 2 or 3) fields src[f] -> dst[f], all carried by (u, v, w).
 void advectSlab(float* const* dst, const float* const* src, int count, const float* u, const float* v,
                 const float* w, const smoke::GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ,

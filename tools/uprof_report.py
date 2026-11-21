@@ -30,14 +30,19 @@ from pathlib import Path
 
 # Which step phase a function belongs to (names from Solver/src/stages). First match wins.
 PHASES = [
+    # D19/D20: threads of the team waiting at a barrier or for the next step (ThreadPool.h, SmokeSolver.cpp) and the
+    # C++20 atomic wait of libstdc++ (ThreadWait::Block). Listed first: these are not work of any phase.
+    ("Čekanje niti", r"poolBarrier|SpinBarrier|arrive_and_wait|workerLoop|__waiter|__platform_wait|atomic_wait"
+                     r"|WaitOnAddress"),
     # Obstacle loops over the sparse lists (Solver/src/stages/Obstacles.cpp). Listed first: "enforceSolidVelocity"
     # and friends must not fall into another phase by a partial name match.
     ("Prepreke", r"extendIntoSolids|setInSolids|reflectVelocityIntoSolids|enforceSolidVelocity|clearSolidScalars"
                  r"|applyPorousDrag|applyPorousFilter"),
+    ("Red-black", r"redBlack"),  # D20: red-black Gauss-Seidel / SOR (Solver/src/stages/RedBlack.cpp)
     ("Jacobi", r"jacobi"),
     ("Projekcija (ostalo)", r"computeDivergence|subtractPressureGradient|divergenceRow|gradientRow|\bproject\b"),
     # sampleTrilinear / clampToBox: helpers of the M3 advection (Solver/demo/M3Solver.inc), if not inlined.
-    ("Advekcija", r"advect|sampleTrilinear|clampToBox"),
+    ("Advekcija", r"[Aa]dvect|sampleTrilinear|clampToBox"),  # A: correctAdvectRow2 (D19)
     # [Vv] / [Cc]: the M3 step calls it applyVorticityConfinement, the optimized solver vorticityRow / confinementRow.
     ("Sile", r"[Vv]orticity|[Cc]onfinement|Buoyancy|applyForces"),
     ("Rubni uslovi", r"setBoundary|setVelocityBoundary"),
@@ -212,7 +217,7 @@ def parse_detail(path):
             current = None
             continue
         if row[0]:
-            full = re.sub(r"\s*\(Showing only disassembly\)\s*$", "", row[0])
+            full = re.sub(r"\s*\((Showing only disassembly|DEBUG INFO NOT FOUND)\)\s*$", "", row[0])
             current = result.setdefault(full, [])
         elif current is not None and len(row) >= 5:
             share = number(row[4])
@@ -228,12 +233,10 @@ def parse_workload(path):
     if path.exists():
         for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
             if line.startswith("smoke_prof"):
-                obstacle = re.search(r"prepreka=(\w+)", line)
-                if obstacle:
-                    workload["prepreka"] = obstacle.group(1)
-                version = re.search(r"verzija=(\w+)", line)
-                if version:
-                    workload["verzija"] = version.group(1)
+                # All key=value fields of the first line: faza, mreza, K, prepreka, verzija and, since D19/D20,
+                # niti, rjesavac, omega, topli_start, cekanje.
+                for key, value in re.findall(r"(\w+)=(\S+)", line):
+                    workload[key] = value
             elif ":" in line:
                 key, value = line.split(":", 1)
                 workload[key.strip()] = value.strip()
@@ -262,9 +265,156 @@ def class_index(name):
     return CLASS_NAMES.index(name)
 
 
+_SYMBOLS = {}
+
+
+def load_symbols(exe):
+    """Function start addresses of `exe` from its symbol table (nm -C), sorted; [] when nm or the file is missing.
+
+    Sessions of a Release build (no -g) list only "smoke_prof.exe!0x1400082ec": uProf finds no debug info. The
+    MinGW executable still has a symbol table, so the address can be mapped to the function that contains it.
+    """
+    if exe in _SYMBOLS:
+        return _SYMBOLS[exe]
+    import shutil
+    import subprocess
+    result = []
+    nm = shutil.which("nm") or next((p for p in ("C:/msys64/ucrt64/bin/nm.exe",) if Path(p).exists()), None)
+    if nm and Path(exe).exists():
+        out = subprocess.run([nm, "-C", "--defined-only", exe], capture_output=True, text=True, errors="replace").stdout
+        for line in out.splitlines():
+            match = re.match(r"^([0-9a-fA-F]+)\s+[tTwW]\s+(.+)$", line)
+            if match:
+                result.append((int(match.group(1), 16), match.group(2)))
+        result.sort()
+    _SYMBOLS[exe] = result
+    return result
+
+
+def resolve_name(full, exe, symbols):
+    """'smoke_prof.exe!0x140019d2e' -> the containing function's name, if `full` is an address in `exe`."""
+    import bisect
+    match = re.match(r"^(.+?)!0x([0-9a-fA-F]+)$", full)
+    if not match:
+        return full
+    if not symbols or Path(match.group(1)).name.lower() != Path(exe).name.lower():
+        # An address in a DLL without symbols (ucrtbase.dll, ntdll.dll): one row per module.
+        return f"{match.group(1)} (bez simbola)"
+    address = int(match.group(2), 16)
+    position = bisect.bisect_right(symbols, (address, "\uffff")) - 1
+    return symbols[position][1] if position >= 0 else full
+
+
+def merge_values(metrics, rows):
+    """Metric values of several rows of one function together: counts add up, ratios are weighted by their own
+    denominator (the same rules as agg() in the page)."""
+    at = {name: i for i, name in enumerate(metrics)}
+    col = lambda row, name: (row["values"][at[name]] or 0.0) if name in at else 0.0
+    inst = lambda row: col(row, "RETIRED_INST")
+    cycles = lambda row: col(row, "CYCLES_NOT_IN_HALT")
+    merged = []
+    for name in metrics:
+        if name.startswith("CPU_TIME") or name in ("CYCLES_NOT_IN_HALT", "RETIRED_INST"):
+            merged.append(sum(col(row, name) for row in rows))
+            continue
+        if name == "CPI":
+            total = sum(inst(row) for row in rows)
+            merged.append(sum(cycles(row) for row in rows) / total if total else None)
+            continue
+        if name == "%RETIRED_BR_INST_MISP":
+            weight = lambda row: col(row, "RETIRED_BR_INST (PTI)") * inst(row)
+        elif name == "%L1_DC_MISSES":
+            weight = lambda row: col(row, "L1_DC_ACCESSES (PTI)") * inst(row)
+        elif name.endswith("(PTC)"):
+            weight = cycles
+        else:
+            weight = inst
+        total = sum(weight(row) for row in rows)
+        merged.append(sum(col(row, name) * weight(row) for row in rows) / total if total else None)
+    return merged
+
+
+def apply_symbols(info, metrics, functions, detail):
+    """Renames address-only rows to their functions and joins the rows (and instructions) of one function."""
+    exe = info.get("Target Path", "")
+    symbols = load_symbols(exe) if exe else []
+    if not symbols or not any(re.search(r"!0x[0-9a-fA-F]+$", f["full"]) for f in functions):
+        return functions, detail
+    groups, order = {}, []
+    for function in functions:
+        full = resolve_name(function["full"], exe, symbols)
+        if full not in groups:
+            groups[full] = []
+            order.append(full)
+        groups[full].append(function)
+    merged = []
+    for full in order:
+        rows = groups[full]
+        values = rows[0]["values"] if len(rows) == 1 else merge_values(metrics, rows)
+        merged.append({"full": full, "name": short_name(full), "phase": phase_of(full), "module": rows[0]["module"],
+                       "values": values})
+    merged.sort(key=lambda f: -(f["values"][0] or 0.0))  # the table is sorted by the first column, as uProf's
+    renamed = {}
+    for key, instructions in detail.items():
+        renamed.setdefault(resolve_name(key, exe, symbols), []).extend(instructions)
+    return merged, renamed
+
+
+# The final optimized version: the configuration the visualization uses (Integration/src/SmokeScene.cpp, D20).
+FINAL_VERSION = "d20_rb15_k6_warm_block_t6"
+# The version before it in the report's CPI card: the same 6 sleeping threads with the reference solver
+# (Jacobi K = 40 from p = 0); CPI 0.69 at 64^3 (PERF_LOG.md, P-005).
+PREVIOUS_VERSION = "d20_jac_k40_block_t6"
+
+
+# D19/D20 versions, from the smoke_prof line (smoke_prof --version d19 [--niti T] [--solver ...]).
+def version_id(workload, info):
+    version = workload.get("verzija", "m4")  # sessions made before --version existed ran the solver now called m4
+    if version == "d19":
+        threads = workload.get("niti", "1")
+        solver, iters = workload.get("rjesavac", "jacobi"), workload.get("K", "40")
+        warm, wait = workload.get("topli_start", "0") == "1", workload.get("cekanje", "spin")
+        if solver == "jacobi" and iters == "40" and not warm and wait == "spin":
+            return f"d19_t{threads}"
+        kind = "rb" + workload.get("omega", "1").replace(".", "") if solver == "rbgs" else "jac"
+        return f"d20_{kind}_k{iters}{'_warm' if warm else ''}_{wait}_t{threads}"
+    # The same code built as Release (no -g) on 2026-11-17 is kept apart from the profile build of 2026-11-15.
+    if "build-prof" not in info.get("Target Path", "").replace("\\", "/"):
+        return version + "_rel"
+    return version
+
+
+def version_label(vid):
+    """(short, long) names of a version id for the page."""
+    fixed = {"m3": ("Naivna", "Naivna verzija (M3 kod, bez vektorizacije)"),
+             "m3auto": ("Auto-vektorizirana", "M3 kod + automatska vektorizacija kompajlera"),
+             "m4": ("Serijska M4", "Serijska optimizirana verzija (M4), profilna gradnja"),
+             "m4_rel": ("Serijska M4 (Release)", "Serijska optimizirana verzija (M4), Release gradnja")}
+    if vid in fixed:
+        return fixed[vid]
+    if vid == FINAL_VERSION:
+        return ("Finalna optimizirana", "Finalna optimizirana verzija (D20: red-black SOR ω = 1.5, K = 6, topli start, "
+                                        "6 niti koje spavaju; ista kao u vizualizaciji)")
+    threads = re.search(r"_t(\d+)$", vid)
+    t = int(threads.group(1)) if threads else 1
+    niti = "1 nit" if t == 1 else f"{t} niti"
+    if vid.startswith("d19_"):
+        return (f"D19, {niti}", f"D19: tim niti, wavefront Jacobi, fuzija (bit po bit isto), {niti}")
+    match = re.match(r"d20_(rb(\d+)|jac)_k(\d+)(_warm)?_(spin|block)_t\d+$", vid)
+    if not match:
+        return (vid, vid)
+    omega = match.group(2)
+    solver = f"red-black ω={omega[0]}.{omega[1:] or '0'}" if match.group(1).startswith("rb") else "Jacobi"
+    warm = ", topli start" if match.group(4) else ""
+    wait = "niti spavaju" if match.group(5) == "block" else "niti vrte"
+    short = f"D20 {solver.split(' ')[0]} K={match.group(3)}{' topli' if warm else ''}, {'spava' if match.group(5) == 'block' else 'vrti'}"
+    return (short, f"D20: {solver}, K = {match.group(3)}{warm}, {wait}, {niti} (rezultat nije bit po bit isti)")
+
+
 def load_session(folder, group):
     info, events, metrics, functions, derived = parse_report(folder / "report.csv")
     detail, detail_metrics = parse_detail(folder / "detail.csv")
+    functions, detail = apply_symbols(info, metrics, functions, detail)
     match = re.match(r"g(\d+)_(\w+)$", folder.name)
     grid, stage = (int(match.group(1)), match.group(2)) if match else (0, folder.name)
     total = sum(f["values"][0] or 0.0 for f in functions) if metrics else 0.0
@@ -288,8 +438,7 @@ def load_session(folder, group):
     workload = parse_workload(folder / "workload.txt")
     return {"id": f"{group}/{folder.name}", "group": group, "kind": kind_of(metrics), "grid": grid, "stage": stage,
             "obstacle": workload.get("prepreka", "none"),
-            # Sessions made before smoke_prof had --version ran the optimized solver, which is now called m4.
-            "version": workload.get("verzija", "m4"),
+            "version": version_id(workload, info),
             "label": f"{grid}^3 {stage} ({group})", "info": info, "events": events, "metrics": metrics,
             "derived": derived, "detailMetrics": detail_metrics,
             "total": total, "functions": functions, "workload": workload}
@@ -311,8 +460,8 @@ def load_all(folders):
 STAGE_ORDER = ["all", "jacobi", "advect", "forces"]
 STAGE_NAMES = {"all": "cijeli korak", "jacobi": "Jacobi", "advect": "advekcija", "forces": "sile"}
 OBSTACLE_NAMES = {"none": "bez prepreke", "sphere": "kugla", "blanket": "deka"}
-# smoke_prof --version. m3 and m3auto are the M3 step (commit 73ceb9e) from Solver/demo, m4 is the current solver.
-VERSION_NAMES = {"m3": "naivna (M3)", "m3auto": "M3 + auto-vektorizacija", "m4": "finalna (M4)"}
+# smoke_prof --version: m3 and m3auto are the M3 step (commit 73ceb9e) from Solver/demo, m4 the serial solver,
+# d19 SmokeSolver::step (names: version_id / version_label above).
 
 
 def build_workloads(sessions):
@@ -335,13 +484,16 @@ def build_workloads(sessions):
         if workload is None:
             stage = STAGE_NAMES.get(session["stage"], session["stage"])
             obstacle = OBSTACLE_NAMES.get(session["obstacle"], session["obstacle"])
-            version = VERSION_NAMES.get(session["version"], session["version"])
-            # Runs named <date>_ver_<version> were collected together to compare the versions: same "vset".
-            vset = re.match(r"(.*)_ver_\w+$", run)
+            version = version_label(session["version"])[0]
+            # Runs named <date>_ver_<version> (and since D19/D20 <date>_d19cmp_... / <date>_d20cpi_...) were
+            # collected together to compare versions: same "vset" (the date).
+            vset = re.match(r"(.*?)_(?:ver|d19cmp|d20cpi)_\w+$", run)
+            label = f"{session['grid']}³ · {stage} · {obstacle} · {version} · {run}"
+            if session["version"] == FINAL_VERSION and session["stage"] == "all" and session["obstacle"] == "none":
+                label = f"{session['grid']}³ · finalna optimizirana verzija"
             workload = {"run": run, "grid": session["grid"], "stage": session["stage"],
                         "obstacle": session["obstacle"], "version": session["version"],
-                        "vset": vset.group(1) if vset else None,
-                        "label": f"{session['grid']}³ · {stage} · {obstacle} · {version} · {run}", "s": {}}
+                        "vset": vset.group(1) if vset else None, "label": label, "s": {}}
             by_key[key] = workload
             workloads.append(workload)
         workload["s"][session["kind"]] = index
@@ -499,7 +651,8 @@ ul { margin:6px 0; padding-left:22px; }
 </header>
 <div id="err"></div>
 <main>
-<p class="muted small">AMD uProf, program <code>smoke_prof</code>, serijska verzija (jedna nit). Generisano: __GENERATED__.
+<p class="muted small">AMD uProf, program <code>smoke_prof</code>: serijske verzije (M3, M4) i, od 2026-11-17, verzije s nitima
+(D19, D20; broj niti je u nazivu verzije). Generisano: __GENERATED__.
 Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i šta se iz ovih podataka <b>ne može</b> dobiti: kartica "O mjerenju".</p>
 
 <div class="tab" id="t-grade">
@@ -520,8 +673,10 @@ Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i 
     <ul class="small">
       <li><b>Nema školskih ocjena ni pragova.</b> Ne znamo izmjerenu granicu između "dobro" i "loše" za ovaj računar, pa je svaka
       ocjena ili izmjeren broj ili odnos prema naivnoj verziji ("2.9 puta brže"). Zelena oznaka znači bolje od naivne, crvena lošije.</li>
-      <li><b>Brzina</b> je iz programa <code>smoke_prof</code> u profilnoj gradnji pod profilerom. Služi za odnos među verzijama snimljenim
-      isti dan. Službeno ubrzanje (obična gradnja, protokol D10) je u <code>docs/plan/PERF_LOG.md</code>, odjeljak 7, i navedeno je gdje postoji.</li>
+      <li><b>Brzina</b> je iz programa <code>smoke_prof</code> pod profilerom (profilna gradnja do 2026-11-15, Release gradnja za
+      sesije od 2026-11-17). Služi za odnos među verzijama snimljenim isti dan. Pod profilerom (Hyper-V) korak traje 1.4 do 2.4 puta duže
+      nego bez njega, a verzije s nitima su pogođene više, pa to <b>nije mjera ubrzanja</b>. Službeno ubrzanje (obična gradnja,
+      protokol D10) je u <code>docs/plan/PERF_LOG.md</code> (odjeljak 7; za D19 i D20 unosi P-004 i P-005).</li>
       <li><b>Instrukcije po koraku</b> nisu izbrojane direktno, pa je odnos dvije verzije procijenjen na dva načina: (1) iz vremena koraka
       i CPI-ja (vrijeme = instrukcije × ciklusa po instrukciji ÷ takt, uz pretpostavku istog takta u obje sesije) i (2) iz broja uzoraka
       brojača instrukcija po koraku (uz pretpostavku da su obje sesije uzorkovane jednako dugo). Ta dva načina se razlikuju do 30 %,
@@ -531,7 +686,11 @@ Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i 
       <li><b>Širina instrukcija</b> (8, do 4 ili 1 broj odjednom) je određena po registrima u ispisu instrukcije (<code>ymm</code>,
       <code>xmm</code>) i po imenu instrukcije, a udio po uzorcima vremena. Uzorak se ponekad pripiše susjednoj instrukciji ("skid"),
       pa su udjeli približni.</li>
-      <li><b>Niti</b>: program je građen bez OpenMP-a i radi na jednoj niti (odluka D8). Broj niti računara je iz CPUID-a.</li>
+      <li><b>Niti</b>: M3 i M4 rade na jednoj niti (odluka D8). D19 i D20 rade s timom niti (<code>std::thread</code>, bez OpenMP
+      biblioteke; odluke D19 i D20), broj je u nazivu verzije. Niti koje <b>vrte</b> na barijeri izvršavaju instrukciju <code>pause</code>;
+      ti ciklusi se broje (faza "Čekanje niti") i dižu CPI. Niti koje <b>spavaju</b> ne troše cikluse. Broj niti računara je iz CPUID-a.</li>
+      <li><b>Imena funkcija</b> u sesijama od 2026-11-17 (Release gradnja, bez <code>-g</code>) su nađena po adresi u tabeli simbola
+      programa (<code>nm</code>); uzorci jedne funkcije su sabrani, omjeri ponderisani svojim nazivnikom.</li>
     </ul>
   </section>
 </div>
@@ -647,8 +806,9 @@ Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i 
 <div class="tab" id="t-cmp">
   <section>
     <h2>Poređenje verzija</h2>
-    <p class="small muted">Isti posao (cijeli korak simulacije, ista mreža, isti scenarij, bit po bit isti rezultat), dvije verzije koda.
-    A je polazna verzija, B ona s kojom se poredi. Obje su snimljene isti dan, na istom računaru, istim postupkom.</p>
+    <p class="small muted">Isti posao (cijeli korak simulacije, ista mreža, isti scenarij), dvije verzije koda. Rezultat je bit po bit
+    isti osim za D20 verzije (drugi rješavač pritiska ili topli start). A je polazna verzija, B ona s kojom se poredi. Isti računar i
+    isti postupak; verzije iz različitih dana (2026-11-15: profilna gradnja, 2026-11-17: Release gradnja) porede se uz oprez.</p>
     <div id="cmpBody">
       <div class="row">
         <span>Mreža</span><span class="seg" id="cmpGrid"></span>
@@ -668,7 +828,7 @@ Fajl je samostalan: nema vanjskih skripti ni stilova. Šta koji prikaz znači i 
       <h3>Brojači procesora</h3>
       <div class="scroll"><table id="cmpCounters"></table></div>
       <h3>Najvrelije funkcije svake verzije</h3>
-      <p class="small muted">Verzije imaju različite funkcije (finalna je jezgra podijelila na redove i AVX2 fajlove), pa se ne spajaju po imenu.
+      <p class="small muted">Verzije imaju različite funkcije (optimizirane su jezgra podijelile na redove i AVX2 fajlove), pa se ne spajaju po imenu.
       Klik na red otvara instrukcije te funkcije.</p>
       <div class="two">
         <div><b id="cmpNameA"></b><div class="scroll"><table id="cmpFnA"></table></div></div>
@@ -741,19 +901,20 @@ window.onerror = function (message, source, line) {
 };
 const DATA = JSON.parse(document.getElementById("data").textContent);
 const S = DATA.sessions, WL = DATA.workloads, CLASSES = DATA.classes;
-const PHASE_COLORS = {"Jacobi":"#4c8fd6","Projekcija (ostalo)":"#7da7d9","Advekcija":"#e0913a","Sile":"#5aa469",
-  "Rubni uslovi":"#b07cc6","Prepreke":"#2f9e9e","Izvor":"#b89a1f","Kopiranje i punjenje":"#8a94a0","Ostalo":"#c2453c"};
+const PHASE_COLORS = {"Jacobi":"#4c8fd6","Red-black":"#2b5d9b","Projekcija (ostalo)":"#7da7d9","Advekcija":"#e0913a","Sile":"#5aa469",
+  "Rubni uslovi":"#b07cc6","Prepreke":"#2f9e9e","Izvor":"#b89a1f","Kopiranje i punjenje":"#8a94a0","Čekanje niti":"#c9b8a0","Ostalo":"#c2453c"};
 const PHASES = Object.keys(PHASE_COLORS);
 const KIND_NAME = {time:"vrijeme (tbp)", pmc:"brojači (assess_ext)", fe:"frontend (inst_access)", other:"ostalo"};
 const KIND_BASIS = {time:"vrijeme (uzorci svake 1 ms)", pmc:"ciklusi (brojač, assess_ext)", fe:"ciklusi (brojač, inst_access)"};
 const TABS = [["grade","Ocjena"],["cmp","Poređenje verzija"],["summary","Sažetak"],["hot","Hotspots"],["uarch","Mikroarhitektura"],
   ["cache","Keš i memorija"],["asm","Instrukcije"],["all","Sve sesije"],["about","O mjerenju"]];
 // smoke_prof --version: m3 = the M3 step without vectorization (naive), m3auto = the same code with the default
-// compiler flags, m4 = the current optimized solver.
-const VERSIONS = ["m3", "m3auto", "m4"];
-const VSHORT = {m3:"Naivna", m3auto:"Auto-vektorizirana", m4:"Finalna"};
-const VLONG = {m3:"Naivna verzija (M3 kod, bez vektorizacije)", m3auto:"M3 kod + automatska vektorizacija kompajlera",
-  m4:"Finalna, optimizirana verzija (M4)"};
+// compiler flags, m4 = the serial optimized solver, d19_* / d20_* = SmokeSolver::step with threads (D19, D20).
+// The ids and names come from the Python side (version_id / version_label in tools/uprof_report.py).
+const VERSIONS = (DATA.versions || []).map((v) => v.id);
+const VSHORT = Object.fromEntries((DATA.versions || []).map((v) => [v.id, v.short]));
+const VLONG = Object.fromEntries((DATA.versions || []).map((v) => [v.id, v.long]));
+const threadsOf = (s) => (s && parseInt(s.workload.niti, 10)) || 1;   // threads the measured program used
 const WIDTH_COLORS = ["#2e8b57", "#4c8fd6", "#e0913a", "#8a94a0"];
 const WIDTH_SHORT = ["8 brojeva odjednom (AVX)", "do 4 broja odjednom (SSE)", "jedan po jedan (skalarno)", "ostalo (brojači, adrese, skokovi)"];
 const OFFICIAL_STAGE = {whole_step:"cijeli korak", sources:"izvori", forces:"sile", advect_velocity:"advekcija brzine", projection:"projekcija",
@@ -1173,12 +1334,12 @@ function renderAsm() {
 }
 
 // ---------- versions: data shared by "Ocjena" and "Poređenje verzija" ----------
-// Version runs are the folders named <date>_ver_<version> (perf/uprof/collect.sh with VERSION=...): the same
-// whole-step workload run by the naive M3 code, the auto-vectorized M3 code and the final solver. If there are
-// several such sets, the newest one is used.
-const VSET = WL.reduce((best, w) => (w.vset && (best === null || w.vset > best)) ? w.vset : best, null);
-const VW = WL.filter((w) => VSET !== null && w.vset === VSET && w.stage === "all");
-const findV = (version, grid) => VW.find((w) => w.version === version && w.grid === +grid) || null;
+// Version runs are the folders named <date>_ver_<version> (perf/uprof/collect.sh with VERSION=...; since D19/D20
+// also <date>_d19cmp_... and <date>_d20cpi_...): the same whole-step workload run by different versions of the code.
+// All such sets are used; when one version was collected more than once, the newest run counts.
+const VW = WL.filter((w) => w.vset && w.stage === "all");
+const findV = (version, grid) => VW.filter((w) => w.version === version && w.grid === +grid)
+  .sort((a, b) => (a.run < b.run ? 1 : a.run > b.run ? -1 : 0))[0] || null;
 const vGrids = () => [...new Set(VW.map((w) => w.grid))].sort((a, b) => a - b);
 const msOf = (s) => s ? parseFloat(s.workload.ms_po_ponavljanju) : NaN;
 const infoText = (s) => (DATA.infos.find((i) => i.group === s.group) || {}).text || "";
@@ -1276,6 +1437,10 @@ function renderGrade() {
   const instR = bm ? ratio(bm.inst, m.inst) : null;       // how many times fewer instructions per step than naive
   const cpiR = bm ? ratio(bm.cpi, m.cpi) : null;          // above 1: fewer cycles per instruction than naive
   const range = bm ? instRange(bm, m) : null;
+  // The final optimized version is also compared with the version before it (DATA.previousVersion: the same threads
+  // that sleep, but the reference Jacobi K = 40 from p = 0), for the CPI card.
+  const prevW = w.version === DATA.finalVersion && DATA.previousVersion ? findV(DATA.previousVersion, w.grid) : null;
+  const prevM = prevW && prevW !== w ? metricsOf(prevW) : null;
   const threadsMatch = infoText(m.timeBase).match(/hardware_threads:\s*(\d+)/);
   const threads = threadsMatch ? +threadsMatch[1] : null;
   const fit = jacobiFit(w, m.timeBase);
@@ -1294,7 +1459,12 @@ function renderGrade() {
   }
   if (m.covered) points.push(`<b>Paralelizam unutar jedne niti (SIMD).</b> ${fmt(m.width[0], 0)} % vremena ide na instrukcije koje obrađuju 8 brojeva odjednom`
     + (bm ? `; kod naivne verzije ${fmt(bm.width[0], 0)} %.` : "."));
-  if (threads) points.push(`<b>Paralelizam nitima.</b> Program koristi 1 od ${threads} niti procesora. Paralelizacija nitima nije rađena (odluka D8), pa je to neiskorišten prostor, isti u svim verzijama.`);
+  const used = threadsOf(m.timeBase);
+  const waitShare = m.phaseShare["Čekanje niti"] || 0;
+  if (threads) points.push(used > 1
+    ? `<b>Paralelizam nitima.</b> Program koristi ${used} od ${threads} niti procesora (std::thread, odluke D19 i D20).`
+      + (waitShare > 0.5 ? ` ${fmt(waitShare, 0)} % ciklusa niti provedu čekajući jedna drugu na barijeri; ti ciklusi ulaze u CPI.` : "")
+    : `<b>Paralelizam nitima.</b> Program koristi 1 od ${threads} niti procesora; ova verzija je serijska (niti dolaze tek u D19).`);
   if (sp && fit) points.push(`<b>Memorija.</b> Tri polja koja Jacobi koristi odjednom imaju ${fmt(fit.mib, 1)} MiB, a L3 keš ${fmt(fit.l3, 0)} MiB: `
     + (fit.fits ? "podaci staju u keš." : "podaci <b>ne staju</b> u keš, pa ih procesor stalno dovlači iz RAM-a.")
     + ` Na 1000 instrukcija procesor ${fmt(m.ram, 2)} puta čeka podatak iz RAM-a.`);
@@ -1305,19 +1475,21 @@ function renderGrade() {
   const cards = [];
   const perSecond = 1000 / m.ms, o0 = official("m3"), o1 = official("m3auto");
   cards.push(card("Brzina", "Koliko brzo računar izračuna jedan korak simulacije?",
-    big(fmt(perSecond, 0), "koraka u sekundi", `${fmt(m.ms, 2)} ms po koraku (profilna gradnja, pod profilerom)`)
+    big(fmt(perSecond, 0), "koraka u sekundi", `${fmt(m.ms, 2)} ms po koraku (pod profilerom, ${/build-prof/.test(m.timeBase.info["Target Path"] || "") ? "profilna" : "Release"} gradnja; nije mjera ubrzanja)`)
     + (isBase ? `<span class="verdict">polazna verzija</span>` : verdict(S, "brže", "sporije", "od naivne verzije"))
     + `<p class="small">Jedan korak pomjera simulaciju za 1/${STEP_HZ} s. Da dim teče u stvarnom vremenu treba najmanje ${STEP_HZ} koraka u sekundi; ova verzija daje `
     + (perSecond >= STEP_HZ ? `${times(perSecond / STEP_HZ)} toliko` : `${fmt(100 * perSecond / STEP_HZ, 0)} % toga`) + ". Računa se samo simulacija, bez crtanja.</p>"
-    + (o0 ? `<p class="small muted">Službeno mjerenje (obična gradnja, protokol D10, ${esc(o0.date)}): finalna verzija je ${fmt(o0.S, 2)}x brža od naivne`
+    + (o0 ? `<p class="small muted">Službeno mjerenje (obična gradnja, protokol D10, ${esc(o0.date)}): serijska M4 verzija je ${fmt(o0.S, 2)}x brža od naivne`
       + (o1 ? ` i ${fmt(o1.S, 2)}x brža od auto-vektorizirane` : "") + ` na ${w.grid}³.</p>` : ""),
     "Ovo je broj sličica dima koje računar izračuna u jednoj sekundi. Veći broj znači da ista simulacija teče glatko, ili da za isto vrijeme stane veća i detaljnija."));
 
   cards.push(card("Paralelizam: niti procesora", "Koliko jezgara procesora program zapošljava?",
-    (threads ? big("1 od " + threads, "niti") + `<div class="boxes">${Array.from({length: threads}, (_, i) => `<span class="${i === 0 ? "on" : ""}"></span>`).join("")}</div>` : big("1", "nit"))
-    + `<span class="verdict">nije urađeno, po planu (odluka D8)</span>`
-    + (fit && !fit.fits ? `<p class="small">Na ovoj mreži Jacobi čeka memoriju (kartica "Promašaji keša"). Memoriju dijele sva jezgra, pa dodatne niti u tom dijelu možda neće dati srazmjerno ubrzanje. To <b>nije izmjereno</b>.</p>` : ""),
-    "Procesor ovog računara može raditi više poslova istovremeno, kao više radnika u radionici. Ovaj program zapošljava jednog. To nije propust: prvo se jedan radnik nauči da radi što brže, pa se tek onda posao dijeli. Ovaj broj je isti u svim verzijama."));
+    (threads ? big(used + " od " + threads, "niti") + `<div class="boxes">${Array.from({length: threads}, (_, i) => `<span class="${i < used ? "on" : ""}"></span>`).join("")}</div>` : big(String(used), used === 1 ? "nit" : "niti"))
+    + (used > 1 ? `<span class="verdict good">${used} niti (odluke D19, D20)</span>` : `<span class="verdict">serijska verzija</span>`)
+    + (used > 1 && waitShare > 0.5 ? `<p class="small">Čekanje na barijeri: ${fmt(waitShare, 1)} % ciklusa (faza "Čekanje niti").</p>` : "")
+    + (fit && !fit.fits ? `<p class="small">Na ovoj mreži podaci ne staju u L3 keš. Memoriju dijele sva jezgra, pa niti u dijelovima koji čekaju memoriju ne daju srazmjerno ubrzanje (PERF_LOG.md, P-004).</p>` : ""),
+    used > 1 ? `Procesor ovog računara može raditi više poslova istovremeno, kao više radnika u radionici. Ova verzija zapošljava ${used} radnika; između faza koraka čekaju jedan drugog.`
+      : "Procesor ovog računara može raditi više poslova istovremeno, kao više radnika u radionici. Ova verzija zapošljava jednog: prvo se jedan radnik nauči da radi što brže, pa se tek onda posao dijeli (D19)."));
 
   cards.push(card("Paralelizam: unutar jedne niti (SIMD)", "Koliko brojeva jedna instrukcija obradi odjednom?",
     (m.covered ? big(fmt(m.width[0], 0) + " %", "vremena u instrukcijama za 8 brojeva odjednom") + `<div style="margin:8px 0">${widthStack(m)}</div>`
@@ -1331,11 +1503,14 @@ function renderGrade() {
         "procjena na dva načina; broj instrukcija nije izbrojan direktno")
       + `<span class="verdict ${range.lo >= 1 ? "good" : "bad"}">${range.lo >= 1 ? "manje" : "više"} instrukcija od naivne verzije</span>`
       : isBase ? big("1.00", "polazna vrijednost") + `<span class="verdict">polazna verzija</span>` : notMeasured("treba sesija s brojačima za ovu i za naivnu verziju")),
-    "Do istog rezultata može se doći dužim ili kraćim putem. Optimizirana verzija isti račun obavi s manje instrukcija, najviše zato što jedna vektorska instrukcija zamijeni osam običnih. Rezultat simulacije je bit po bit isti."));
+    "Do istog rezultata može se doći dužim ili kraćim putem. Optimizirana verzija isti račun obavi s manje instrukcija, najviše zato što jedna vektorska instrukcija zamijeni osam običnih. "
+      + (w.version.startsWith("d20") ? "Ova verzija rješava pritisak drugačije (odluka D20), pa rezultat nije bit po bit isti; kvalitet je u docs/plan/MATH.md, 5.1." : "Rezultat simulacije je bit po bit isti.")));
 
   cards.push(card("Efikasnost procesora", "Koliko posla procesor završi u jednom taktu?",
     (sp ? big(fmt(1 / m.cpi, 2), "instrukcija po taktu", `CPI = ${fmt(m.cpi, 2)} ciklusa po instrukciji (manje je bolje)`)
       + (isBase ? `<span class="verdict">polazna verzija</span>` : verdict(cpiR, "manje ciklusa po instrukciji", "više ciklusa po instrukciji", "od naivne verzije"))
+      + (prevM && prevM.cpi ? " " + verdict(ratio(prevM.cpi, m.cpi), "manje ciklusa po instrukciji", "više ciklusa po instrukciji",
+          `od prethodne verzije (${esc(VSHORT[DATA.previousVersion] || DATA.previousVersion)}, CPI ${fmt(prevM.cpi, 2)})`) : "")
       + (cpiR && cpiR < 1 && S > 1 ? `<p class="small">To ne znači da je verzija sporija. Instrukcija je manje (kartica "Količina posla") i svaka radi više posla, pa duže traje. Brzinu određuje proizvod ta dva broja.</p>` : "")
       : notMeasured("nema sesije s hardverskim brojačima")),
     "Procesor radi u taktovima, kao metronom. U jednom taktu može završiti i nekoliko instrukcija, ako ne mora čekati podatke. Kad čeka, taktovi prolaze uprazno."));
@@ -1404,6 +1579,7 @@ function renderCompare() {
     + tile("B: " + esc(VSHORT[state.cb]), fmt(mb.ms, 2) + " ms", `po koraku; ${fmt(1000 / mb.ms, 0)} koraka u sekundi`)
     + tile("Odnos vremena S = A ÷ B", fmt(S, 2) + "x", esc(speedWords(S)) + " (pod profilerom)")
     + (off && off.whole_step ? tile("Službeno S", fmt(off.whole_step.S, 2) + "x", `obična gradnja, protokol D10, ${esc(off.whole_step.date)} (PERF_LOG.md, odjeljak 7)`)
+      : (/^d(19|20)/.test(state.ca) || /^d(19|20)/.test(state.cb)) ? tile("Službeno S", "PERF_LOG.md", "D19 i D20 su mjerene po protokolu D10 u P-004 i P-005 (tabele po mrežama)")
       : tile("Službeno S", "nije mjereno", "za ovaj par verzija nema zbirnog unosa u perf/results.csv"))
     + tile("Instrukcije po koraku A ÷ B", range ? range.text + "x" : "–", range ? (range.lo === range.hi || (range.lo > 1) === (range.hi > 1)
         ? esc(instWords(instR)) + (ratio(ma.instS, mb.instS) != null ? "; druga procjena: " + esc(fewer(ratio(ma.instS, mb.instS))) : "")
@@ -1476,7 +1652,7 @@ function renderCompare() {
   fnTable("cmpFnA", wa, ma); fnTable("cmpFnB", wb, mb);
 
   el("cmpOfficial").innerHTML = off ? `<h3>Službeno izmjereno ubrzanje (protokol D10)</h3><p class="small muted">Iz <code>perf/results.csv</code>: obična Release gradnja, `
-    + `mjereno po protokolu D10 (docs/plan/PERF_LOG.md, odjeljak 7). Ovo su brojevi za izvještaj; profil iznad objašnjava odakle dolaze.</p><table style="max-width:560px"><tr><th>Faza</th><th class="num" title="Koliko puta je B (finalna verzija) brža od A.">S = A ÷ B</th><th>Unos</th></tr>`
+    + `mjereno po protokolu D10 (docs/plan/PERF_LOG.md, odjeljak 7). Ovo su brojevi za izvještaj; profil iznad objašnjava odakle dolaze.</p><table style="max-width:560px"><tr><th>Faza</th><th class="num" title="Koliko puta je B (serijska M4) brža od A.">S = A ÷ B</th><th>Unos</th></tr>`
     + Object.keys(OFFICIAL_STAGE).filter((k) => off[k]).map((k) => `<tr><td>${esc(OFFICIAL_STAGE[k])}</td><td class="num">${fmt(off[k].S, 2)}x</td><td class="small muted">${esc(off[k].id)}</td></tr>`).join("")
     + "</table>" : "";
 }
@@ -1526,7 +1702,9 @@ function render() {
 function init() {
   el("wsel").innerHTML = WL.map((w, i) => `<option value="${i}">${esc(w.label)}</option>`).join("");
   // Start on the final version at 64^3 when the version runs are there; the hash (a shared link) wins over this.
-  const start = findV("m4", 64) || VW[0];
+  const vizVersion = VERSIONS.find((v) => /^d20_rb.*_block_/.test(v));   // the version the visualization uses (D20)
+  const start = (vizVersion && findV(vizVersion, 64)) || findV("m4", 64) || VW[0];
+  if (vizVersion) state.cb = vizVersion;
   if (start) state.w = WL.indexOf(start);
   readHash();
   const bind = (id, key, numeric, event) => { el(id)[event || "onchange"] = () => { state[key] = numeric ? +el(id).value : el(id).value; render(); }; };
@@ -1568,8 +1746,18 @@ def main():
             # Most counter cells are zero: write them as 0, not 0.0 (the page is a few megabytes).
             for item in function["ins"]:
                 item["v"] = [int(value) if value is not None and value == int(value) else value for value in item["v"]]
+    # Versions in a fixed order: M3, M3 + auto-vectorization, M4, then D19 by threads, then D20.
+    def version_order(vid):
+        fixed = ["m3", "m3auto", "m4", "m4_rel"]
+        if vid in fixed:
+            return (0, fixed.index(vid), "")
+        threads = re.search(r"_t(\d+)$", vid)
+        return (1 if vid.startswith("d19") else 2, int(threads.group(1)) if threads else 0, vid)
+    version_ids = sorted({s["version"] for s in sessions}, key=version_order)
+    versions = [{"id": vid, "short": version_label(vid)[0], "long": version_label(vid)[1]} for vid in version_ids]
     payload = {"sessions": sessions, "infos": infos, "workloads": build_workloads(sessions), "classes": CLASS_NAMES,
-               "widths": WIDTH_NAMES, "official": load_official(args.results)}
+               "widths": WIDTH_NAMES, "official": load_official(args.results), "versions": versions,
+               "finalVersion": FINAL_VERSION, "previousVersion": PREVIOUS_VERSION}
     data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     page = PAGE.replace("__GENERATED__", html.escape(datetime.now().strftime("%Y-%m-%d %H:%M"))).replace("__DATA__", data)
     output = Path(args.output) if args.output else Path(args.folders[0]) / "report.html"

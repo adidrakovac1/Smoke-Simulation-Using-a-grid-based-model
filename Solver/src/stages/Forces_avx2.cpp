@@ -25,4 +25,15 @@ void confinementSlabAvx2(float* u, float* v, float* w, float* ox, float* oy, flo
     confinementSlab(VorticityFields{u, v, w, ox, oy, oz, mag}, nx, ny, k0, k1, epsilonDt, sJ, sK);
 }
 
+void vorticityMagnitudeSlabAvx2(float* mag, const float* u, const float* v, const float* w, int nx, int ny, int k0,
+                                int k1, std::ptrdiff_t sJ, std::ptrdiff_t sK) {
+    vorticityMagnitudeSlab(mag, u, v, w, nx, ny, k0, k1, sJ, sK);
+}
+
+void confinementOutSlabAvx2(float* uOut, float* vOut, float* wOut, const float* u, const float* v, const float* w,
+                            const float* mag, int nx, int ny, int k0, int k1, float epsilonDt, std::ptrdiff_t sJ,
+                            std::ptrdiff_t sK) {
+    confinementOutSlab(uOut, vOut, wOut, u, v, w, mag, nx, ny, k0, k1, epsilonDt, sJ, sK);
+}
+
 } // namespace smoke::serial

@@ -17,6 +17,8 @@
 //                               m3auto  the M3 step (commit 73ceb9e) with the default Release flags (like B1)
 //                               m3      the M3 step compiled without vectorization: the naive version (like B0)
 //                               The M3 copies are the ones smoke_demo uses (Solver/demo/M3Solver.inc).
+//                               d19     SmokeSolver::step itself (decision D19: whole-step thread team, wavefront
+//                                       Jacobi, fused kernels); with --niti T the CpuParallel backend
 //
 // It uses the internal stage functions directly (like the tests and smoke_lab), so it measures the same code
 // the solver runs. Text is ASCII only (decision D7).
@@ -26,6 +28,7 @@
 #include "SmokeState.h"
 #include "smoke/SolverConfig.h"
 #include "smoke/StepTimings.h"
+#include "smoke/SmokeSolver.h"
 #include "stages/ObstacleLists.h"
 #include "stages/Stages.h"
 
@@ -51,12 +54,19 @@ struct Options {
     std::string version = "m4";     // m4, m3auto or m3; the M3 versions only with stage "all" and no obstacle
     int develop = 100;     // whole steps run before the measured part (the reference scenario also runs 100)
     int resetEvery = 300;  // --stage all: start again from an empty box after this many steps (see runAll)
+    int threads = 0;       // --niti T, only with --version d19: CpuParallel backend with T threads
+    // D20, only with --version d19: --solver rbgs, --omega W, --warm, --block, --iters K
+    std::string solver = "jacobi";
+    float omega = 1.0f;
+    bool warm = false;
+    bool block = false;
+    int iters = 0;
 };
 
 void printUsage() {
     std::cout << "Koriscenje: smoke_prof [--grid N] [--seconds S] [--stage all|jacobi|advect|forces]\n"
                  "                       [--develop N] [--reset-every N] [--obstacle none|sphere|blanket]\n"
-                 "                       [--version m4|m3auto|m3]\n"
+                 "                       [--version m4|m3auto|m3|d19] [--niti T]\n"
                  "  --grid N        kubna mreza N^3 (zadano 64)\n"
                  "  --seconds S      koliko dugo se ponavlja izabrani posao (zadano 10)\n"
                  "  --stage X        all = cijeli korak; jacobi, advect, forces = samo ta faza (zadano all)\n"
@@ -64,7 +74,10 @@ void printUsage() {
                  "  --reset-every N  samo za 'all': poslije N koraka kreni od prazne kutije (zadano 300)\n"
                  "  --obstacle X     samo za 'all': prepreka u kutiji, kao smoke_bench --obstacle (zadano none)\n"
                  "  --version X      samo za 'all' bez prepreke: m4 = optimizirani solver (zadano), m3auto = M3 kod\n"
-                 "                   sa zadanim opcijama, m3 = M3 kod bez vektorizacije (naivna verzija)\n";
+                 "                   sa zadanim opcijama, m3 = M3 kod bez vektorizacije (naivna verzija),\n"
+                 "                   d19 = SmokeSolver::step (niti, wavefront Jacobi; odluka D19)\n"
+                 "  --niti T         samo uz --version d19: paralelni backend s T niti\n"
+                 "  --solver jacobi|rbgs, --omega W, --warm, --block, --iters K   samo uz --version d19 (D20)\n";
 }
 
 bool parseInt(const char* text, int& out, int minValue) {
@@ -82,6 +95,8 @@ bool parseArgs(int argc, char** argv, Options& options) {
             printUsage();
             std::exit(0);
         }
+        if (arg == "--warm") { options.warm = true; continue; }
+        if (arg == "--block") { options.block = true; continue; }
         if (i + 1 >= argc) return false;
         const char* value = argv[++i];
         if (arg == "--grid") {
@@ -100,7 +115,20 @@ bool parseArgs(int argc, char** argv, Options& options) {
             if (!scenarios::isObstacleScenario(options.obstacle)) return false;
         } else if (arg == "--version") {
             options.version = value;
-            if (options.version != "m4" && options.version != "m3auto" && options.version != "m3") return false;
+            if (options.version != "m4" && options.version != "m3auto" && options.version != "m3" &&
+                options.version != "d19")
+                return false;
+        } else if (arg == "--niti") {
+            if (!parseInt(value, options.threads, 1)) return false;
+        } else if (arg == "--solver") {
+            options.solver = value;
+            if (options.solver != "jacobi" && options.solver != "rbgs") return false;
+        } else if (arg == "--omega") {
+            char* end = nullptr;
+            options.omega = std::strtof(value, &end);
+            if (end == value || *end != '\0' || !(options.omega > 0.0f) || !(options.omega < 2.0f)) return false;
+        } else if (arg == "--iters") {
+            if (!parseInt(value, options.iters, 0)) return false;
         } else if (arg == "--develop") {
             if (!parseInt(value, options.develop, 0)) return false;
         } else if (arg == "--reset-every") {
@@ -110,7 +138,13 @@ bool parseArgs(int argc, char** argv, Options& options) {
         }
     }
     // The M3 step is one function for the whole step and has no obstacles.
-    if (options.version != "m4" && (options.stage != "all" || options.obstacle != "none")) return false;
+    if ((options.version == "m3" || options.version == "m3auto") && (options.stage != "all" || options.obstacle != "none"))
+        return false;
+    if (options.version == "d19" && options.stage != "all") return false;
+    if (options.threads > 0 && options.version != "d19") return false;
+    if (options.version != "d19" &&
+        (options.solver != "jacobi" || options.warm || options.block || options.iters > 0 || options.omega != 1.0f))
+        return false;
     // The single-stage loops call the kernels directly, and the kernels know nothing about obstacles.
     return options.obstacle == "none" || options.stage == "all";
 }
@@ -249,6 +283,50 @@ int main(int argc, char** argv) {
     if (options.obstacle != "none") {
         lists = buildObstacleLists(scenarios::makeObstacleScenario(options.obstacle, config.grid), state.density);
         if (!lists.empty()) obstacles = &lists;
+    }
+
+    if (options.version == "d19") {
+        // The real SmokeSolver::step (D19), with the same reset rule as runAll.
+        SolverConfig solverConfig = config;
+        if (options.threads > 0) {
+            solverConfig.backend = Backend::CpuParallel;
+            solverConfig.threads = options.threads;
+        }
+        solverConfig.params.pressureSolver =
+            options.solver == "rbgs" ? PressureSolver::RedBlackGaussSeidel : PressureSolver::Jacobi;
+        solverConfig.params.sorOmega = options.omega;
+        solverConfig.params.warmStartPressure = options.warm;
+        if (options.iters > 0) solverConfig.params.jacobiIterations = options.iters;
+        solverConfig.threadWait = options.block ? ThreadWait::Block : ThreadWait::Spin;
+        SmokeSolver solver(solverConfig);
+        if (options.obstacle != "none")
+            solver.setObstacles(scenarios::makeObstacleScenario(options.obstacle, config.grid));
+        for (int step = 0; step < options.develop; ++step) solver.step();
+        long long steps = 0;
+        int stepsSinceReset = options.develop;
+        const auto start = Clock::now();
+        while (secondsSince(start) < options.seconds) {
+            if (stepsSinceReset >= options.resetEvery) {
+                solver.reset();
+                stepsSinceReset = 0;
+            }
+            solver.step();
+            ++stepsSinceReset;
+            ++steps;
+        }
+        const double seconds = secondsSince(start);
+        const DensityView d = solver.density();
+        const float checksum = d.origin[(d.nx / 2) + d.strideJ * (d.ny / 2) + d.strideK * (d.nz / 2)];
+        std::cout << "smoke_prof: faza=all mreza=" << options.grid << "^3 razvoj_koraka=" << options.develop
+                  << " K=" << solver.params().jacobiIterations << " prepreka=" << options.obstacle
+                  << " verzija=d19 niti=" << solver.threadCount() << " rjesavac=" << options.solver
+                  << " omega=" << options.omega << " topli_start=" << (options.warm ? 1 : 0)
+                  << " cekanje=" << (options.block ? "block" : "spin") << '\n'
+                  << std::fixed << std::setprecision(3) << "  trajanje_s: " << seconds << '\n'
+                  << "  ponavljanja: " << steps << '\n'
+                  << std::setprecision(6) << "  ms_po_ponavljanju: " << (steps ? seconds * 1000.0 / steps : 0.0) << '\n'
+                  << "  kontrolna_vrijednost: " << checksum << '\n';
+        return checksum == checksum ? 0 : 1;
     }
 
     for (int step = 0; step < options.develop; ++step) wholeStep(state, params, all, obstacles);

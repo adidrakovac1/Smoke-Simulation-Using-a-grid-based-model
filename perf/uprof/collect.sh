@@ -15,6 +15,7 @@
 #   VERSION=m4|m3auto|m3      which code runs the measured steps (smoke_prof --version; default m4). m3 is the
 #                             naive M3 step without vectorization, m3auto the same code with the default flags.
 #                             The M3 versions only have the stage "all", so STAGES is then forced to "all".
+#   VERSION=d19               SmokeSolver::step itself (decision D19); THREADS=T adds --niti T (CpuParallel)
 #   STAGES="all jacobi"       which stages to collect (default: all jacobi advect forces)
 #   GRIDS="64"                which grids to collect (default: 64 128)
 #
@@ -33,13 +34,15 @@ LABEL="${1:?usage: perf/uprof/collect.sh <label> [config] [seconds]}"
 CONFIG="${2:-tbp}"
 SECONDS_PER_RUN="${3:-20}"
 UPROF="${UPROF:-/c/Program Files/AMD/AMDuProf/bin/AMDuProfCLI.exe}"
-PROF="Solver/build-prof/smoke_prof.exe"
-BENCH="Solver/build-prof/smoke_bench.exe"
+PROF="${PROF:-Solver/build-prof/smoke_prof.exe}"     # may be overridden, e.g. a Release build
+BENCH="${BENCH:-Solver/build-prof/smoke_bench.exe}"
 OUT="perf/uprof/$(date +%Y-%m-%d)_${LABEL}"
 OBSTACLE="${OBSTACLE:-none}"
 STAGES="${STAGES:-all jacobi advect forces}"
 GRIDS="${GRIDS:-64 128}"
 VERSION="${VERSION:-m4}"
+THREADS="${THREADS:-}"
+EXTRA="${EXTRA:-}"   # more smoke_prof options for VERSION=d19 (D20), e.g. EXTRA="--warm --iters 10 --block"
 [ "$OBSTACLE" = "none" ] || STAGES="all"
 [ "$VERSION" = "m4" ] || STAGES="all"
 
@@ -58,6 +61,8 @@ mkdir -p "$OUT"
     echo "  seconds_per_workload: $SECONDS_PER_RUN"
     echo "  obstacle: $OBSTACLE"
     echo "  version: $VERSION"
+    echo "  threads: ${THREADS:-1}"
+    echo "  extra: ${EXTRA:-none}"
     echo "  date: $(date '+%Y-%m-%d %H:%M')"
 } > "$OUT/session_info.txt" 2>&1
 
@@ -72,7 +77,7 @@ for GRID in $GRIDS; do
         RUN_SECONDS=$((SECONDS_PER_RUN + DELAY))
         "$UPROF" collect --config "$CONFIG" --start-delay "$DELAY" -o "$(cygpath -w "$SESSION")" \
             "$(cygpath -w "$PWD/$PROF")" --grid "$GRID" --seconds "$RUN_SECONDS" --stage "$STAGE" \
-            --obstacle "$OBSTACLE" --version "$VERSION" \
+            --obstacle "$OBSTACLE" --version "$VERSION" ${THREADS:+--niti "$THREADS"} $EXTRA \
             > "$OUT/collect_g${GRID}_${STAGE}.log" 2>&1
         if [ ! -d "$SESSION" ]; then
             echo "   collection FAILED, see $OUT/collect_g${GRID}_${STAGE}.log" >&2

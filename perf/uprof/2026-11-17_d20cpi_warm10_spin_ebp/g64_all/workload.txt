@@ -1,0 +1,5 @@
+smoke_prof: faza=all mreza=64^3 razvoj_koraka=100 K=10 prepreka=none verzija=d19 niti=6 rjesavac=jacobi omega=1 topli_start=1 cekanje=spin
+  trajanje_s: 17.002
+  ponavljanja: 5770
+  ms_po_ponavljanju: 2.946593
+  kontrolna_vrijednost: 0.250928

@@ -51,6 +51,63 @@ SMOKE_NOINLINE void confinementRow(float* SMOKE_RESTRICT u, float* SMOKE_RESTRIC
     }
 }
 
+// D19 (kernel fusion, fewer bytes through memory). The vorticity components are needed only by pass 2 at the
+// SAME cell, so pass 2 can compute them again from u, v, w instead of reading three stored fields. Pass 1 then
+// writes only |w| (which pass 2 needs at the neighbours). Pass 2 must then not overwrite u, v, w while it still
+// reads their neighbours, so it writes the result into the scratch fields uOut, vOut, wOut (u0, v0, w0 in the
+// step). The expressions are copied from vorticityRow / confinementRow in the same order, so every value is
+// bit-identical: wx, wy, wz are recomputed from the same inputs, and u + scale*(...) is what u += does.
+SMOKE_NOINLINE void vorticityMagnitudeRow(float* SMOKE_RESTRICT mag, const float* SMOKE_RESTRICT u,
+                                          const float* SMOKE_RESTRICT v, const float* SMOKE_RESTRICT w, int n,
+                                          std::ptrdiff_t sJ, std::ptrdiff_t sK) {
+    for (int i = 1; i <= n; ++i) {
+        const float wx = 0.5f * ((w[i + sJ] - w[i - sJ]) - (v[i + sK] - v[i - sK]));
+        const float wy = 0.5f * ((u[i + sK] - u[i - sK]) - (w[i + 1] - w[i - 1]));
+        const float wz = 0.5f * ((v[i + 1] - v[i - 1]) - (u[i + sJ] - u[i - sJ]));
+        mag[i] = std::sqrt(wx * wx + wy * wy + wz * wz);
+    }
+}
+
+SMOKE_NOINLINE void confinementOutRow(float* SMOKE_RESTRICT uOut, float* SMOKE_RESTRICT vOut,
+                                      float* SMOKE_RESTRICT wOut, const float* SMOKE_RESTRICT u,
+                                      const float* SMOKE_RESTRICT v, const float* SMOKE_RESTRICT w,
+                                      const float* SMOKE_RESTRICT mag, int n, float epsilonDt, std::ptrdiff_t sJ,
+                                      std::ptrdiff_t sK) {
+    for (int i = 1; i <= n; ++i) {
+        const float wx = 0.5f * ((w[i + sJ] - w[i - sJ]) - (v[i + sK] - v[i - sK]));
+        const float wy = 0.5f * ((u[i + sK] - u[i - sK]) - (w[i + 1] - w[i - 1]));
+        const float wz = 0.5f * ((v[i + 1] - v[i - 1]) - (u[i + sJ] - u[i - sJ]));
+        const float nx = 0.5f * (mag[i + 1] - mag[i - 1]);
+        const float ny = 0.5f * (mag[i + sJ] - mag[i - sJ]);
+        const float nz = 0.5f * (mag[i + sK] - mag[i - sK]);
+        const float gradientMagnitude = std::sqrt(nx * nx + ny * ny + nz * nz);
+        const bool p = gradientMagnitude > 0.0f;  // same branchless form as confinementRow
+        const float scale = epsilonDt / (p * gradientMagnitude + (!p) * 1.0f);
+        uOut[i] = u[i] + scale * (ny * wz - nz * wy);
+        vOut[i] = v[i] + scale * (nz * wx - nx * wz);
+        wOut[i] = w[i] + scale * (nx * wy - ny * wx);
+    }
+}
+
+void vorticityMagnitudeSlab(float* mag, const float* u, const float* v, const float* w, int nx, int ny, int k0,
+                            int k1, std::ptrdiff_t sJ, std::ptrdiff_t sK) {
+    for (int k = k0; k < k1; ++k)
+        for (int j = 1; j <= ny; ++j) {
+            const std::ptrdiff_t r = j * sJ + k * sK;
+            vorticityMagnitudeRow(mag + r, u + r, v + r, w + r, nx, sJ, sK);
+        }
+}
+
+void confinementOutSlab(float* uOut, float* vOut, float* wOut, const float* u, const float* v, const float* w,
+                        const float* mag, int nx, int ny, int k0, int k1, float epsilonDt, std::ptrdiff_t sJ,
+                        std::ptrdiff_t sK) {
+    for (int k = k0; k < k1; ++k)
+        for (int j = 1; j <= ny; ++j) {
+            const std::ptrdiff_t r = j * sJ + k * sK;
+            confinementOutRow(uOut + r, vOut + r, wOut + r, u + r, v + r, w + r, mag + r, nx, epsilonDt, sJ, sK);
+        }
+}
+
 // Pointers of the fields the two passes use (all with the same strides).
 struct VorticityFields {
     float* u;

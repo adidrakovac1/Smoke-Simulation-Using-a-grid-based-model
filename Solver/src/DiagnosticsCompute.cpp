@@ -23,7 +23,8 @@ Diagnostics computeDiagnostics(const SmokeState& s, float dt, const ObstacleList
     const GridSize g = s.density.size();
     if (!g.valid() || s.density.data() == nullptr) return d;
 
-    double maxDivBefore = 0.0, maxDivAfter = 0.0, mass = 0.0, maxSpeed2 = 0.0;
+    double maxDivBefore = 0.0, maxDivAfter = 0.0, mass = 0.0, maxSpeed2 = 0.0, sumDiv2 = 0.0, residual = 0.0;
+    long long fluidCells = 0;
     for (int k = 1; k <= g.nz; ++k) {
         for (int j = 1; j <= g.ny; ++j) {
             for (int i = 1; i <= g.nx; ++i) {
@@ -35,6 +36,15 @@ Diagnostics computeDiagnostics(const SmokeState& s, float dt, const ObstacleList
                                              s.v.at(i, j + 1, k) - s.v.at(i, j - 1, k) +
                                              s.w.at(i, j, k + 1) - s.w.at(i, j, k - 1));
                 maxDivAfter = std::max(maxDivAfter, double(std::fabs(divNow)));
+                sumDiv2 += double(divNow) * divNow;
+                ++fluidCells;
+                // Seven-point Laplacian of the final pressure minus the divergence it was solved for (state.
+                // divergence still holds it, Stages.h). Same operator as bench --convergence.
+                const double lap = double(s.pressure.at(i - 1, j, k)) + s.pressure.at(i + 1, j, k) +
+                                   double(s.pressure.at(i, j - 1, k)) + s.pressure.at(i, j + 1, k) +
+                                   double(s.pressure.at(i, j, k - 1)) + s.pressure.at(i, j, k + 1) -
+                                   6.0 * double(s.pressure.at(i, j, k));
+                residual = std::max(residual, std::fabs(lap - double(s.divergence.at(i, j, k))));
 
                 mass += s.density.at(i, j, k);
 
@@ -47,6 +57,8 @@ Diagnostics computeDiagnostics(const SmokeState& s, float dt, const ObstacleList
     d.computed       = true;
     d.maxDivBefore   = maxDivBefore;
     d.maxDivAfter    = maxDivAfter;
+    d.rmsDivAfter    = fluidCells ? std::sqrt(sumDiv2 / double(fluidCells)) : 0.0;
+    d.poissonResidual = residual;
     d.totalMass      = mass;
     d.maxSpeed       = std::sqrt(maxSpeed2);
     d.cfl            = d.maxSpeed * double(dt);

@@ -23,7 +23,45 @@ namespace {
 // Defined in Advection_avx2.cpp (compiled with -mavx2). Only call it when avx2Supported() is true.
 void advectSlabAvx2(float* const* dst, const float* const* src, int count, const float* u, const float* v,
                     const float* w, const GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ, std::ptrdiff_t sK);
+void correctAdvectSlab2Avx2(float* d0, float* d1, float* u, float* v, float* w, const float* p, const float* s0,
+                            const float* s1, const GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ,
+                            std::ptrdiff_t sK);
+// Defined in Advection_gather_avx2.cpp (hand-written AVX2 with vgatherdps, D19).
+void advectSlabGatherAvx2(float* const* dst, const float* const* src, int count, const float* u, const float* v,
+                          const float* w, const GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ,
+                          std::ptrdiff_t sK);
+void correctAdvectSlab2GatherAvx2(float* d0, float* d1, float* u, float* v, float* w, const float* p,
+                                  const float* s0, const float* s1, const GridSize s, int k0, int k1, float dt,
+                                  std::ptrdiff_t sJ, std::ptrdiff_t sK);
 #endif
+
+// D19: KernelIsa::Auto uses the hand-written gather rows when CMake option SMOKE_ADVECTION_GATHER is ON
+// (SMOKE_ADVECTION_GATHER_DEFAULT); Avx2Intrinsics always selects them, Avx2 the auto-vectorized rows.
+#if defined(SMOKE_ADVECTION_GATHER_DEFAULT)
+constexpr bool kGatherByDefault = true;
+#else
+constexpr bool kGatherByDefault = false;
+#endif
+
+void correctVelocityAndAdvectScalars(SmokeState& st, float dt, SlabRange range) {
+    const GridSize s = st.u.size();
+    const std::ptrdiff_t sJ = st.u.strideJ(), sK = st.u.strideK();
+    assert(st.v.strideK() == sK && st.w.strideK() == sK && st.pressure.strideK() == sK &&
+           st.density.strideK() == sK && st.density0.strideK() == sK && st.temperature.strideK() == sK &&
+           st.temperature0.strideK() == sK);
+    assert(st.density0.totalFloats() < static_cast<std::size_t>(INT_MAX));  // 32-bit cell index
+#if defined(SMOKE_HAS_AVX2_BINARY)
+    if (avx2Supported()) {
+        auto* kernel = kGatherByDefault ? &correctAdvectSlab2GatherAvx2 : &correctAdvectSlab2Avx2;
+        kernel(st.density.data(), st.temperature.data(), st.u.data(), st.v.data(), st.w.data(), st.pressure.data(),
+               st.density0.data(), st.temperature0.data(), s, range.k0, range.k1, dt, sJ, sK);
+        return;
+    }
+#endif
+    correctAdvectSlab2(st.density.data(), st.temperature.data(), st.u.data(), st.v.data(), st.w.data(),
+                       st.pressure.data(), st.density0.data(), st.temperature0.data(), s, range.k0, range.k1, dt, sJ,
+                       sK);
+}
 
 bool advectFields(Field3D* const dst[], const Field3D* const src[], int count, const Field3D& u, const Field3D& v,
                   const Field3D& w, float dt, SlabRange range, KernelIsa isa) {
@@ -40,9 +78,12 @@ bool advectFields(Field3D* const dst[], const Field3D* const src[], int count, c
         f[n] = src[n]->data();
     }
     const bool haveAvx2 = avx2Supported();  // always false when the AVX2 file is not built
-    if (isa == KernelIsa::Avx2Intrinsics) return false;  // there is no hand-written advection version
-    if (isa == KernelIsa::Avx2 && !haveAvx2) return false;
+    if ((isa == KernelIsa::Avx2 || isa == KernelIsa::Avx2Intrinsics) && !haveAvx2) return false;
 #if defined(SMOKE_HAS_AVX2_BINARY)
+    if (isa == KernelIsa::Avx2Intrinsics || (isa == KernelIsa::Auto && kGatherByDefault && haveAvx2)) {
+        advectSlabGatherAvx2(d, f, count, u.data(), v.data(), w.data(), s, range.k0, range.k1, dt, sJ, sK);
+        return true;
+    }
     if (isa != KernelIsa::Scalar && haveAvx2) {
         advectSlabAvx2(d, f, count, u.data(), v.data(), w.data(), s, range.k0, range.k1, dt, sJ, sK);
         return true;

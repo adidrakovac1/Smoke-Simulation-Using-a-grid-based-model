@@ -32,6 +32,8 @@ void divergenceRow(float* SMOKE_RESTRICT d, const float* SMOKE_RESTRICT u, const
 
 // jacobiRow / jacobiSlab: the same source is compiled again with -mavx2 in Projection_avx2.cpp (M4-009).
 #include "stages/JacobiRows.inc"
+// redBlackRow / redBlackSweep (D20): likewise.
+#include "stages/RedBlackRows.inc"
 
 void gradientRow(float* SMOKE_RESTRICT u, float* SMOKE_RESTRICT v, float* SMOKE_RESTRICT w,
                  const float* SMOKE_RESTRICT p, int nx, std::ptrdiff_t sJ, std::ptrdiff_t sK) {
@@ -61,7 +63,19 @@ void jacobiSlabAvx2(float* pNew, const float* pOld, const float* div, int nx, in
                     std::ptrdiff_t sJ, std::ptrdiff_t sK);
 void jacobiSlabAvx2Intrinsics(float* pNew, const float* pOld, const float* div, int nx, int ny, int k0, int k1,
                               std::ptrdiff_t sJ, std::ptrdiff_t sK);
+void jacobiPlaneRowsAvx2(float* pNew, const float* pOld, const float* div, int nx, int j0, int j1, int k,
+                         std::ptrdiff_t sJ, std::ptrdiff_t sK, bool fromZero);
+void redBlackSweepAvx2(float* p, const float* div, int nx, int ny, int k0, int k1, int colour, float omega,
+                       std::ptrdiff_t sJ, std::ptrdiff_t sK);
 #endif
+
+RedBlackSweepFn redBlackSweepKernel(KernelIsa isa) {
+#if defined(SMOKE_HAS_AVX2_BINARY)
+    if (isa != KernelIsa::Scalar && avx2Supported()) return &redBlackSweepAvx2;
+#endif
+    (void)isa;
+    return &redBlackSweep;
+}
 
 bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, SlabRange range, KernelIsa isa) {
     const GridSize g = pNew.size();
@@ -81,6 +95,14 @@ bool jacobiIteration(Field3D& pNew, const Field3D& pOld, const Field3D& div, Sla
 #endif
     jacobiSlab(pNew.data(), pOld.data(), div.data(), g.nx, g.ny, range.k0, range.k1, sJ, sK);
     return true;
+}
+
+// D19: the row kernel of the wavefront schedule (JacobiWavefront.cpp), AVX2 build when the CPU has it.
+JacobiPlaneRowsFn jacobiPlaneRowsKernel() {
+#if defined(SMOKE_HAS_AVX2_BINARY)
+    if (avx2Supported()) return &jacobiPlaneRowsAvx2;
+#endif
+    return &jacobiPlaneRows;
 }
 
 void subtractPressureGradient(Field3D& u, Field3D& v, Field3D& w, const Field3D& p, SlabRange range) {

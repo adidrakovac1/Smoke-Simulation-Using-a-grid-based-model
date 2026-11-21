@@ -44,7 +44,21 @@ bool SmokeScene::Setup() {
     SetSkyboxVisible(false);
 
     // One box = one solver instance (docs/plan/ARCHITECTURE.md, section 8). Default grid is 64^3.
-    m_solver = std::make_unique<smoke::SmokeSolver>(smoke::SolverConfig{});
+    // D19: the multi-threaded CPU backend (bit-identical to the serial one), one thread per physical core.
+    // D20 (Ermin, 2026-11-17: lower CPI even if a step is a little slower): warm-started red-black SOR,
+    // omega = 1.5, K = 6, and threads that sleep instead of spinning. Lowest CPI of all measured variants and a
+    // smaller Poisson residual than the reference (Jacobi K = 40 from p = 0), still faster than D19.
+    // Measured in docs/plan/PERF_LOG.md, P-005. The menu can switch the solver, omega, K and the warm start.
+    smoke::SolverConfig config;
+    config.backend    = smoke::Backend::CpuParallel;
+    config.threads    = 0;
+    config.threadWait = smoke::ThreadWait::Block;
+    config.params.pressureSolver    = smoke::PressureSolver::RedBlackGaussSeidel;
+    config.params.sorOmega          = 1.5f;
+    config.params.jacobiIterations  = 6;
+    config.params.warmStartPressure = true;
+    m_solver = std::make_unique<smoke::SmokeSolver>(config);
+    spdlog::info("[SmokeScene] solver: CpuParallel, {} threads", m_solver->threadCount());
     PlaceBox(m_solver->gridSize());
 
     if (!m_volumePass.Init(ShaderDir())) {
