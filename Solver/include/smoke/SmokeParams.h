@@ -1,6 +1,12 @@
 #pragma once
 
+#include <array>
+
 namespace smoke {
+
+/// D22: how many smoke sources and fans one box can have (fixed arrays, no allocation in SmokeParams).
+inline constexpr int kMaxSources = 8;
+inline constexpr int kMaxFans    = 8;
 
 /// Where smoke (and heat) is injected: a sphere inside the box. Position and radius are relative, so they
 /// do not change when the grid size changes: x, y, z in [0,1] along each axis, radius as a fraction of nx.
@@ -13,6 +19,24 @@ struct SmokeSource {
     float radius          = 0.08f;       // about 5 cells on 64^3
     float densityRate     = 10.0f;
     float temperatureRate = 10.0f;
+};
+
+/// D22: a fan, an external force that drives the air inside a cylinder in front of it towards a target speed
+/// along its axis (docs/plan/MATH.md, section 3, "Ventilator"). Position like SmokeSource (relative, [0,1] along
+/// each axis); radius and reach (the cylinder's length) as a fraction of nx, like SmokeSource::radius.
+/// For a cell centre p:  a = (p - c) . n  (distance along the axis),  r^2 = |p - c|^2 - a^2;
+/// if 0 <= a <= reach and r <= radius:  target = speed * (1 - a / reach),  un = u . n,
+///                                       if un < target:  u += min(1, dt * response) * (target - un) * n.
+/// A real fan blows the air at a certain speed rather than accelerating it without limit, and it does not brake
+/// air that is already faster. The update is a force term u += dt * f (Stam 2003 / Fedkiw et al. 2001) with
+/// f = response * (target - un) * n; the cylinder, the linear fall-off and the relaxation are our model choice.
+struct SmokeFan {
+    float x = 0.5f, y = 0.5f, z = 0.5f;          // centre of the fan's face
+    float dirX = 1.0f, dirY = 0.0f, dirZ = 0.0f; // blowing direction; normalized by the solver (zero = off)
+    float radius   = 0.06f;
+    float reach    = 0.40f;
+    float speed    = 0.0f;  // target air speed at the face, cells/s; 0 = off (the house scene converts from m/s)
+    float response = 0.0f;  // 1/s: how fast the air reaches the target speed; 0 = off
 };
 
 /// How the pressure equation  laplacian(p) = div  is solved (decision D20, docs/plan/MATH.md, section 5).
@@ -42,6 +66,11 @@ struct SmokeParams {
     float viscosity        = 0.0f;          // 0 = skip velocity diffusion (small for smoke)
     float diffusion        = 0.0f;          // 0 = skip density diffusion
     SmokeSource source;
+    // D22: more sources and fans. The defaults (none) keep the reference result bit for bit.
+    std::array<SmokeSource, kMaxSources - 1> extraSources{};  // used: the first extraSourceCount
+    int                                      extraSourceCount = 0;
+    std::array<SmokeFan, kMaxFans>           fans{};          // used: the first fanCount
+    int                                      fanCount = 0;
 };
 
 } // namespace smoke

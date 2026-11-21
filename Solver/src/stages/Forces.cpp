@@ -3,6 +3,7 @@
 #include "CpuFeatures.h"
 #include "Restrict.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -35,8 +36,76 @@ void applyBuoyancySlab(SmokeState& s, const SmokeParams& p, float dt, SlabRange 
     }
 }
 
+// D22: fans (docs/plan/MATH.md, section 3, "Ventilator"). Each fan drives the cells inside a cylinder in front of
+// it towards a target speed along its axis (SmokeParams.h, SmokeFan). Only the bounding box of the cylinder is
+// visited, clipped to this slab. Every cell reads and writes only itself, and the fans are applied one after
+// another in their order, the same in every backend, so Serial and CpuParallel stay bit-identical.
+bool anyFanActive(const SmokeParams& p) {
+    for (int f = 0; f < p.fanCount && f < kMaxFans; ++f) {
+        const SmokeFan& fan = p.fans[static_cast<std::size_t>(f)];
+        if (fan.speed != 0.0f && fan.response > 0.0f && fan.radius > 0.0f && fan.reach > 0.0f &&
+            (fan.dirX != 0.0f || fan.dirY != 0.0f || fan.dirZ != 0.0f))
+            return true;
+    }
+    return false;
+}
+
+void applyFansSlab(SmokeState& s, const SmokeParams& p, float dt, SlabRange range) {
+    const GridSize g = s.u.size();
+    for (int f = 0; f < p.fanCount && f < kMaxFans; ++f) {
+        const SmokeFan& fan = p.fans[static_cast<std::size_t>(f)];
+        const float     len = std::sqrt(fan.dirX * fan.dirX + fan.dirY * fan.dirY + fan.dirZ * fan.dirZ);
+        if (fan.speed == 0.0f || fan.response <= 0.0f || len == 0.0f) continue;
+        const float nxD = fan.dirX / len, nyD = fan.dirY / len, nzD = fan.dirZ / len;
+        // Relative position -> cell-index coordinates, exactly like the source sphere (Sources.cpp).
+        const float cx     = 0.5f + fan.x * static_cast<float>(g.nx);
+        const float cy     = 0.5f + fan.y * static_cast<float>(g.ny);
+        const float cz     = 0.5f + fan.z * static_cast<float>(g.nz);
+        const float radius = fan.radius * static_cast<float>(g.nx);
+        const float reach  = fan.reach * static_cast<float>(g.nx);
+        if (radius <= 0.0f || reach <= 0.0f) continue;
+        const float r2 = radius * radius;
+
+        // Bounding box of the cylinder: both end centres, widened by the radius.
+        const float ex = cx + reach * nxD, ey = cy + reach * nyD, ez = cz + reach * nzD;
+        const int   i0 = std::max(1, static_cast<int>(std::floor(std::min(cx, ex) - radius)));
+        const int   i1 = std::min(g.nx, static_cast<int>(std::ceil(std::max(cx, ex) + radius)));
+        const int   j0 = std::max(1, static_cast<int>(std::floor(std::min(cy, ey) - radius)));
+        const int   j1 = std::min(g.ny, static_cast<int>(std::ceil(std::max(cy, ey) + radius)));
+        const int   k0 = std::max(range.k0, static_cast<int>(std::floor(std::min(cz, ez) - radius)));
+        const int   k1 = std::min(range.k1 - 1, static_cast<int>(std::ceil(std::max(cz, ez) + radius)));
+
+        const float blend = std::min(1.0f, dt * fan.response);  // share of the gap closed in this step
+        for (int k = k0; k <= k1; ++k) {
+            for (int j = j0; j <= j1; ++j) {
+                for (int i = i0; i <= i1; ++i) {
+                    const float dx = static_cast<float>(i) - cx;
+                    const float dy = static_cast<float>(j) - cy;
+                    const float dz = static_cast<float>(k) - cz;
+                    const float a  = dx * nxD + dy * nyD + dz * nzD;
+                    if (a < 0.0f || a > reach) continue;
+                    if (dx * dx + dy * dy + dz * dz - a * a > r2) continue;
+                    const float target = fan.speed * (1.0f - a / reach);
+                    const float along  = s.u.at(i, j, k) * nxD + s.v.at(i, j, k) * nyD + s.w.at(i, j, k) * nzD;
+                    if (along >= target) continue;  // already at least as fast: the fan does not brake it
+                    const float amount = blend * (target - along);
+                    s.u.at(i, j, k) += amount * nxD;
+                    s.v.at(i, j, k) += amount * nyD;
+                    s.w.at(i, j, k) += amount * nzD;
+                }
+            }
+        }
+    }
+}
+
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range) {
     applyBuoyancy(state, params, dt, range);
+    if (anyFanActive(params)) {
+        applyFansSlab(state, params, dt, range);
+        setBoundary(state.u, BoundaryKind::VelocityX);
+        setBoundary(state.v, BoundaryKind::VelocityY);
+        setBoundary(state.w, BoundaryKind::VelocityZ);
+    }
     applyVorticityConfinement(state, params.vorticityEps, dt, range);
 }
 

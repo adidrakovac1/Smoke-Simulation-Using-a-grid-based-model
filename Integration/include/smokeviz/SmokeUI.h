@@ -8,6 +8,7 @@
 
 namespace smoke {
 class SmokeSolver;
+struct SmokeParams;
 }
 
 namespace smokeviz {
@@ -38,6 +39,14 @@ struct SmokeUiState {
     bool        obstacleActive = false;
     std::string obstacleMessage;   ///< result of the last "apply": cell counts or the error text
 };
+
+/// Parts of the panel that the house panel (HouseScene, D22) uses too. They only draw ImGui widgets.
+/// Simulation: dt, pressure solver and iterations, vorticity, buoyancy (docs/plan/MATH.md, sections 2, 3 and 5).
+void DrawSimulationParams(smoke::SmokeParams& params);
+/// Display only (does not change the simulation); showOutline may be null when there is no box outline.
+void DrawViewSettings(VolumeSettings& view, bool* showOutline);
+/// Timings of the last step (StepTimings: every stage measures itself), the density upload and the frame rate.
+void DrawStepTimings(const smoke::SmokeSolver& solver, double uploadMs);
 
 /// The ImGui panel of the smoke scene: grid size, simulation parameters, source, display settings, timings.
 /// Labels are Bosnian without diacritics because the default ImGui font has no glyphs for them (same choice

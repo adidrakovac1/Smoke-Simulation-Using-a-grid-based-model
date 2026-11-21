@@ -84,9 +84,17 @@ void runStep(SmokeState& st, const SmokeParams& params, const ObstacleLists* obs
     if (obstacles) serialPart([&] { clearSolidScalars(st, params.ambientTemp, *obstacles); });
     lap(timings[Stage::Sources]);
 
-    // 2. Forces: buoyancy, setBoundary(v), vorticity confinement (two passes), obstacles.
+    // 2. Forces: buoyancy, fans (D22), setBoundary, vorticity confinement (two passes), obstacles.
+    // Without fans this is exactly the path from before D22. The fans read and write only their own cell, so
+    // every thread can run them on its own slab right after the buoyancy, without a barrier in between.
+    const bool fans = anyFanActive(params);
     if (mine) {
         applyBuoyancySlab(st, params, dt, slab);
+        if (fans) {
+            applyFansSlab(st, params, dt, slab);
+            setBoundarySlab(st.u, BoundaryKind::VelocityX, slab);
+            setBoundarySlab(st.w, BoundaryKind::VelocityZ, slab);
+        }
         setBoundarySlab(st.v, BoundaryKind::VelocityY, slab);
     }
     team.sync();

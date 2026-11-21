@@ -45,3 +45,30 @@ TEST_CASE("sources_with_zero_radius_change_nothing") {
     smoke::serial::addSources(s, p, 1.0f, smoke::serial::wholeInterior(GridSize{8, 8, 8}));
     CHECK(totalMass(s.density) == 0.0);
 }
+
+// D22: the extra sources add their own spheres; the same source twice gives twice as much.
+TEST_CASE("D22 extra sources add separate spheres and add up where they overlap") {
+    const GridSize g{16, 16, 16};
+    SmokeState s;
+    s.resize(g);
+    SmokeParams p;
+    p.source           = {0.25f, 0.25f, 0.25f, 0.125f, 2.0f, 2.0f};  // radius 2 cells
+    p.extraSourceCount = 2;
+    p.extraSources[0]  = {0.75f, 0.75f, 0.75f, 0.125f, 2.0f, 2.0f};
+    p.extraSources[1]  = p.source;                                   // the first one again
+    p.extraSources[2]  = {0.5f, 0.5f, 0.5f, 0.25f, 9.0f, 9.0f};      // beyond extraSourceCount: not used
+    smoke::serial::addSources(s, p, 0.5f, smoke::serial::wholeInterior(g));
+
+    CHECK(s.density.at(4, 4, 4) == 2.0f);    // centre (4.5, 4.5, 4.5): 2 * 0.5 * 2
+    CHECK(s.density.at(12, 12, 12) == 1.0f); // centre (12.5, 12.5, 12.5): once
+    CHECK(s.density.at(8, 8, 8) == 0.0f);    // the unused sphere would be here
+    CHECK(ghostLayerErrors(s.density, false, false, false) == 0);
+
+    SmokeState t;
+    t.resize(g);
+    SmokeParams onlyExtra = p;
+    onlyExtra.source.radius = 0.0f;  // main source off, the extra ones still work
+    smoke::serial::addSources(t, onlyExtra, 0.5f, smoke::serial::wholeInterior(g));
+    CHECK(t.density.at(12, 12, 12) == 1.0f);
+    CHECK(t.density.at(4, 4, 4) == 1.0f);
+}

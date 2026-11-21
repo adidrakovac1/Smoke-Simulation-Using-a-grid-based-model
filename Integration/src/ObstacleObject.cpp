@@ -1,7 +1,8 @@
 #include "smokeviz/ObstacleObject.h"
 
+#include "smokeviz/MeshBuild.h"
+
 #include "core/Mesh.h"
-#include "core/MeshData.h"
 #include "smoke/ObjLoader.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -59,35 +60,8 @@ void ObstacleObject::Place(const ObstacleSettings& settings, const glm::vec3& bo
         m_boxMesh.positions[3 * v + 2] = inBox.z;
     }
 
-    // 2. For the Renderer: flat-shaded triangles in world space (each triangle has its own three vertices and
-    //    its face normal). Every triangle is added twice, once per winding, so the object is visible whichever
-    //    way the file orders its corners; the Renderer culls back faces.
-    MeshData data;
-    data.name = "SmokeObstacle";
-    data.vertices.reserve(m_unit.triangleCount() * 6);
-    data.indices.reserve(m_unit.triangleCount() * 6);
-    for (std::size_t t = 0; t < m_unit.triangleCount(); ++t) {
-        const glm::vec3 a = world[m_unit.indices[3 * t]], b = world[m_unit.indices[3 * t + 1]], c = world[m_unit.indices[3 * t + 2]];
-        glm::vec3       normal = glm::cross(b - a, c - a);
-        const float     length = glm::length(normal);
-        if (!(length > 0.0f)) continue;  // degenerate triangle: nothing to draw
-        normal /= length;
-        const glm::vec4 tangent(glm::normalize(b - a), 1.0f);
-        const uint32_t  base = static_cast<uint32_t>(data.vertices.size());
-        data.vertices.push_back({a, normal, {0.0f, 0.0f}, tangent});
-        data.vertices.push_back({b, normal, {1.0f, 0.0f}, tangent});
-        data.vertices.push_back({c, normal, {0.0f, 1.0f}, tangent});
-        data.vertices.push_back({a, -normal, {0.0f, 0.0f}, tangent});
-        data.vertices.push_back({c, -normal, {0.0f, 1.0f}, tangent});
-        data.vertices.push_back({b, -normal, {1.0f, 0.0f}, tangent});
-        for (uint32_t k = 0; k < 6; ++k) data.indices.push_back(base + k);
-    }
-    SubMesh subMesh;
-    subMesh.name        = "Obstacle";
-    subMesh.indexCount  = static_cast<uint32_t>(data.indices.size());
-    subMesh.hasTangents = true;
-    data.submeshes.push_back(subMesh);
-    m_renderMesh = data.IsValid() ? std::make_shared<Mesh>(data) : nullptr;
+    // 2. For the Renderer: flat-shaded triangles in world space, in both windings (MeshBuild.h).
+    m_renderMesh = BuildFlatMesh(world, m_unit.indices, true, "SmokeObstacle");
 }
 
 } // namespace smokeviz

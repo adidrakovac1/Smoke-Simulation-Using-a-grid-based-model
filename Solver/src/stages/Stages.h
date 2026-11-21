@@ -92,7 +92,13 @@ SlabRange addSourcesSlab(SmokeState& state, const SmokeParams& params, float dt,
 void applyBuoyancy(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 void applyBuoyancySlab(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 
-/// 2. Forces: buoyancy and optional vorticity confinement (docs/plan/MATH.md, section 3).
+/// D22: true when at least one of the first fanCount fans can push (strength, size and direction non-zero).
+bool anyFanActive(const SmokeParams& params);
+/// D22: fans, u += dt * strength * (1 - a / reach) * n inside each fan's cylinder (SmokeParams.h, SmokeFan), for the
+/// planes of `range`, without the ghost layer (the caller refreshes u, v, w).
+void applyFansSlab(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
+
+/// 2. Forces: buoyancy, fans (D22) and optional vorticity confinement (docs/plan/MATH.md, section 3).
 void applyForces(SmokeState& state, const SmokeParams& params, float dt, SlabRange range);
 /// Add Fedkiw et al. vorticity confinement to the velocity field. A non-positive epsilon disables it.
 /// `isa`: see KernelIsa (AVX2 build since M4-020); returns false only when the requested build is not available.

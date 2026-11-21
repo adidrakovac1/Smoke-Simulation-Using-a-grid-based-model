@@ -247,3 +247,20 @@ Petlje po listama diraju dakle oko 1% ćelija, dok jezgra (Jacobi, advekcija, si
 
 Nije izmjereno: tih računar, trošak po ćeliji liste, predmeti koji zauzimaju veći dio kutije, i sama
 voxelizacija (radi se jednom, izvan koraka).
+
+---
+
+## 9. Više objekata u jednoj kutiji: kuća (odluka D22, 2026-11-21)
+
+- `voxelize()` dodaje ćelije u mrežu koja već postoji, pa se svi objekti scene kuće voxeliziraju u **jedan**
+  `ObstacleGrid`: unutrašnji zidovi, sav namještaj (svaki sa svojim načinom: puni, ljuska ili porozni) i
+  ventilatori kojima je uključeno "Kućište je prepreka". Zatim jedan `setObstacles` (`HouseScene::RebuildObstacles`).
+- Vanjski zidovi, pod i plafon kuće se **ne** voxeliziraju: unutrašnjost kuće je tačno kutija solvera, a zidovi
+  kutije su u solveru već čvrsti (odjeljak 4). Model kuće ih samo crta.
+- Unutrašnji zidovi su debeli 0.25 m. Voxelizacija ih daje kao 4 do 5 čvrstih ćelija na ćeliji 0.10, 0.075 i
+  0.06 m, a otvori vrata ostaju prohodni (provjera 2026-11-21 probnim programom koji učita svaki model kroz
+  `loadObj` i voxelizira ga). To je iznad granice od dvije ćelije iz odjeljka 5.
+- Svi modeli su zatvoreni kvadri (`tools/make_house_meshes.py`). Kvadri koji se preklapaju ne smetaju, jer se
+  unutrašnjost puni "poplavom" izvana, a ne brojanjem presjeka (odjeljak 2.4).
+- Prepreke se ponovo grade tek kad se pusti miš ili završi izmjena u panelu, ne dok se objekat vuče: na
+  0.075 m to traje oko 85 ms (zidovi + 8 komada namještaja, log 2026-11-21).

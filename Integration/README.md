@@ -38,6 +38,10 @@ F12 snima sliku (`smoke_screenshot_N.png` u radnom folderu).
 | `Texture3D` | 3D tekstura s jednim float kanalom; u njoj je gustina dima na grafičkoj kartici | Renderer ima samo 2D teksture, pa je pišemo sami | `SmokeScene` je puni svaki frejm, shader iz nje čita |
 | `VolumeRaymarchPass` | Crta dim: zraka kroz kutiju, uzorkovanje, prozirnost | [Crane07] (GPU Gems 3, pogl. 30), Beer-Lambertov zakon | `SmokeScene::OnPostRender` |
 | `BoxOutline` | 12 ivica kutije kao linije | pomoć pri razvoju: kutija je inače nevidljiva | `SmokeScene::OnPostRender` |
+| `HouseScene` (+ `HouseSceneUI.cpp`) | Scena kuće: jedna kutija solvera = unutrašnjost kuće; namještaj, 1 do 8 izvora, 0 do 8 ventilatora; panel kroz meni Smoke | D22 (PLAN.md, OBSTACLES.md odjeljak 9, MATH.md odjeljak 3) | `Renderer/test-app/src/main.cpp` je registruje (zadnja scena) |
+| `SceneObject` | Jedan postavljeni `.obj` u metrima: isti `Transform` za crtanje i za voxelizer | D22; obrazac `ObstacleObject` (OBSTACLES.md 2.2) | `HouseScene` |
+| `MousePicker.h` | Zraka kroz piksel, presjek s kvadrom i s ravni poda | D22 | `HouseScene::HandleMouse` (lijevi klik bira i vuče) |
+| `MeshBuild` | Rendererova mreža s ravnim normalama iz trouglova | izdvojeno iz `ObstacleObject` | `ObstacleObject`, `SceneObject` |
 | `SmokeSystem` | Skup kutija dima jedne scene i prozor "Dimovi" (dodaj, ukloni, uredi) | D21 (ARCHITECTURE.md, odjeljak 6, tačka 5) | `SmokeScene` (dodatne kutije), `TerrainScene`, ostale scene preko `main.cpp` |
 | `SolverSetup.h` | `VisualizationSolverConfig()`: D19/D20 postavke solvera za svaku kutiju | D19, D20 (PERF_LOG.md, P-005), D21 | `SmokeScene`, `SmokeVolume` |
 | `SmokeUI` | ImGui panel: mreža, parametri, izvor, položaj kutije, prepreka, prikaz, vremena | parametri su `smoke::SmokeParams`, vremena `smoke::StepTimings` | `SmokeScene::OnGlobalSmokeUI`, `SmokeVolume::DrawUI` |
@@ -112,3 +116,23 @@ build\test-app\TestApp.exe
 ```
 
 Program uradi zadani broj koraka, snimi sliku prozora i zatvori se. Tako su napravljene slike u `docs/plan/img/`.
+
+## Scena kuće (D22)
+
+Zadnja scena u listi ("Smoke: house"). Panel se otvara dugmetom **Smoke** u gornjoj traci.
+
+- **Kamera:** FreeFly; desni klik i miš gledaju, WASD hoda, Space/Ctrl gore i dolje. Dugmad "Pogled iz sobe" i
+  "Pogled odozgo" (odozgo se plafon sakrije).
+- **Namještaj:** kartica Namjestaj, izbor modela pa "Dodaj", ili putanja do bilo kojeg `.obj` (u metrima) pa
+  "Ucitaj". Lijevi klik na objekat ga bira i vuče po podu; R okreće za 90 stepeni, Delete uklanja. Tačna pozicija,
+  rotacija, skala i tip prepreke (puni, ljuska, porozni) su u dijelu "Odabrano".
+- **Izvori:** kartica Izvori, 1 do 8; svaki ima poziciju, radijus i jačinu, i može se isključiti. Prvi se ne uklanja.
+- **Ventilatori:** kartica Ventilatori, 0 do 8; pozicija, smjer (lijevo-desno, nagib), radijus i domet cilindra,
+  brzina zraka (m/s) i odziv, "Kućište je prepreka". Prozirni plavi cilindar pokazuje gdje ventilator gura zrak.
+- **Rezolucija:** ćelija 0.10, 0.075 (zadano) ili 0.06 m, dugme "Primijeni".
+- Kuća ima prozore sa staklom (zatvoreni: zidovi kutije solvera su na mjestu stakla, pa dim ostaje unutra),
+  drveni pod, travu oko kuće i plavo nebo.
+- Modeli se prave skriptom: `python tools/make_house_meshes.py` (izlaz u `Integration/assets/house/`).
+- Provjera bez ruku: `SMOKE_SCENE_SHOT_INDEX=6 SMOKE_SCENE_SHOT_FRAMES=600 SMOKE_SCENE_SHOT_FILE=kuca.png`, uz
+  `SMOKE_HOUSE_VIEW=above` (pogled odozgo), `SMOKE_HOUSE_FAN=1` (probni ventilator), `SMOKE_HOUSE_CELL=0|1|2`.
+  Indeks 6 važi kad se Bistro scena ne učita (modela nema u repozitoriju); inače 7.
