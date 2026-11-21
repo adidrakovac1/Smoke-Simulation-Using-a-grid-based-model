@@ -42,7 +42,10 @@ vektorizacije B0, bit po bit isti rezultat; [`docs/plan/PERF_LOG.md`](docs/plan/
 Poslije toga je urađeno (plan: [`docs/plan/EXECUTION_PLAN.md`](docs/plan/EXECUTION_PLAN.md)):
 
 - **M4d, profil:** AMD uProf s hardverskim brojačima, tabela hardvera i nalazi u
-  [`docs/plan/PROFILE.md`](docs/plan/PROFILE.md); HTML izvještaj `perf/uprof/report.html`.
+  [`docs/plan/PROFILE.md`](docs/plan/PROFILE.md); HTML izvještaji `perf/uprof/report_v1.html` (serijske verzije,
+  do 2026-11-15) i `perf/uprof/report_v2.html` (sve sesije, i verzije s nitima D19/D20).
+- **D19/D20, niti i rješavači pritiska:** tim niti, wavefront Jacobi, topli start, red-black SOR
+  ([`docs/plan/PERF_LOG.md`](docs/plan/PERF_LOG.md), P-004 i P-005; MATH.md, 5.1).
 - **M-VIZ, vizualizacija:** dim u rendereru ([`Integration/README.md`](Integration/README.md)).
 - **M-OBS, prepreke:** čvrsti i porozni predmeti iz `.obj` fajla
   ([`docs/plan/OBSTACLES.md`](docs/plan/OBSTACLES.md)); bez prepreka rezultat je i dalje bit po bit isti.

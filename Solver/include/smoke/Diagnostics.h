@@ -7,6 +7,10 @@ struct Diagnostics {
     bool      computed        = false;  // false until the stages that fill these values exist
     double    maxDivBefore    = 0.0;    // max |div u| before the pressure projection
     double    maxDivAfter     = 0.0;    // max |div u| after the pressure projection
+    // D20: two finer measures of the projection, to compare pressure solvers (max|div| after hardly changes
+    // with the solver: on this collocated grid even the exact solution leaves some divergence).
+    double    rmsDivAfter     = 0.0;    // root mean square of div u after the projection
+    double    poissonResidual = 0.0;    // max | laplacian(p) - div | of the last pressure solve (0 = solved exactly)
     double    totalMass       = 0.0;    // sum of density over interior cells
     double    maxSpeed        = 0.0;    // max |u|
     double    cfl             = 0.0;    // max|u| * dt / h

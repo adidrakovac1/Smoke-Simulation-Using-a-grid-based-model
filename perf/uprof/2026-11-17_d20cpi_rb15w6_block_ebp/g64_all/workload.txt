@@ -1,0 +1,5 @@
+smoke_prof: faza=all mreza=64^3 razvoj_koraka=100 K=6 prepreka=none verzija=d19 niti=6 rjesavac=rbgs omega=1.5 topli_start=1 cekanje=block
+  trajanje_s: 17.001
+  ponavljanja: 4710
+  ms_po_ponavljanju: 3.609452
+  kontrolna_vrijednost: 0.000000

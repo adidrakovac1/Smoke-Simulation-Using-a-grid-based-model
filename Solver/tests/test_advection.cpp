@@ -163,6 +163,34 @@ TEST_CASE("advection_avx2_and_scalar_builds_are_bit_identical") {
     CHECK(cellsDifferent(sScalar, sAvx2) == 0);
 }
 
+TEST_CASE("advection_hand_written_gather_avx2_is_bit_identical") {
+    // D19: Advection_gather_avx2.cpp (intrinsics, vgatherdps) against the scalar build, for 1, 2 and 3 fields,
+    // on rows of 29 cells (three vectors of 8 and a tail of 5) and with velocities up to 4 cells per step, so
+    // the clamp at every wall is used.
+    const GridSize g{29, 11, 6};
+    Field3D u(g), v(g), w(g), a(g), b(g), c(g);
+    SplitMix64 rng{2026};
+    fillRandom(u, rng, -240.0f, 240.0f);
+    fillRandom(v, rng, -240.0f, 240.0f);
+    fillRandom(w, rng, -240.0f, 240.0f);
+    fillRandom(a, rng, -3.0f, 3.0f);
+    fillRandom(b, rng, 0.0f, 1.0f);
+    fillRandom(c, rng, 0.0f, 300.0f);
+    const float dt = 1.0f / 60.0f;
+    for (int count = 1; count <= 3; ++count) {
+        Field3D s0(g), s1(g), s2(g), h0(g), h1(g), h2(g);
+        Field3D* const       ds[3] = {&s0, &s1, &s2};
+        Field3D* const       dh[3] = {&h0, &h1, &h2};
+        const Field3D* const src[3] = {&a, &b, &c};
+        REQUIRE(advectFields(ds, src, count, u, v, w, dt, wholeInterior(g), KernelIsa::Scalar));
+        if (!advectFields(dh, src, count, u, v, w, dt, wholeInterior(g), KernelIsa::Avx2Intrinsics)) {
+            MESSAGE("AVX2 not available on this CPU/build: only the scalar path was checked");
+            return;
+        }
+        for (int n = 0; n < count; ++n) CHECK(cellsDifferent(*ds[n], *dh[n]) == 0);
+    }
+}
+
 TEST_CASE("fused_advection_is_bit_identical_to_separate_calls") {
     // M4-015/M4-016: advectFields (one back-trace for 2 or 3 fields) must give exactly what separate advectScalar
     // calls give, in the default and in the AVX2 build. The 3-field case is the velocity self-advection (the
@@ -177,7 +205,7 @@ TEST_CASE("fused_advection_is_bit_identical_to_separate_calls") {
     fillRandom(temp, rng, 0.0f, 3.0f);
     const float dt = 1.0f / 60.0f;
 
-    for (const KernelIsa isa : {KernelIsa::Scalar, KernelIsa::Avx2}) {
+    for (const KernelIsa isa : {KernelIsa::Scalar, KernelIsa::Avx2, KernelIsa::Avx2Intrinsics}) {
         Field3D su(g), sv(g), sw(g), fu(g), fv(g), fw(g);
         if (!advectScalar(su, u, u, v, w, dt, wholeInterior(g), isa)) {
             MESSAGE("AVX2 not available on this CPU/build: only the scalar path was checked");

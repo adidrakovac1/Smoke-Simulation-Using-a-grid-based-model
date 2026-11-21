@@ -105,7 +105,15 @@ SmokeUiActions SmokeUI::Draw(smoke::SmokeSolver& solver, VolumeSettings& view, S
     // ── Simulation parameters (docs/plan/MATH.md, sections 2 and 3) ──────────
     ImGui::SeparatorText("Simulacija");
     ImGui::SliderFloat("dt (s)", &params.dt, 1.0f / 240.0f, 1.0f / 15.0f, "%.4f");
-    ImGui::SliderInt("Jacobi iteracija K", &params.jacobiIterations, 1, 160);
+    ImGui::SliderInt("Iteracija pritiska K", &params.jacobiIterations, 1, 160);
+    // D20: pressure solver and its starting value (docs/plan/MATH.md, section 5).
+    int pressureChoice = params.pressureSolver == smoke::PressureSolver::RedBlackGaussSeidel ? 1 : 0;
+    const char* const kSolvers[] = {"Jacobi", "Red-black SOR"};
+    if (ImGui::Combo("Rjesavac pritiska", &pressureChoice, kSolvers, 2))
+        params.pressureSolver =
+            pressureChoice == 1 ? smoke::PressureSolver::RedBlackGaussSeidel : smoke::PressureSolver::Jacobi;
+    if (pressureChoice == 1) ImGui::SliderFloat("SOR omega", &params.sorOmega, 1.0f, 1.95f, "%.2f");
+    ImGui::Checkbox("Topli start pritiska", &params.warmStartPressure);
     ImGui::SliderFloat("Vrtlozenje eps", &params.vorticityEps, 0.0f, 15.0f, "%.2f");
     ImGui::SliderFloat("Uzgon alfa (tezina)", &params.buoyancyAlpha, 0.0f, 1.0f, "%.3f");
     ImGui::SliderFloat("Uzgon beta (toplota)", &params.buoyancyBeta, 0.0f, 10.0f, "%.2f");

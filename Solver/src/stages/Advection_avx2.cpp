@@ -22,4 +22,10 @@ void advectSlabAvx2(float* const* dst, const float* const* src, int count, const
     advectSlab(dst, src, count, u, v, w, s, k0, k1, dt, sJ, sK);  // the internal copy compiled with -mavx2
 }
 
+void correctAdvectSlab2Avx2(float* d0, float* d1, float* u, float* v, float* w, const float* p, const float* s0,
+                            const float* s1, const GridSize s, int k0, int k1, float dt, std::ptrdiff_t sJ,
+                            std::ptrdiff_t sK) {
+    correctAdvectSlab2(d0, d1, u, v, w, p, s0, s1, s, k0, k1, dt, sJ, sK);
+}
+
 } // namespace smoke::serial

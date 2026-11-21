@@ -15,11 +15,22 @@ namespace smoke::serial {
 
 namespace {
 #include "stages/JacobiRows.inc"
+#include "stages/RedBlackRows.inc"
 } // namespace
+
+void redBlackSweepAvx2(float* p, const float* div, int nx, int ny, int k0, int k1, int colour, float omega,
+                       std::ptrdiff_t sJ, std::ptrdiff_t sK) {
+    redBlackSweep(p, div, nx, ny, k0, k1, colour, omega, sJ, sK);  // copy compiled with -mavx2 (D20)
+}
 
 void jacobiSlabAvx2(float* pNew, const float* pOld, const float* div, int nx, int ny, int k0, int k1,
                     std::ptrdiff_t sJ, std::ptrdiff_t sK) {
     jacobiSlab(pNew, pOld, div, nx, ny, k0, k1, sJ, sK);  // the internal copy compiled with -mavx2
+}
+
+void jacobiPlaneRowsAvx2(float* pNew, const float* pOld, const float* div, int nx, int j0, int j1, int k,
+                         std::ptrdiff_t sJ, std::ptrdiff_t sK, bool fromZero) {
+    jacobiPlaneRows(pNew, pOld, div, nx, j0, j1, k, sJ, sK, fromZero);  // copy compiled with -mavx2
 }
 
 // T9 (M4-010): the same Jacobi row written by hand with AVX2 intrinsics, 8 floats per instruction, like

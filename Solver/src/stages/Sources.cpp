@@ -8,6 +8,19 @@ namespace smoke::serial {
 // Like add_source in Stam 2003 (x += dt * s), but the source "s" is a sphere given by params.source
 // instead of a user-filled array (docs/plan/MATH.md, section 3).
 void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRange range) {
+    if (params.source.radius * static_cast<float>(state.density.size().nx) <= 0.0f) return;  // as before D19
+    addSourcesSlab(state, params, dt, range);
+    setBoundary(state.density, BoundaryKind::Scalar);
+    setBoundary(state.temperature, BoundaryKind::Scalar);
+}
+
+// The interior part of addSources for the planes of `range`; the caller fills the ghost layer. Returns the
+// planes [k0, k1) it may have changed (empty when the sphere misses the slab). D19: SmokeSolver::step refreshes
+// the ghost layer only for those planes. That gives the same result as setBoundary on the whole field, because
+// the ghost cells of every other plane already hold the values setBoundary would write: every phase that
+// changes density or temperature ends with setBoundary (Stages.h invariant), so the ghost layer is always a
+// copy of the current interior.
+SlabRange addSourcesSlab(SmokeState& state, const SmokeParams& params, float dt, SlabRange range) {
     const SmokeSource& src = params.source;
     const GridSize     g   = state.density.size();
 
@@ -17,7 +30,7 @@ void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRang
     const float cy     = 0.5f + src.y * static_cast<float>(g.ny);
     const float cz     = 0.5f + src.z * static_cast<float>(g.nz);
     const float radius = src.radius * static_cast<float>(g.nx);
-    if (radius <= 0.0f) return;
+    if (radius <= 0.0f) return {range.k0, range.k0};
     const float r2 = radius * radius;
 
     // Only visit the bounding box of the sphere (clipped to the interior and to this call's slab).
@@ -44,9 +57,7 @@ void addSources(SmokeState& state, const SmokeParams& params, float dt, SlabRang
             }
         }
     }
-
-    setBoundary(state.density, BoundaryKind::Scalar);
-    setBoundary(state.temperature, BoundaryKind::Scalar);
+    return k0 <= k1 ? SlabRange{k0, k1 + 1} : SlabRange{range.k0, range.k0};
 }
 
 } // namespace smoke::serial

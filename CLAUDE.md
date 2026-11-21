@@ -8,10 +8,14 @@ Studentski projekat za predmet **Paralelni računarski sistemi** (ETF Sarajevo):
 dima na mreži ćelija (Eulerov pristup) u C++-u, koju kasnije paraleliziramo (OpenMP, SIMD,
 eventualno GPU) i mjerimo ubrzanje. Dim prikazujemo u postojećem OpenGL rendereru.
 
-**Serijski backend ostaje zadani i referentni**, uključujući M4 optimizacije. Odluka D18 dopušta
-eksperimentalni CPU backend sa `std::thread`, ali samo kada se izričito uključi (`smoke_demo --niti T`
-ili `smoke_bench --niti T`). OpenMP niti i GPU ostaju van ove faze (D8); dalja paralelizacija traži
-novu odluku tima.
+**Serijski backend ostaje zadani u `SolverConfig{}` i referentni**, uključujući M4 optimizacije. Odluka D18
+je uvela CPU backend sa `std::thread`; **odluka D19 (2026-11-17)** ga je pretvorila u najbržu verziju (tim niti
+za cijeli korak, wavefront Jacobi, fuzija jezgara), bit po bit istu kao serijska za svaki broj niti. Vizualizacija
+(`Integration/`) koristi `CpuParallel`; ostali programi ga uključuju sa `--niti T`. OpenMP biblioteka (niti) i GPU
+ostaju van ove faze (D8); `#pragma omp simd` uz `-fopenmp-simd` je dozvoljen. **D20:** topli start pritiska,
+red-black SOR i spavanje niti (`ThreadWait::Block`, niži CPI) su opcije koje mijenjaju rezultat ili brzinu;
+zadani `SmokeParams{}` je i dalje referenca, a vizualizacija koristi red-black SOR (MATH.md 5.1). Ostale tehnike
+koje mijenjaju rezultat (multigrid, FMA, ...) traže novu odluku tima.
 
 **Plan rada od 2026-11-11: `docs/plan/EXECUTION_PLAN.md` je izvršen (2026-11-13):** M4d (profiling, uProf), M-VIZ
 (vizualizacija), M-OBS (prepreke/mesh); tačke G0 do G3 su prošle. Šta još čeka Ermina ili tim piše u

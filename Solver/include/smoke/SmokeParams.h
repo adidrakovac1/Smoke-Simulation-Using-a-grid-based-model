@@ -15,11 +15,24 @@ struct SmokeSource {
     float temperatureRate = 10.0f;
 };
 
+/// How the pressure equation  laplacian(p) = div  is solved (decision D20, docs/plan/MATH.md, section 5).
+///   Jacobi                every cell from the OLD iterate of its neighbours (two buffers); the reference.
+///   RedBlackGaussSeidel   the cells are coloured like a 3D chess board, (i + j + k) even = red, odd = black;
+///                         first all red cells, then all black cells are updated IN PLACE, each from the newest
+///                         values of its neighbours (which all have the other colour). With sorOmega > 1 the
+///                         change of every cell is over-relaxed (SOR). Converges faster per iteration than
+///                         Jacobi, but gives a DIFFERENT result (not bit-identical to the reference).
+enum class PressureSolver { Jacobi, RedBlackGaussSeidel };
+
 /// All values that can be changed while the program runs (e.g. from the ImGui menu later).
 /// Units: the solver works in grid-cell units (h = 1), see docs/plan/PLAN.md, decision D4.
 struct SmokeParams {
     float dt               = 1.0f / 60.0f;  // from the project plan: one step = 1/60 s
-    int   jacobiIterations = 40;            // project plan says 20 to 80 per step
+    int   jacobiIterations = 40;            // project plan says 20 to 80 per step; also the red-black iterations
+    // D20. The defaults are the reference solver (Jacobi from p = 0), so --verify stays bit-identical.
+    PressureSolver pressureSolver    = PressureSolver::Jacobi;
+    float          sorOmega          = 1.0f;   // red-black only; 1 = plain Gauss-Seidel. TODO(measure): best value
+    bool           warmStartPressure = false;  // true: start from the pressure of the previous step instead of 0
     // Buoyancy, Fedkiw et al. 2001, eq. 8. The paper gives no numbers ("two positive constants"); these were
     // chosen experimentally on 64^3 (2026-11-09, M2), see docs/plan/MATH.md, section 3.
     float buoyancyAlpha    = 0.05f;

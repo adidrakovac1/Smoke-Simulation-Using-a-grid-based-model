@@ -164,11 +164,14 @@ Radni plan: [EXECUTION_PLAN.md](EXECUTION_PLAN.md), faze P0 do P2. Još uvijek s
 **Kriterij:** postoji HTML izvještaj s hardverskim brojačima i PROFILE.md; Jacobi je potvrđen ili je red-black
 eksperiment odobren.
 
-### Paralelizacija: eksperimentalni CPU backend (odluke D8 i D18)
-D8 i dalje isključuje OpenMP i GPU iz ove faze. D18 dopušta da se postojeća, eksplicitno uključena
-`std::thread` CPU implementacija isporuči kao eksperimentalni backend. `Serial` ostaje zadani backend
-za solver, benchmark i renderer; `smoke_demo --niti T` uključuje paralelni backend samo za C. Ovo nije
-odobrenje za dalju paralelizaciju ili za tvrdnje o ubrzanju bez mjerenja po D10.
+### Paralelizacija: CPU backend (odluke D8, D18 i D19)
+D8 i dalje isključuje OpenMP biblioteku (niti) i GPU. D18 je dopustila eksperimentalni `std::thread` backend.
+**D19 (2026-11-17)** ga pretvara u najbržu verziju solvera: cijeli korak radi jedan tim niti (spin barijere
+između faza), rubni uslovi idu po slojevima, Jacobi ide s vremenskim blokiranjem (wavefront), dio faza je spojen.
+Rezultat je bit po bit isti kao serijski, za svaki broj niti (test `test_parallel_solver.cpp`, `smoke_bench --verify
+--niti T`). Vizualizacija koristi `CpuParallel` s jednom niti po fizičkom jezgru; `Serial` ostaje zadani u `SolverConfig{}`
+i referenca. Mjerenje po D10: PERF_LOG.md, P-004 (prema serijskoj M4 verziji, 6 niti: 64³ 2.9x, 128³ 3.0x;
+12 niti: 64³ 3.6x, ali s povremenim zastojima koraka, pa nije zadano).
 
 ### M-VIZ: vizualizacija u rendereru (poslije M4d; odluke D14 i D17)
 Radi se tek kad je solver gotov, sekvencijalno optimiziran i izmjeren. Do tada se dim provjerava konzolnim programom
@@ -253,12 +256,15 @@ izabran način bez preuzimanja s interneta. D8 je dodana istog dana.
 | D16 | Dizajn prepreka (2026-11-11) | Rijetke liste graničnih ćelija; vektorizirana jezgra netaknuta; vlastiti OBJ parser u Solveru; bez prepreka rezultat bit po bit isti kao referenca |
 | D17 | Petlja simulacije i prva scena (2026-11-11) | Jedan korak po frejmu u glavnoj niti (D8); prva scena je jednostavna kutija s dimom |
 | D18 | Eksperimentalni CPU backend (2026-11-15, na zahtjev za PR #10) | Dozvoljen je postojeći `std::thread` backend kao opt-in u `smoke_demo --niti T`; `Serial` ostaje zadani backend i osnova mjerenja. Dalja paralelizacija nije odobrena ovim izuzetkom |
+| D19 | Najbrža verzija solvera (2026-11-17, Ermin, poslije konsultacija s asistentom) | Dozvoljeno je sve što ubrzava, **ako rezultat ostaje bit po bit isti** kao PC-2 referenca: niti (`std::thread`, bez OpenMP biblioteke), `omp simd` (`-fopenmp-simd`, bez niti), vremensko blokiranje Jacobija (wavefront), fuzija jezgara, spin barijera, vezanje niti za jezgra. `CpuParallel` (jedna nit po fizičkom jezgru) je zadani backend u vizualizaciji (`Integration/`); u `SolverConfig{}` zadani ostaje `Serial` i on je referenca za `--verify`. Tehnike koje **mijenjaju rezultat** (red-black GS, multigrid, topli start pritiska, FMA, `1/6` umjesto dijeljenja, manji K) i dalje traže posebnu odluku (D11, D15). Mjerenje: PERF_LOG.md, P-004 |
+| D20 | Topli start, red-black SOR i CPI (2026-11-17, Ermin) | Dodani su topli start pritiska i red-black Gauss-Seidel / SOR (`SmokeParams::pressureSolver`, `sorOmega`, `warmStartPressure`) i niti koje spavaju umjesto da vrte (`SolverConfig::threadWait = Block`). Mijenjaju rezultat, pa su **opcije**: `SmokeParams{}` ostaje Jacobi od `p = 0` (referenca, `--verify` bit po bit). Kvalitet se mjeri reziduumom Poissonove jednačine (MATH.md, 5.1). Ermin bira **niži CPI i po cijenu sporijeg koraka**: vizualizacija koristi red-black SOR ω = 1.5, K = 6, topli start, `Block`. Zamjenjuje D15 za vizualizaciju. Mjerenje: PERF_LOG.md, P-005 |
 
 ---
 
 ## 4. Šta se NE radi u ovoj fazi
 
-- OpenMP niti i GPU (odluke D8/D18). Nisu milestone; jedini izuzetak je opt-in `std::thread` backend opisan pod D18.
+- OpenMP niti (biblioteka) i GPU (odluke D8/D18/D19). Niti postoje samo kao `std::thread` backend (D18, D19).
+- Tehnike koje mijenjaju rezultat solvera mimo D20 (multigrid, FMA, ...), dok tim ne odluči (D15, D19, D20).
 - Optimizacija prije M4. U M1 do M3 pišemo jasan, ispravan kod; brzina dolazi tek u M4, poslije mjerenja.
 - Izmjene u `Renderer/` mimo popisa u ARCHITECTURE.md, odjeljak 6 (odluka D13).
 - Vizualizacija prije M4d (profiling dolazi prvi, D14).

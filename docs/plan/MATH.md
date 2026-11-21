@@ -317,6 +317,46 @@ Gauss-Seidel) dao mjerljivo manju divergenciju za isti broj iteracija.
 Razlog: zadani scenarij koristi ε = 5 (odluka D9), a tu je K = 40 već blizu poda. Ako slučaj ε = 0 kasnije
 postane važan, tabela iznad je polazna tačka za ponovnu odluku.
 
+### 5.1 Topli start i red-black SOR (odluka D20, 2026-11-17)
+
+D20 zamjenjuje D15 za vizualizaciju (zadana konfiguracija `SmokeParams{}` je i dalje Jacobi od `p = 0`, referenca).
+
+**Topli start.** Pritisak se mijenja sporo od koraka do koraka, pa je pritisak prošlog koraka mnogo bolji početak
+od nule: rješavač kreće skoro od rješenja. To odstupa od [Stam03] (`p = 0` svaki korak), ali jednačina je ista;
+mijenja se samo početna tačka iteracije, pa se mijenja i rezultat (nije bit po bit isti).
+
+**Red-black Gauss-Seidel / SOR.** Formula za ćeliju je ista kao kod Jacobija, `gs = (zbir 6 susjeda − div)/6`,
+ali se ćelija mijenja u mjestu i odmah koristi novu vrijednost susjeda. Ćelije se boje kao 3D šahovska tabla
+(`(i + j + k)` parno = crvena, neparno = crna): sve crvene imaju samo crne susjede, pa se mogu računati istovremeno
+(niti, SIMD), zatim sve crne. SOR pomjera ćeliju dalje od Gauss-Seidela: `p ← p + ω (gs − p)`, `1 < ω < 2`.
+U [Stam03] je `project()` zapravo Gauss-Seidel u redoslijedu petlje (mijenja `p` u mjestu); red-black je isti
+postupak u redoslijedu koji se može podijeliti. Izvor za izbor rješavača kod [Fedkiw01]: TODO(paper: Fedkiw et al. 2001, odjeljak 4).
+
+**Kako se mjeri kvalitet.** `max|div|` poslije projekcije gotovo se ne mijenja s rješavačem ni s K (64³ oko 2.0,
+128³ oko 2.4 za sve varijante, 100 koraka). Razlog je mreža: divergencija i gradijent su centralne razlike preko
+dvije ćelije, a rješavamo kompaktni 7-tačkasti Laplasijan, pa ni tačno rješenje ne daje `div = 0` (vidi pod u
+tabeli iznad). Zato se rješavači porede po **reziduumu Poissonove jednačine** `max|∇²p − div|` (nova
+`Diagnostics::poissonResidual`) i po rms divergencije (`rmsDivAfter`). Mjereno `smoke_bench --quality`, 6 niti,
+60 + 30 koraka (PERF_LOG.md, P-005):
+
+| Rješavač | reziduum 64³ | reziduum 128³ | ms/korak 64³ | ms/korak 128³ |
+| :--- | ---: | ---: | ---: | ---: |
+| Jacobi K = 40, od nule (referenca) | 0.050 | 0.132 | 2.59 | 30.1 |
+| Jacobi K = 40, topli start | 0.0026 | 0.0054 | 2.60 | 30.5 |
+| Jacobi K = 10, topli start | 0.028 | 0.034 | 1.59 | 22.0 |
+| red-black GS K = 40, od nule | 0.036 | 0.125 | 5.55 | 56.0 |
+| red-black SOR ω = 1.5, K = 6, topli start | 0.015 | 0.026 | 1.90 | 24.9 |
+
+Duži razvoj (300 + 60 koraka, dim puni kutiju): referenca 0.172 / 2.18, topli Jacobi K = 10 0.235 / 1.01,
+red-black SOR ω = 1.5, K = 6, topli 0.078 / 0.691. rms divergencije je za sve varijante isti ili manji od reference.
+Napomena: najveći reziduum odmah poslije red-black iteracije sjedi na crvenim ćelijama, pa je za poređenje na
+istom polju bolja greška prema tačnom rješenju (test `D20 red-black converges faster ...`: poslije 40 iteracija
+Jacobi 0.048, GS 0.030, SOR 1.8 0.0013).
+
+**Izbor za vizualizaciju (Ermin, 2026-11-17, CPI prije brzine):** red-black SOR, ω = 1.5, K = 6, topli start,
+niti koje spavaju. Manji reziduum od reference i najniži CPI od svih izmjerenih varijanti (PERF_LOG.md, P-005).
+Veći ω (1.8, 1.9) s toplim startom daje veći najveći reziduum (prebacivanje), pa nije izabran.
+
 ---
 
 ## 6. Rubni uslovi (zidovi kutije)
